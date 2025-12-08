@@ -10,6 +10,7 @@ try:
 except Exception:
     pass
 
+from ..utils.win32 import set_dpi_awareness
 from .. import __version__
 from ..core.state import app_state
 from ..core.singleton import check_single_instance
@@ -94,6 +95,9 @@ def check_update_in_background(notification_manager: NotificationManager, tray_m
 def main() -> None:
     """应用程序主入口点"""
     try:
+        # 设置 DPI 感知（尽早调用）
+        set_dpi_awareness()
+
         # 检查单实例运行
         if not check_single_instance():
             log("Application is already running")

@@ -9,6 +9,8 @@ TRANSLATIONS = {
     "New: {new_hotkey}\n"
     "\n"
     "The change takes effect immediately.",
+    "hotkey.dialog.conflict_message": "Hotkey {hotkey} is already in use by another application.\n\nForcing it may cause it to stop working in the other application or fail to work in PasteMD.\n\nDo you still want to force use it?",
+    "hotkey.dialog.conflict_title": "Hotkey Conflict",
     "hotkey.dialog.confirm_title": "Confirm change",
     "hotkey.dialog.current_hotkey": "Current hotkey:",
     "hotkey.dialog.heading": "Configure global hotkey",

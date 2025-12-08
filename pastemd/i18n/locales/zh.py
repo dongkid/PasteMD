@@ -4,6 +4,8 @@ TRANSLATIONS = {
     "app.startup.success": "启动成功，已经运行在后台。",
     "hotkey.dialog.cancel_button": "取消",
     "hotkey.dialog.confirm_message": "确认将热键更改为：{new_hotkey}\n\n原热键：{old_hotkey}\n新热键：{new_hotkey}\n\n更改将立即生效，是否继续？",
+    "hotkey.dialog.conflict_message": "热键 {hotkey} 已被其他程序占用。\n\n强制使用可能会导致该热键在其他程序中失效，或者无法在 PasteMD 中生效。\n\n是否仍要强制使用？",
+    "hotkey.dialog.conflict_title": "热键冲突",
     "hotkey.dialog.confirm_title": "确认更改",
     "hotkey.dialog.current_hotkey": "当前热键：",
     "hotkey.dialog.heading": "设置全局热键",

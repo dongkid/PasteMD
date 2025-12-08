@@ -4,6 +4,7 @@ import os
 from PIL import Image, ImageDraw
 
 from ...config.paths import get_app_png_path
+from ...utils.win32 import get_dpi_scale
 
 
 def create_fallback_icon(ok: bool = True, flash: bool = False) -> Image.Image:
@@ -17,7 +18,14 @@ def create_fallback_icon(ok: bool = True, flash: bool = False) -> Image.Image:
     Returns:
         PIL 图像对象
     """
-    size = (64, 64)
+    # 根据 DPI 调整图标大小，确保在高分屏下清晰
+    scale = get_dpi_scale()
+    base_size = 64
+    # 限制最小尺寸为 64，最大为 256
+    target_size = int(base_size * max(1.0, scale))
+    target_size = min(256, max(64, target_size))
+    
+    size = (target_size, target_size)
     img = Image.new("RGBA", size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
     
@@ -30,8 +38,14 @@ def create_fallback_icon(ok: bool = True, flash: bool = False) -> Image.Image:
     if flash:
         color = tuple(min(255, int(c * 1.3)) if i < 3 else c for i, c in enumerate(color))
     
-    # 绘制圆形
-    draw.ellipse([10, 10, 54, 54], fill=color)
+    # 绘制圆形 (按比例缩放坐标)
+    # 原始坐标: 10, 10, 54, 54 (在 64x64 中)
+    ratio = target_size / 64.0
+    padding = 10 * ratio
+    draw.ellipse(
+        [padding, padding, target_size - padding, target_size - padding],
+        fill=color
+    )
     
     return img
 

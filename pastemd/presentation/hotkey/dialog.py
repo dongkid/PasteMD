@@ -5,6 +5,7 @@ from tkinter import ttk, messagebox
 from typing import Optional, Callable
 
 from ...utils.logging import log
+from ...utils.win32 import HotkeyChecker, get_dpi_scale
 from ...domains.hotkey.recorder import HotkeyRecorder
 from ...i18n import t
 
@@ -28,7 +29,13 @@ class HotkeyDialog:
         
         self.root = tk.Tk()
         self.root.title(t("hotkey.dialog.title"))
-        self.root.geometry("450x300")
+        
+        # 适配高分屏：根据 DPI 缩放窗口大小
+        scale = get_dpi_scale()
+        width = int(450 * scale)
+        height = int(300 * scale)
+        self.root.geometry(f"{width}x{height}")
+        
         self.root.resizable(False, False)
         
         # 设置关闭窗口时的处理
@@ -195,6 +202,15 @@ class HotkeyDialog:
         if not messagebox.askyesno(t("hotkey.dialog.confirm_title"), confirm_msg):
             return
         
+        # 检测热键占用
+        if not HotkeyChecker.is_hotkey_available(self.new_hotkey):
+            conflict_msg = t(
+                "hotkey.dialog.conflict_message",
+                hotkey=self._format_hotkey(self.new_hotkey)
+            )
+            if not messagebox.askyesno(t("hotkey.dialog.conflict_title"), conflict_msg, icon='warning'):
+                return
+
         try:
             # 调用保存回调
             self.on_save(self.new_hotkey)
