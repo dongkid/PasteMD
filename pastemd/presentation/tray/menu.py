@@ -13,7 +13,7 @@ from ...domains.notification.manager import NotificationManager
 from ...utils.fs import ensure_dir
 from ...utils.logging import log
 from ...utils.version_checker import VersionChecker
-from ...i18n import t, iter_languages, get_language, set_language, get_language_label
+from ...i18n import t, iter_languages, get_language, set_language, get_language_label, get_no_app_action_map
 from .icon import create_status_icon
 from ..hotkey.dialog import HotkeyDialog
 from ..settings.dialog import SettingsDialog
@@ -94,15 +94,11 @@ class TrayMenuManager:
                 checked=lambda item: config.get("notify", True)
             ),
             pystray.MenuItem(
-                t("tray.menu.auto_open"),
-                self._on_toggle_auto_open,
-                checked=lambda item: config.get("auto_open_on_no_app", True)
-            ),
-            pystray.MenuItem(
                 t("tray.menu.move_cursor"),
                 self._on_toggle_move_cursor,
                 checked=lambda item: config.get("move_cursor_to_end", True)
             ),
+            self._build_no_app_action_menu(),
             html_formatting_menu,
             pystray.Menu.SEPARATOR,
             pystray.MenuItem(t("tray.menu.set_hotkey"), self._on_set_hotkey),
@@ -218,15 +214,6 @@ class TrayMenuManager:
         else:
             log("Notifications disabled via tray toggle")
     
-    def _on_toggle_auto_open(self, icon, item):
-        """切换无应用时自动打开状态"""
-        current = app_state.config.get("auto_open_on_no_app", True)
-        app_state.config["auto_open_on_no_app"] = not current
-        self._save_config()
-        icon.menu = self.build_menu()
-        status = t("tray.status.auto_open_on") if app_state.config["auto_open_on_no_app"] else t("tray.status.auto_open_off")
-        self.notification_manager.notify("PasteMD", status, ok=True)
-    
     def _on_toggle_move_cursor(self, icon, item):
         """切换插入后光标移动到末尾状态"""
         current = app_state.config.get("move_cursor_to_end", True)
@@ -341,6 +328,64 @@ class TrayMenuManager:
                 ),
             ),
         )
+
+    def _build_no_app_action_menu(self) -> pystray.MenuItem:
+        """构建无应用时动作子菜单"""
+        return pystray.MenuItem(
+            t("tray.menu.no_app_action"),
+            pystray.Menu(
+                pystray.MenuItem(
+                    t("action.open"),
+                    self._on_set_no_app_action,
+                    checked=lambda item: self._get_no_app_action() == "open",
+                ),
+                pystray.MenuItem(
+                    t("action.save"),
+                    self._on_set_no_app_action,
+                    checked=lambda item: self._get_no_app_action() == "save",
+                ),
+                pystray.MenuItem(
+                    t("action.clipboard"),
+                    self._on_set_no_app_action,
+                    checked=lambda item: self._get_no_app_action() == "clipboard",
+                ),
+                pystray.MenuItem(
+                    t("action.none"),
+                    self._on_set_no_app_action,
+                    checked=lambda item: self._get_no_app_action() == "none",
+                ),
+            ),
+        )
+
+    def _get_no_app_action(self) -> str:
+        """获取当前无应用动作设置"""
+        return app_state.config.get("no_app_action", "open")
+
+    def _on_set_no_app_action(self, icon, item):
+        """设置无应用动作"""
+        # 从标签文本映射到配置值（反转 action_map）
+        action_map = get_no_app_action_map()
+        reverse_action_map = {v: k for k, v in action_map.items()}
+        
+        # 获取点击的菜单项的文本
+        clicked_text = getattr(item, 'text', '')
+        
+        # 设置新的动作
+        new_action = reverse_action_map.get(clicked_text, "open")
+        app_state.config["no_app_action"] = new_action
+        self._save_config()
+        icon.menu = self.build_menu()
+        
+        # 显示状态通知
+        status_map = {
+            "open": t("tray.status.no_app_action_open"),
+            "save": t("tray.status.no_app_action_save"),
+            "clipboard": t("tray.status.no_app_action_clipboard"),
+            "none": t("tray.status.no_app_action_none")
+        }
+        
+        status = status_map.get(new_action, "")
+        self.notification_manager.notify("PasteMD", status, ok=True)
 
     def _get_html_formatting_option(self, key: str, default: bool) -> bool:
         options = app_state.config.get("html_formatting", {})

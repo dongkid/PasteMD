@@ -1,12 +1,17 @@
 """Clipboard operations."""
 
+import os
 import re
+import sys
+import ctypes
+from ctypes import wintypes
 import pyperclip
 import win32clipboard as wc
 import time
 from ..core.errors import ClipboardError
 from ..core.state import app_state
 from .html_formatter import clean_html_content
+from ..utils.logging import log
 
 
 def get_clipboard_text() -> str:
@@ -194,5 +199,266 @@ def _extract_html_fragment(cf_html: str) -> str:
         return cf_html[start_html:end_html]
     except Exception:
         return cf_html
+
+
+def copy_files_to_clipboard(file_paths: list) -> None:
+    """
+    将文件路径复制到剪贴板（CF_HDROP 格式）
+    
+    Args:
+        file_paths: 文件路径列表
+        
+    Raises:
+        ClipboardError: 剪贴板操作失败时
+    """
+    try:
+        # 确保文件路径是绝对路径
+        absolute_paths = [os.path.abspath(path) for path in file_paths if os.path.exists(path)]
+        
+        if not absolute_paths:
+            raise ClipboardError("No valid files to copy to clipboard")
+        
+        # 使用最简单可靠的方法
+        _copy_files_simple(absolute_paths)
+        
+    except Exception as e:
+        raise ClipboardError(f"Failed to copy files to clipboard: {e}")
+
+
+def _build_hdrop_data(file_paths: list) -> bytes:
+    """构建 CF_HDROP 格式的数据"""
+    # 定义 DROPFILES 结构体
+    class DROPFILES(ctypes.Structure):
+        _fields_ = [
+            ("pFiles", wintypes.DWORD),
+            ("pt", wintypes.POINT),
+            ("fNC", wintypes.BOOL),
+            ("fWide", wintypes.BOOL),
+        ]
+
+    # 准备文件列表数据 (UTF-16LE, double-null terminated)
+    # 路径之间用 \0 分隔，整个列表以 \0\0 结尾
+    files_text = "\0".join(file_paths) + "\0\0"
+    files_data = files_text.encode("utf-16le")
+    
+    # 计算结构体大小
+    struct_size = ctypes.sizeof(DROPFILES)
+    
+    # 创建缓冲区
+    total_size = struct_size + len(files_data)
+    buf = ctypes.create_string_buffer(total_size)
+    
+    # 填充结构体
+    dropfiles = DROPFILES.from_buffer(buf)
+    dropfiles.pFiles = struct_size  # 文件列表数据紧跟在结构体之后
+    dropfiles.pt = wintypes.POINT(0, 0)
+    dropfiles.fNC = False
+    dropfiles.fWide = True  # 使用宽字符 (UTF-16)
+    
+    # 填充文件数据
+    # 使用 ctypes.memmove 确保数据正确复制到缓冲区指定偏移位置
+    ctypes.memmove(ctypes.byref(buf, struct_size), files_data, len(files_data))
+    
+    return buf.raw
+
+
+def _copy_files_simple(file_paths: list) -> None:
+    """使用最简单可靠的方法复制文件到剪贴板"""
+    try:
+        # 直接使用 None 作为 owner，避免依赖 tkinter 窗口生命周期
+        wc.OpenClipboard(None)
+        try:
+            # 清空剪贴板
+            wc.EmptyClipboard()
+            
+            # 构建 CF_HDROP 数据
+            data = _build_hdrop_data(file_paths)
+            
+            # 设置 CF_HDROP 数据
+            wc.SetClipboardData(wc.CF_HDROP, data)
+            
+            log(f"Successfully copied {len(file_paths)} files to clipboard using CF_HDROP")
+            
+        finally:
+            wc.CloseClipboard()
+            
+    except Exception as e1:
+        log(f"CF_HDROP method failed: {e1}")
+        # 尝试文本方式作为备选
+        try:
+            _copy_files_as_text(file_paths)
+        except Exception as e2:
+            # 保留两个异常的完整信息
+            raise ClipboardError(
+                f"All clipboard methods failed. CF_HDROP: {e1}; Text fallback: {e2}"
+            ) from e1
+
+def _copy_files_as_text(file_paths: list) -> None:
+    """作为备选：复制文件路径为文本"""
+    try:
+        wc.OpenClipboard(None)
+        try:
+            wc.EmptyClipboard()
+            
+            # 复制文件路径为 Unicode 文本
+            text_data = "\r\n".join(file_paths)
+            wc.SetClipboardData(wc.CF_UNICODETEXT, text_data)
+            
+            log("Copied file paths as text to clipboard as fallback")
+            
+        finally:
+            wc.CloseClipboard()
+            
+    except Exception as e:
+        log(f"Text fallback method failed: {e}")
+        # 最后的兜底方案：使用 pyperclip
+        text_data = "\r\n".join(file_paths)
+        pyperclip.copy(text_data)
+        log("Used pyperclip as final fallback")
+
+
+# ============================================================
+# 剪贴板文件检测与读取（仅 Windows）
+# ============================================================
+
+def is_clipboard_files() -> bool:
+    """
+    检测剪贴板是否包含文件（CF_HDROP 格式）
+    
+    Returns:
+        True 如果剪贴板中存在文件；否则 False
+    """
+    try:
+        # 某些应用会暂时占用剪贴板，这里做几次轻量重试
+        for attempt in range(3):
+            try:
+                wc.OpenClipboard()
+                try:
+                    result = bool(wc.IsClipboardFormatAvailable(wc.CF_HDROP))
+                    log(f"Clipboard files check: {result}")
+                    return result
+                finally:
+                    wc.CloseClipboard()
+            except Exception as e:
+                log(f"Clipboard files check attempt {attempt + 1} failed: {e}")
+                time.sleep(0.03)
+        return False
+    except Exception as e:
+        log(f"Failed to check clipboard files: {e}")
+        return False
+
+
+def get_clipboard_files() -> list[str]:
+    """
+    获取剪贴板中的文件路径列表（Windows 实现）
+    
+    使用 wc.GetClipboardData(wc.CF_HDROP) 获取文件路径
+    
+    Returns:
+        文件绝对路径列表
+    """
+    file_paths = []
+    try:
+        for attempt in range(3):
+            try:
+                wc.OpenClipboard()
+                try:
+                    if wc.IsClipboardFormatAvailable(wc.CF_HDROP):
+                        data = wc.GetClipboardData(wc.CF_HDROP)
+                        # data 是一个包含文件路径的元组
+                        if data:
+                            file_paths = list(data)
+                            log(f"Got {len(file_paths)} files from clipboard")
+                        break
+                finally:
+                    wc.CloseClipboard()
+            except Exception as e:
+                log(f"Get clipboard files attempt {attempt + 1} failed: {e}")
+                time.sleep(0.03)
+    except Exception as e:
+        log(f"Failed to get clipboard files: {e}")
+    
+    return file_paths
+
+
+def get_clipboard_files_macos() -> list[str]:
+    """
+    获取剪贴板中的文件路径列表（macOS 实现 - 预留）
+    
+    Returns:
+        文件绝对路径列表（当前返回空列表）
+    """
+    # TODO: macOS 实现
+    log("macOS clipboard files support not implemented yet")
+    return []
+
+
+def get_markdown_files_from_clipboard() -> list[str]:
+    """
+    从剪贴板获取 Markdown 文件路径列表
+    
+    只返回扩展名为 .md 或 .markdown 的文件
+    根据平台选择实现（Windows 或 macOS）
+    
+    Returns:
+        Markdown 文件的绝对路径列表（按文件名排序）
+    """
+    # 根据平台获取剪贴板文件列表
+    if sys.platform == "win32":
+        all_files = get_clipboard_files()
+    elif sys.platform == "darwin":
+        all_files = get_clipboard_files_macos()
+    else:
+        log(f"Unsupported platform for clipboard files: {sys.platform}")
+        return []
+    
+    # 过滤 Markdown 文件
+    md_extensions = (".md", ".markdown")
+    md_files = [
+        f for f in all_files
+        if os.path.isfile(f) and f.lower().endswith(md_extensions)
+    ]
+    
+    # 按文件名排序
+    md_files.sort(key=lambda x: os.path.basename(x).lower())
+    
+    log(f"Found {len(md_files)} Markdown files in clipboard")
+    return md_files
+
+
+def read_file_with_encoding(file_path: str) -> str:
+    """
+    读取文件内容，自动检测 UTF-8 或 GBK 编码
+    
+    尝试顺序：utf-8 -> gbk -> gb2312 -> utf-8-sig
+    
+    Args:
+        file_path: 文件路径
+        
+    Returns:
+        文件内容字符串
+        
+    Raises:
+        ClipboardError: 读取失败时
+    """
+    encodings = ["utf-8", "gbk", "gb2312", "utf-8-sig"]
+    
+    for encoding in encodings:
+        try:
+            with open(file_path, "r", encoding=encoding) as f:
+                content = f.read()
+                log(f"Successfully read file '{file_path}' with encoding: {encoding}")
+                return content
+        except UnicodeDecodeError:
+            log(f"Failed to decode '{file_path}' with encoding: {encoding}")
+            continue
+        except Exception as e:
+            log(f"Error reading file '{file_path}' with encoding {encoding}: {e}")
+            continue
+    
+    # 所有编码都失败
+    raise ClipboardError(
+        f"Failed to read file '{file_path}' with any supported encoding: {encodings}"
+    )
 
 

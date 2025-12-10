@@ -86,6 +86,28 @@ class AppLauncher:
             return False
     
     @staticmethod
+    def generate_spreadsheet(table_data: List[List[str]], output_path: str,
+                             keep_format: bool = True) -> bool:
+        """
+        仅生成 XLSX 文件（不打开）
+        
+        Args:
+            table_data: 二维数组表格数据
+            output_path: 输出 XLSX 文件路径
+            keep_format: 是否保留格式
+            
+        Returns:
+            True 如果成功生成
+        """
+        try:
+            SpreadsheetGenerator.generate_xlsx(table_data, output_path, keep_format)
+            log(f"Successfully generated spreadsheet: {output_path}")
+            return True
+        except Exception as e:
+            log(f"Failed to generate spreadsheet: {e}")
+            return False
+    
+    @staticmethod
     def generate_and_open_spreadsheet(table_data: List[List[str]], output_path: str,
                                       keep_format: bool = True) -> bool:
         """
@@ -99,14 +121,8 @@ class AppLauncher:
         Returns:
             True 如果成功生成并打开
         """
-        try:
-            # 生成 XLSX 文件
-            SpreadsheetGenerator.generate_xlsx(table_data, output_path, keep_format)
-            
-            # 打开文件
-            return AppLauncher.awaken_and_open_spreadsheet(output_path)
-        except Exception as e:
-            log(f"Failed to generate and open spreadsheet: {e}")
+        if not AppLauncher.generate_spreadsheet(table_data, output_path, keep_format):
             return False
+        return AppLauncher.awaken_and_open_spreadsheet(output_path)
 
 
