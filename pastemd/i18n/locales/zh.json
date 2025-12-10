@@ -1,5 +1,5 @@
 {
-  "app.startup.success": "启动成功，已经运行在后台。",
+    "app.startup.success": "启动成功，已经运行在后台。",
     "hotkey.dialog.cancel_button": "取消",
     "hotkey.dialog.confirm_message": "确认将热键更改为：{new_hotkey}\n\n原热键：{old_hotkey}\n新热键：{new_hotkey}\n\n更改将立即生效，是否继续？",
     "hotkey.dialog.conflict_message": "热键 {hotkey} 已被其他程序占用。\n\n强制使用可能会导致该热键在其他程序中失效，或者无法在 PasteMD 中生效。\n\n是否仍要强制使用？",
@@ -175,5 +175,22 @@
     "workflow.table.insert_success": "已插入 {rows} 行表格到 {app}。",
     "workflow.table.invalid_simple": "未检测到有效的 Markdown 表格。",
     "workflow.table.invalid_with_app": "未检测到有效的 Markdown 表格。\n当前应用: {app}",
-    "workflow.word.insert_success": "已插入到 {app}。"
+    "workflow.word.insert_success": "已插入到 {app}。",
+    "workflow.action.saved": "文件已保存至：{path}",
+    "workflow.action.clipboard_copied": "文件已生成并复制到剪贴板",
+    "workflow.action.clipboard_failed": "复制文件到剪贴板失败",
+    "workflow.md_file.read_failed": "无法读取 Markdown 文件 {filename}：{error}",
+    "workflow.md_file.multiple_found": "检测到 {count} 个 Markdown 文件",
+    "workflow.md_file.batch_success": "已成功处理 {count} 个 Markdown 文件",
+    "workflow.md_file.batch_action_line": "动作：{action}",
+    "workflow.md_file.batch_failure_line": "失败 {failed_count} 个：{failed_files}",
+    "workflow.md_file.insert_success": "已从 MD 文件插入到 {app}",
+    "workflow.md_file.insert_success_multi": "已从 {count} 个 MD 文件合并插入到 {app}",
+    "workflow.md_file.generated_and_opened": "已从 MD 文件生成并打开文档\n路径: {path}",
+    "workflow.md_file.saved": "已从 MD 文件保存到\n路径: {path}",
+    "workflow.md_file.clipboard_copied": "已从 MD 文件生成并复制到剪贴板",
+    "action.open": "自动打开",
+    "action.save": "仅保存",
+    "action.clipboard": "复制文件到剪贴板",
+    "action.none": "无操作"
 }

@@ -174,3 +174,14 @@ def t(key: str, **kwargs) -> str:
             pass
 
     return text
+
+
+def get_no_app_action_map() -> Dict[str, str]:
+    """获取动作值到显示文本的映射（用于 UI）"""
+    from ..core.constants import NoAppAction
+    return {
+        NoAppAction.OPEN.value: t("action.open"),
+        NoAppAction.SAVE.value: t("action.save"),
+        NoAppAction.CLIPBOARD.value: t("action.clipboard"),
+        NoAppAction.NONE.value: t("action.none"),
+    }

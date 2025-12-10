@@ -10,7 +10,7 @@ from typing import Optional, Callable, Dict, Any
 from ...utils.logging import log
 from ...utils.win32 import get_dpi_scale
 from ...utils.resources import resource_path
-from ...i18n import t, iter_languages, get_language_label
+from ...i18n import t, iter_languages, get_language_label, get_no_app_action_map
 from ...core.state import app_state
 from ...config.loader import ConfigLoader
 from ...config.defaults import DEFAULT_CONFIG
@@ -159,16 +159,24 @@ class SettingsDialog:
         ttk.Button(button_frame, text=t("settings.general.browse"), command=self._browse_save_dir).pack(side=tk.LEFT, padx=2)
         ttk.Button(button_frame, text=t("settings.general.restore_default"), command=self._restore_default_save_dir).pack(side=tk.LEFT, padx=2)
         
+        # 无应用时动作下拉框
+        ttk.Label(frame, text=t("settings.general.no_app_action")).grid(row=2, column=0, sticky=tk.W, pady=5)
+
+        # 获取当前动作设置
+        current_action = self.current_config.get("no_app_action", "open")
+        action_map = get_no_app_action_map()
+        self.no_app_action_var = tk.StringVar(value=action_map.get(current_action, t("action.open")))
+        self.no_app_action_combo = ttk.Combobox(frame, textvariable=self.no_app_action_var, state="readonly")
+        self.no_app_action_combo['values'] = list(action_map.values())
+        self.no_app_action_combo.grid(row=2, column=1, sticky=tk.W, padx=5, pady=5)
+
         # 复选框选项
         self.keep_file_var = tk.BooleanVar(value=self.current_config.get("keep_file", False))
-        ttk.Checkbutton(frame, text=t("settings.general.keep_file"), variable=self.keep_file_var).grid(row=2, column=0, columnspan=3, sticky=tk.W, pady=5)
-        
+        ttk.Checkbutton(frame, text=t("settings.general.keep_file"), variable=self.keep_file_var).grid(row=3, column=0, columnspan=3, sticky=tk.W, pady=5)
+
         self.notify_var = tk.BooleanVar(value=self.current_config.get("notify", True))
-        ttk.Checkbutton(frame, text=t("settings.general.notify"), variable=self.notify_var).grid(row=3, column=0, columnspan=3, sticky=tk.W, pady=5)
-        
-        self.auto_open_var = tk.BooleanVar(value=self.current_config.get("auto_open_on_no_app", True))
-        ttk.Checkbutton(frame, text=t("settings.general.auto_open"), variable=self.auto_open_var).grid(row=4, column=0, columnspan=3, sticky=tk.W, pady=5)
-        
+        ttk.Checkbutton(frame, text=t("settings.general.notify"), variable=self.notify_var).grid(row=4, column=0, columnspan=3, sticky=tk.W, pady=5)
+
         self.move_cursor_var = tk.BooleanVar(value=self.current_config.get("move_cursor_to_end", True))
         ttk.Checkbutton(frame, text=t("settings.general.move_cursor"), variable=self.move_cursor_var).grid(row=5, column=0, columnspan=3, sticky=tk.W, pady=5)
         
@@ -344,7 +352,15 @@ class SettingsDialog:
             new_config["save_dir"] = self.save_dir_var.get()
             new_config["keep_file"] = self.keep_file_var.get()
             new_config["notify"] = self.notify_var.get()
-            new_config["auto_open_on_no_app"] = self.auto_open_var.get()
+
+            # 获取 action_map 用于映射
+            action_map = get_no_app_action_map()
+
+            # 映射显示文本回配置值
+            reverse_action_map = {v: k for k, v in action_map.items()}
+            selected_action_text = self.no_app_action_var.get()
+            new_config["no_app_action"] = reverse_action_map.get(selected_action_text, "open")
+
             new_config["move_cursor_to_end"] = self.move_cursor_var.get()
             
             new_config["pandoc_path"] = self.pandoc_path_var.get()

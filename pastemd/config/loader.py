@@ -60,6 +60,14 @@ class ConfigLoader:
         """
         has_changes = False
 
+        # 特殊处理：向后兼容迁移 - auto_open_on_no_app -> no_app_action
+        if "auto_open_on_no_app" in source and "no_app_action" not in source:
+            old_value = source["auto_open_on_no_app"]
+            # 根据旧值设置新值
+            target["no_app_action"] = "open" if old_value else "none"
+            has_changes = True
+            log(f"Migrated auto_open_on_no_app={old_value} to no_app_action='{target['no_app_action']}'")
+
         for key, value in source.items():
             if key in target:
                 if isinstance(value, dict) and isinstance(target[key], dict):
@@ -77,7 +85,7 @@ class ConfigLoader:
                 # has_changes = True # 如果你想自动清理废弃字段，这里逻辑要反过来写
 
         # 反向检查：检查 target (默认配置) 里有，但 source (用户配置) 里没有的 key
-        # 这才是“自动补全”的核心
+        # 这才是"自动补全"的核心
         for key in target.keys():
             if key not in source:
                 has_changes = True  # 发现了一个新配置项，需要保存！

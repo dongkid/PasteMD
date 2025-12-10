@@ -39,7 +39,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "notify": True,
     "enable_excel": True,
     "excel_keep_format": True,
-    "auto_open_on_no_app": True,
+    "no_app_action": "open",  # 无应用检测时的动作：open=自动打开, save=仅保存, clipboard=复制到剪贴板, none=无操作
     "md_disable_first_para_indent": True,
     "html_disable_first_para_indent": True,
     "html_formatting": {

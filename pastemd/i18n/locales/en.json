@@ -1,5 +1,5 @@
 {
-  "app.startup.success": "Started successfully and is running in the background.",
+    "app.startup.success": "Started successfully and is running in the background.",
     "hotkey.dialog.cancel_button": "Cancel",
     "hotkey.dialog.confirm_message": "Apply the new hotkey?\n\nCurrent: {old_hotkey}\nNew: {new_hotkey}\n\nThe change takes effect immediately.",
     "hotkey.dialog.conflict_message": "Hotkey {hotkey} is already in use by another application.\n\nForcing it may cause it to stop working in the other application or fail to work in PasteMD.\n\nDo you still want to force use it?",
@@ -175,5 +175,22 @@
     "workflow.table.insert_success": "Inserted {rows} rows into {app}.",
     "workflow.table.invalid_simple": "No valid Markdown table detected.",
     "workflow.table.invalid_with_app": "No valid Markdown table detected.\nCurrent app: {app}",
-    "workflow.word.insert_success": "Inserted into {app}."
+    "workflow.word.insert_success": "Inserted into {app}.",
+    "workflow.action.saved": "File saved to: {path}",
+    "workflow.action.clipboard_copied": "File generated and copied to clipboard",
+    "workflow.action.clipboard_failed": "Failed to copy file to clipboard",
+    "workflow.md_file.read_failed": "Failed to read Markdown file {filename}: {error}",
+    "workflow.md_file.multiple_found": "{count} Markdown files detected",
+    "workflow.md_file.batch_success": "Successfully processed {count} Markdown files",
+    "workflow.md_file.batch_action_line": "Action: {action}",
+    "workflow.md_file.batch_failure_line": "Failed {failed_count}: {failed_files}",
+    "workflow.md_file.insert_success": "Inserted from MD file to {app}",
+    "workflow.md_file.insert_success_multi": "Merged {count} MD files and inserted to {app}",
+    "workflow.md_file.generated_and_opened": "Generated document from MD file and opened\nPath: {path}",
+    "workflow.md_file.saved": "Saved from MD file to\nPath: {path}",
+    "workflow.md_file.clipboard_copied": "Generated from MD file and copied to clipboard",
+    "action.open": "Auto open",
+    "action.save": "Save only",
+    "action.clipboard": "Copy file to clipboard",
+    "action.none": "No action"
 }
