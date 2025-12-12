@@ -1,7 +1,16 @@
 """Common type aliases and protocols."""
 
+from enum import Enum
 from typing import Protocol, Any, Dict, Callable, Literal
 from abc import abstractmethod
+
+
+class NoAppAction(str, Enum):
+    """无应用检测时的动作类型"""
+    OPEN = "open"
+    SAVE = "save"
+    CLIPBOARD = "clipboard"
+    NONE = "none"
 
 
 ConfigDict = Dict[str, Any]

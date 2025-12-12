@@ -188,6 +188,8 @@ TRANSLATIONS = {
     "workflow.md_file.read_failed": "Failed to read Markdown file {filename}: {error}",
     "workflow.md_file.multiple_found": "{count} Markdown files detected",
     "workflow.md_file.batch_success": "Successfully processed {count} Markdown files",
+    "workflow.md_file.batch_action_line": "Action: {action}",
+    "workflow.md_file.batch_failure_line": "Failed {failed_count}: {failed_files}",
     # MD file processing notifications (with source and target)
     "workflow.md_file.insert_success": "Inserted from MD file to {app}",
     "workflow.md_file.insert_success_multi": "Merged {count} MD files and inserted to {app}",

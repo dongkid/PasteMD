@@ -239,3 +239,6 @@ Output/
 /test
 .vscode/launch.json
 .vscode/settings.json
+
+## Kilo rules
+.kilocode

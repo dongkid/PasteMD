@@ -462,3 +462,40 @@ def read_file_with_encoding(file_path: str) -> str:
     )
 
 
+def read_markdown_files_from_clipboard() -> tuple[bool, list[tuple[str, str]], list[tuple[str, str]]]:
+    """
+    从剪贴板读取 Markdown 文件内容
+    
+    封装了"获取剪贴板 MD 文件路径 + 逐个读取内容"的完整逻辑。
+    读取失败的文件会被跳过，继续处理其它文件。
+    
+    Returns:
+        (found, files_data, errors) 元组：
+        - found: 是否发现并成功读取至少一个 MD 文件
+        - files_data: [(filename, content), ...] 成功读取的文件名和内容列表
+        - errors: [(filename, error_message), ...] 读取失败的文件和错误信息
+    """
+    md_files = get_markdown_files_from_clipboard()
+    
+    if not md_files:
+        return False, [], []
+    
+    files_data: list[tuple[str, str]] = []
+    errors: list[tuple[str, str]] = []
+    
+    for file_path in md_files:
+        filename = os.path.basename(file_path)
+        try:
+            content = read_file_with_encoding(file_path)
+            files_data.append((filename, content))
+            log(f"Successfully read MD file: {filename}")
+        except Exception as e:
+            # 记录失败信息，但继续处理其他文件
+            error_msg = str(e)
+            log(f"Failed to read MD file '{filename}': {error_msg}")
+            errors.append((filename, error_msg))
+    
+    # found 为 True 当且仅当至少成功读取了一个文件
+    return len(files_data) > 0, files_data, errors
+
+

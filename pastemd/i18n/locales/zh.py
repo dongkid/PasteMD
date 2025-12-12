@@ -182,6 +182,8 @@ TRANSLATIONS = {
     "workflow.md_file.read_failed": "无法读取 Markdown 文件 {filename}：{error}",
     "workflow.md_file.multiple_found": "检测到 {count} 个 Markdown 文件",
     "workflow.md_file.batch_success": "已成功处理 {count} 个 Markdown 文件",
+    "workflow.md_file.batch_action_line": "动作：{action}",
+    "workflow.md_file.batch_failure_line": "失败 {failed_count} 个：{failed_files}",
     # MD 文件处理通知（带来源和目标）
     "workflow.md_file.insert_success": "已从 MD 文件插入到 {app}",
     "workflow.md_file.insert_success_multi": "已从 {count} 个 MD 文件合并插入到 {app}",
