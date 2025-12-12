@@ -247,3 +247,7 @@ Output/
 *.exe
 nuitka-crash-report.xml
 /nuitka/*
+
+# AI agent folders
+.claude/
+.kilocode/

@@ -192,5 +192,11 @@
     "action.open": "Auto open",
     "action.save": "Save only",
     "action.clipboard": "Copy file to clipboard",
-    "action.none": "No action"
+    "action.none": "No action",
+    "settings.general.no_app_action": "Action when no app detected",
+    "tray.menu.no_app_action": "No app action",
+    "tray.status.no_app_action_open": "Set to: Auto open",
+    "tray.status.no_app_action_save": "Set to: Save only",
+    "tray.status.no_app_action_clipboard": "Set to: Copy to clipboard",
+    "tray.status.no_app_action_none": "Set to: No action"
 }

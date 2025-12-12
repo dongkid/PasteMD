@@ -192,5 +192,11 @@
     "action.open": "自动打开",
     "action.save": "仅保存",
     "action.clipboard": "复制文件到剪贴板",
-    "action.none": "无操作"
+    "action.none": "无操作",
+    "settings.general.no_app_action": "无应用时动作",
+    "tray.menu.no_app_action": "无应用时动作",
+    "tray.status.no_app_action_open": "已设置：自动打开",
+    "tray.status.no_app_action_save": "已设置：仅保存",
+    "tray.status.no_app_action_clipboard": "已设置：复制到剪贴板",
+    "tray.status.no_app_action_none": "已设置：无操作"
 }

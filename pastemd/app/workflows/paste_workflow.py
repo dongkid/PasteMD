@@ -11,28 +11,27 @@ from ...utils.clipboard import (
     is_clipboard_empty,
     is_clipboard_html,
     get_clipboard_html,
-    get_markdown_files_from_clipboard,
-    read_file_with_encoding
+    read_markdown_files_from_clipboard,
 )
-from ...utils.latex import convert_latex_delimiters
-from ...utils.md_normalizer import normalize_markdown
-from ...domains.awakener import AppLauncher
-from ...integrations.pandoc import PandocIntegration
+from ...utils.markdown_utils import merge_markdown_contents
 from ...domains.document.word import WordInserter
 from ...domains.document.wps import WPSInserter
+from ...domains.document.generator import DocumentGeneratorService
 from ...domains.spreadsheet.parser import parse_markdown_table
 from ...domains.spreadsheet.excel import MSExcelInserter
 from ...domains.spreadsheet.wps_excel import WPSExcelInserter
 from ...domains.notification.manager import NotificationManager
 from ...utils.fs import generate_output_path
+from ...utils.docx_processor import DocxProcessor
 from ...utils.logging import log
 from ...core.state import app_state
-from ...core.errors import ClipboardError, PandocError, InsertError
-from ...core.constants import NoAppAction
 from ...config.defaults import DEFAULT_CONFIG
 from ...config.loader import ConfigLoader
+from .output_executor import OutputExecutor
+from ...core.errors import ClipboardError, PandocError, InsertError
+from ...integrations.pandoc import PandocIntegration
+from ...core.types import NoAppAction
 from ...utils.win32.memfile import EphemeralFile
-from ...utils.docx_processor import DocxProcessor
 from ...utils.html_analyzer import is_plain_html_fragment
 from ...i18n import t
 
@@ -46,6 +45,8 @@ class PasteWorkflow:
         self.ms_excel_inserter = MSExcelInserter()
         self.wps_excel_inserter = WPSExcelInserter()
         self.notification_manager = NotificationManager()
+        self.doc_generator = DocumentGeneratorService()
+        self.output_executor = OutputExecutor(self.notification_manager)
         self.pandoc_integration = None  # 延迟初始化
     
     def execute(self) -> None:
@@ -103,10 +104,21 @@ class PasteWorkflow:
                         )
             else:
                 # 2. 文本为空时，检测是否有 MD 文件
-                has_md_files, files_data = self._try_read_clipboard_md_files()
+                found, files_data, errors = read_markdown_files_from_clipboard()
                 
-                if not has_md_files:
-                    # 确实为空
+                # 计算原始发现的文件数（成功 + 失败）
+                total_found = len(files_data) + len(errors)
+                
+                # 显示每个失败文件的通知
+                for filename, error_msg in errors:
+                    self.notification_manager.notify(
+                        "PasteMD",
+                        t("workflow.md_file.read_failed", filename=filename, error=error_msg),
+                        ok=False
+                    )
+                
+                if not found:
+                    # 确实为空（没有 MD 文件，或所有文件读取都失败）
                     self.notification_manager.notify(
                         "PasteMD",
                         t("workflow.clipboard.empty"),
@@ -120,7 +132,7 @@ class PasteWorkflow:
                 
                 if target in ("word", "wps"):
                     # 合并所有文件后插入
-                    merged_content = self._merge_md_contents(files_data)
+                    merged_content = merge_markdown_contents(files_data)
                     self._handle_word_flow(merged_content, target, config,
                                            from_md_file=True, file_count=len(files_data))
                 elif target in ("excel", "wps_excel") and config.get("enable_excel", True):
@@ -157,70 +169,6 @@ class PasteWorkflow:
                 ok=False
             )
     
-    def _try_read_clipboard_md_files(self) -> tuple[bool, list[tuple[str, str]]]:
-        """
-        尝试从剪贴板读取 Markdown 文件内容
-        
-        Returns:
-            (found, files_data)
-            - found: 是否发现 MD 文件
-            - files_data: [(filename, content), ...] 文件名和内容列表
-        """
-        md_files = get_markdown_files_from_clipboard()
-        
-        if not md_files:
-            return False, []
-        
-        files_data: list[tuple[str, str]] = []
-        
-        # 如果有多个文件，显示通知
-        if len(md_files) > 1:
-            self.notification_manager.notify(
-                "PasteMD",
-                t("workflow.md_file.multiple_found", count=len(md_files)),
-                ok=True
-            )
-        
-        for file_path in md_files:
-            filename = os.path.basename(file_path)
-            try:
-                content = read_file_with_encoding(file_path)
-                files_data.append((filename, content))
-                log(f"Successfully read MD file: {filename}")
-            except Exception as e:
-                # 单个文件读取失败时显示通知但继续处理其他文件
-                log(f"Failed to read MD file '{filename}': {e}")
-                self.notification_manager.notify(
-                    "PasteMD",
-                    t("workflow.md_file.read_failed", filename=filename, error=str(e)),
-                    ok=False
-                )
-        
-        return len(files_data) > 0, files_data
-    
-    def _merge_md_contents(self, files_data: list[tuple[str, str]]) -> str:
-        """
-        合并多个 MD 文件内容
-        
-        Args:
-            files_data: [(filename, content), ...] 列表
-            
-        Returns:
-            合并后的 Markdown 内容
-        """
-        if len(files_data) == 1:
-            # 单个文件直接返回内容
-            return files_data[0][1]
-        
-        # 多个文件用 HTML 注释标记来源
-        merged_parts = []
-        for filename, content in files_data:
-            merged_parts.append(f"<!-- Source: {filename} -->")
-            merged_parts.append(content.strip())
-            merged_parts.append("")  # 空行分隔
-        
-        return "\n".join(merged_parts)
-    
     def _handle_md_files_no_app_flow(
         self,
         files_data: list[tuple[str, str]],
@@ -246,30 +194,74 @@ class PasteWorkflow:
             )
             return
         
-        success_count = 0
+        # 验证动作类型
+        if action not in (NoAppAction.OPEN, NoAppAction.SAVE, NoAppAction.CLIPBOARD):
+            log(f"Unknown no_app_action for MD files: {action}")
+            return
         
+        if len(files_data) == 1:
+            filename, content = files_data[0]
+            log(f"Processing MD file: {filename}")
+            try:
+                self._execute_docx_action(action, content, config, from_md_file=True)
+            except Exception as e:
+                log(f"Failed to process MD file '{filename}': {e}")
+            return
+
+        # 批量生成 DOCX items，再由 executor 统一输出与汇总通知
+        if action == NoAppAction.CLIPBOARD:
+            keep_file = config.get("keep_file", False)
+        else:
+            keep_file = True
+
+        items: list[tuple[bytes, str, str]] = []
+        pre_failures: list[tuple[str, str]] = []
+
         for filename, content in files_data:
             log(f"Processing MD file: {filename}")
             try:
-                if action == NoAppAction.OPEN:
-                    self._generate_and_open_document(content, config, from_md_file=True)
-                    success_count += 1
-                elif action == NoAppAction.SAVE:
-                    self._generate_and_save_document(content, config, from_md_file=True)
-                    success_count += 1
-                elif action == NoAppAction.CLIPBOARD:
-                    self._generate_and_clipboard_document(content, config, from_md_file=True)
-                    success_count += 1
+                docx_bytes, output_path = self.doc_generator.generate_docx_file_from_markdown(
+                    content, config, keep_file=keep_file
+                )
+                items.append((docx_bytes, output_path, filename))
+            except PandocError as e:
+                log(f"Pandoc error while processing MD file '{filename}': {e}")
+                self.notification_manager.notify(
+                    "PasteMD",
+                    t("workflow.markdown.convert_failed"),
+                    ok=False
+                )
+                pre_failures.append((filename, str(e)))
+            except ClipboardError as e:
+                log(f"Clipboard error while processing MD file '{filename}': {e}")
+                self.notification_manager.notify(
+                    "PasteMD",
+                    t("workflow.html.clipboard_failed"),
+                    ok=False
+                )
+                pre_failures.append((filename, str(e)))
             except Exception as e:
                 log(f"Failed to process MD file '{filename}': {e}")
-        
-        # 处理完成后显示批量成功通知
-        if success_count > 0 and len(files_data) > 1:
-            self.notification_manager.notify(
-                "PasteMD",
-                t("workflow.md_file.batch_success", count=success_count),
-                ok=True
-            )
+                if action == NoAppAction.CLIPBOARD:
+                    self.notification_manager.notify(
+                        "PasteMD",
+                        t("workflow.action.clipboard_failed"),
+                        ok=False
+                    )
+                else:
+                    self.notification_manager.notify(
+                        "PasteMD",
+                        t("workflow.document.generate_failed"),
+                        ok=False
+                    )
+                pre_failures.append((filename, str(e)))
+
+        self.output_executor.execute_docx_batch(
+            action=action,
+            items=items,
+            from_md_file=True,
+            pre_failures=pre_failures
+        )
 
     def _handle_excel_flow(self, md_text: str, target: str, config: dict) -> None:
         """
@@ -350,22 +342,14 @@ class PasteWorkflow:
                 cwd=config.get("save_dir"),
             )
 
-            # 3. 在内存中处理 DOCX 样式
-            if config.get("html_disable_first_para_indent", True):
-                docx_bytes = DocxProcessor.apply_custom_processing(
-                    docx_bytes,
-                    disable_first_para_indent=True,
-                    target_style="Body Text"
-                )
-
-            # 4. 使用临时文件插入
+            # 3. 使用临时文件插入
             temp_dir = config.get("temp_dir")  # 可选：支持 RAM 盘目录
             with EphemeralFile(suffix=".docx", dir_=temp_dir) as eph:
                 eph.write_bytes(docx_bytes)
                 # 插入
                 inserted = self._perform_word_insertion(eph.path, target)
             
-            # 5. 可选保存文件
+            # 4. 可选保存文件
             if config.get("keep_file", False):
                 try:
                     output_path = generate_output_path(
@@ -379,7 +363,7 @@ class PasteWorkflow:
                 except Exception as e:
                     log(f"Failed to save HTML-converted DOCX file: {e}")
             
-            # 6. 显示结果通知
+            # 5. 显示结果通知
             if inserted:
                 app_name = "Word" if target == "word" else "WPS 文字"
                 self.notification_manager.notify(
@@ -432,11 +416,8 @@ class PasteWorkflow:
             from_md_file: 是否来源于 MD 文件
             file_count: MD 文件数量
         """
-        # 1. 规范化 Markdown 格式（处理智谱清言等来源的格式问题）
-        md_text = normalize_markdown(md_text)
-        
-        # 2. 处理LaTeX公式
-        md_text = convert_latex_delimiters(md_text)
+        # 1. 生成 DOCX 字节流（使用 DocumentGeneratorService）
+        docx_bytes = self.doc_generator.convert_markdown_to_docx_bytes(md_text, config)
 
         # 3. 检测文件行数，如果较大则提示用户转换已开始
         line_count = md_text.count('\n') + 1
@@ -496,31 +477,10 @@ class PasteWorkflow:
                     ok=False
                 )
         
-        # 6. 显示结果通知
+        # 4. 显示结果通知
         self._show_word_result(target, inserted, from_md_file, file_count)
     
-    def _ensure_pandoc_integration(self) -> None:
-        """确保 Pandoc 集成已初始化"""
-        if self.pandoc_integration is None:
-            pandoc_path = app_state.config.get("pandoc_path", "pandoc")
-            try:
-                self.pandoc_integration = PandocIntegration(pandoc_path)
-            except PandocError as e:
-                log(f"Failed to initialize PandocIntegration: {e}")
-                try:
-                    self.pandoc_integration = PandocIntegration(DEFAULT_CONFIG.get("pandoc_path", "pandoc"))
-                    app_state.config["pandoc_path"] = DEFAULT_CONFIG["pandoc_path"]
-                    config_loader = ConfigLoader()
-                    config_loader.save(config=app_state.config)
-                except Exception as e2:
-                    log(f"Retry to initialize PandocIntegration failed: {e2}")
-                    self.notification_manager.notify(
-                        "PasteMD",
-                        t("workflow.pandoc.init_failed"),
-                        ok=False
-                    )
-                    self.pandoc_integration = None
-    
+
     def _perform_word_insertion(self, docx_path: str, target: str) -> bool:
         """
         执行Word/WPS文档插入
@@ -549,16 +509,9 @@ class PasteWorkflow:
             return False
     
     def _show_word_result(self, target: str, inserted: bool, from_md_file: bool = False, file_count: int = 1) -> None:
-        """显示Word/WPS流程的结果通知
-        
-        Args:
-            target: 目标应用
-            inserted: 是否插入成功
-            from_md_file: 是否来源于 MD 文件
-            file_count: MD 文件数量
-        """
+        """显示Word/WPS流程的结果通知"""
+        app_name = "Word" if target == "word" else "WPS 文字"
         if inserted:
-            app_name = "Word" if target == "word" else "WPS 文字"
             if from_md_file:
                 if file_count > 1:
                     msg = t("workflow.md_file.insert_success_multi", count=file_count, app=app_name)
@@ -568,119 +521,40 @@ class PasteWorkflow:
                 msg = t("workflow.word.insert_success", app=app_name)
             self.notification_manager.notify("PasteMD", msg, ok=True)
         else:
-            app_name = "Word" if target == "word" else "WPS 文字"
             self.notification_manager.notify(
                 "PasteMD",
                 t("workflow.insert_failed_no_app", app=app_name),
                 ok=False
             )
-    
-    def _generate_docx_from_markdown(self, md_text: str, config: dict, keep_file: bool = True) -> tuple[bytes, str]:
-        """
-        从 Markdown 生成 DOCX 字节流和输出路径
-        
-        Args:
-            md_text: Markdown 文本
-            config: 配置字典
-            keep_file: 是否持久化保存文件（影响输出路径生成）
-            
-        Returns:
-            (docx_bytes, output_path) 元组
-            
-        Raises:
-            PandocError: 转换失败时
-        """
-        # 1. 规范化 Markdown 格式
-        md_text = normalize_markdown(md_text)
-        
-        # 2. 处理 LaTeX 公式
-        md_text = convert_latex_delimiters(md_text)
-        
-        # 3. 生成输出路径
-        output_path = generate_output_path(
-            keep_file=keep_file,
-            save_dir=config.get("save_dir", ""),
-            md_text=md_text
-        )
-        
-        # 4. 转换为 DOCX 字节流
-        self._ensure_pandoc_integration()
-        docx_bytes = self.pandoc_integration.convert_to_docx_bytes(
-            md_text=md_text,
-            reference_docx=config.get("reference_docx"),
-            Keep_original_formula=config.get("Keep_original_formula", False),
-            enable_latex_replacements=config.get("enable_latex_replacements", True),
-            custom_filters=config.get("pandoc_filters", []),
-            cwd=config.get("save_dir"),
-        )
-        
-        # 5. 处理 DOCX 样式
-        if config.get("md_disable_first_para_indent", True):
-            docx_bytes = DocxProcessor.apply_custom_processing(
-                docx_bytes,
-                disable_first_para_indent=True,
-                target_style="Body Text"
-            )
-        
-        return docx_bytes, output_path
-    
-    def _generate_docx_from_html(self, md_text: str, config: dict,
-                                  html_text: Optional[str] = None,
-                                  keep_file: bool = True) -> tuple[bytes, str]:
-        """
-        从 HTML 生成 DOCX 字节流和输出路径
-        
-        Args:
-            md_text: Markdown 文本（用于生成文件名）
-            config: 配置字典
-            html_text: HTML 文本，如果为 None 则从剪贴板获取
-            keep_file: 是否持久化保存文件（影响输出路径生成）
-            
-        Returns:
-            (docx_bytes, output_path) 元组
-            
-        Raises:
-            ClipboardError: 剪贴板读取失败时
-            PandocError: 转换失败时
-        """
-        # 1. 获取 HTML 内容
-        if html_text is None:
-            html_text = get_clipboard_html(config)
-        log(f"Retrieved HTML from clipboard, length: {len(html_text)}")
-        
-        # 2. 转换为 DOCX 字节流
-        self._ensure_pandoc_integration()
-        docx_bytes = self.pandoc_integration.convert_html_to_docx_bytes(
-            html_text=html_text,
-            reference_docx=config.get("reference_docx"),
-            Keep_original_formula=config.get("Keep_original_formula", False),
-            enable_latex_replacements=config.get("enable_latex_replacements", True),
-            custom_filters=config.get("pandoc_filters", []),
-            cwd=config.get("save_dir"),
-        )
-        
-        # 3. 处理 DOCX 样式
-        if config.get("html_disable_first_para_indent", True):
-            docx_bytes = DocxProcessor.apply_custom_processing(
-                docx_bytes,
-                disable_first_para_indent=True,
-                target_style="Body Text"
-            )
-        
-        # 4. 生成输出路径
-        output_path = generate_output_path(
-            keep_file=keep_file,
-            save_dir=config.get("save_dir", ""),
-            md_text=md_text,
-            html_text=html_text
-        )
-        
-        return docx_bytes, output_path
+
+    def _ensure_pandoc_integration(self) -> None:
+        """确保 Pandoc 集成已初始化"""
+        if self.pandoc_integration is None:
+            pandoc_path = app_state.config.get("pandoc_path", "pandoc")
+            try:
+                self.pandoc_integration = PandocIntegration(pandoc_path)
+            except PandocError as e:
+                log(f"Failed to initialize PandocIntegration: {e}")
+                try:
+                    self.pandoc_integration = PandocIntegration(DEFAULT_CONFIG.get("pandoc_path", "pandoc"))
+                    app_state.config["pandoc_path"] = DEFAULT_CONFIG["pandoc_path"]
+                    config_loader = ConfigLoader()
+                    config_loader.save(config=app_state.config)
+                except Exception as e2:
+                    log(f"Retry to initialize PandocIntegration failed: {e2}")
+                    self.notification_manager.notify(
+                        "PasteMD",
+                        t("workflow.pandoc.init_failed"),
+                        ok=False
+                    )
+                    self.pandoc_integration = None
     
     def _handle_no_app_flow(self, md_text: str, config: dict, is_html: bool = False, html_text: Optional[str] = None) -> None:
         """
         无应用检测时的处理流程：支持多种动作模式
         支持 Markdown 和 HTML 富文本
+        
+        根据 no_app_action 配置统一分发到 DOCX/XLSX 执行方法。
         
         Args:
             md_text: Markdown文本
@@ -701,216 +575,141 @@ class PasteWorkflow:
             )
             return
         
-        # 根据动作类型执行相应流程
-        if action == NoAppAction.OPEN:
-            self._handle_no_app_open_action(md_text, config, is_html, html_text)
-        elif action == NoAppAction.SAVE:
-            self._handle_no_app_save_action(md_text, config, is_html, html_text)
-        elif action == NoAppAction.CLIPBOARD:
-            self._handle_no_app_clipboard_action(md_text, config, is_html, html_text)
-        else:
+        # 验证动作类型
+        if action not in (NoAppAction.OPEN, NoAppAction.SAVE, NoAppAction.CLIPBOARD):
             log(f"Unknown no_app_action: {action}")
             self.notification_manager.notify(
                 "PasteMD",
                 t("workflow.no_app_detected"),
                 ok=False
             )
-
-    def _handle_no_app_open_action(self, md_text: str, config: dict, is_html: bool = False, html_text: Optional[str] = None) -> None:
-        """
-        处理自动打开动作（保留原有逻辑）
-        
-        Args:
-            md_text: Markdown文本
-            config: 配置字典
-            is_html: 剪贴板是否包含 HTML 富文本
-            html_text: 预读取的 HTML 富文本内容
-        """
-        # HTML 富文本优先处理
-        if is_html:
-            self._generate_and_open_html_document(md_text, config, html_text=html_text)
             return
         
-        # 检测内容类型
-        is_table = parse_markdown_table(md_text) is not None
+        # HTML 富文本优先处理
+        if is_html:
+            self._execute_docx_action(action, md_text, config, from_html=True, html_text=html_text)
+            return
         
-        if is_table and config.get("enable_excel", True):
-            # 是表格，生成 XLSX 并打开
-            self._generate_and_open_spreadsheet(md_text, config)
+        # 检测内容类型：表格 vs 文档
+        table_data = parse_markdown_table(md_text)
+        
+        if table_data is not None and config.get("enable_excel", True):
+            # 是表格，执行 XLSX 动作
+            self._execute_xlsx_action(action, md_text, config, table_data)
         else:
-            # 是文档，生成 DOCX 并打开
-            self._generate_and_open_document(md_text, config)
-
-    def _handle_no_app_save_action(self, md_text: str, config: dict, is_html: bool = False, html_text: Optional[str] = None) -> None:
-        """
-        处理自动保存动作：仅生成文件到保存目录，不打开
-        
-        Args:
-            md_text: Markdown文本
-            config: 配置字典
-            is_html: 剪贴板是否包含 HTML 富文本
-            html_text: 预读取的 HTML 富文本内容
-        """
-        try:
-            # HTML 富文本优先处理
-            if is_html:
-                self._generate_and_save_html_document(md_text, config, html_text=html_text)
-                return
-            
-            # 检测内容类型
-            is_table = parse_markdown_table(md_text) is not None
-            
-            if is_table and config.get("enable_excel", True):
-                # 是表格，生成 XLSX
-                self._generate_and_save_spreadsheet(md_text, config)
-            else:
-                # 是文档，生成 DOCX
-                self._generate_and_save_document(md_text, config)
-                
-        except Exception as e:
-            log(f"Failed to save file in no-app flow: {e}")
-            self.notification_manager.notify(
-                "PasteMD",
-                t("workflow.document.save_failed"),
-                ok=False
-            )
-
-    def _handle_no_app_clipboard_action(self, md_text: str, config: dict, is_html: bool = False, html_text: Optional[str] = None) -> None:
-        """
-        处理复制到剪贴板动作：生成文件并复制到剪贴板
-        
-        Args:
-            md_text: Markdown文本
-            config: 配置字典
-            is_html: 剪贴板是否包含 HTML 富文本
-            html_text: 预读取的 HTML 富文本内容
-        """
-        try:
-            # HTML 富文本优先处理
-            if is_html:
-                self._generate_and_clipboard_html_document(md_text, config, html_text=html_text)
-                return
-            
-            # 检测内容类型
-            is_table = parse_markdown_table(md_text) is not None
-            
-            if is_table and config.get("enable_excel", True):
-                # 是表格，生成 XLSX 并复制到剪贴板
-                self._generate_and_clipboard_spreadsheet(md_text, config)
-            else:
-                # 是文档，生成 DOCX 并复制到剪贴板
-                self._generate_and_clipboard_document(md_text, config)
-                
-        except Exception as e:
-            log(f"Failed to copy file to clipboard in no-app flow: {e}")
-            self.notification_manager.notify(
-                "PasteMD",
-                t("workflow.action.clipboard_failed"),
-                ok=False
-            )
+            # 是文档，执行 DOCX 动作
+            self._execute_docx_action(action, md_text, config)
     
-    def _generate_and_open_document(self, md_text: str, config: dict, from_md_file: bool = False) -> None:
-        """生成 DOCX 文件并用默认应用打开
+    # ==================== 统一执行方法 ====================
+    
+    def _execute_docx_action(
+        self,
+        action: str,
+        md_text: str,
+        config: dict,
+        *,
+        from_md_file: bool = False,
+        from_html: bool = False,
+        html_text: Optional[str] = None
+    ) -> None:
+        """
+        统一执行 DOCX 输出动作
         
         Args:
+            action: 输出动作 ("open" | "save" | "clipboard")
             md_text: Markdown 文本
             config: 配置字典
             from_md_file: 是否来源于 MD 文件
+            from_html: 是否来源于 HTML
+            html_text: HTML 文本（from_html=True 时使用）
         """
         try:
-            docx_bytes, output_path = self._generate_docx_from_markdown(md_text, config)
-            
-            # 写入文件
-            with open(output_path, "wb") as f:
-                f.write(docx_bytes)
-            log(f"Generated DOCX: {output_path}")
-            
-            # 用默认应用打开
-            if AppLauncher.awaken_and_open_document(output_path):
-                if from_md_file:
-                    msg = t("workflow.md_file.generated_and_opened", path=output_path)
-                else:
-                    msg = t("workflow.document.generated_and_opened", path=output_path)
-                self.notification_manager.notify("PasteMD", msg, ok=True)
+            # 确定 keep_file 策略
+            if action == "clipboard":
+                keep_file = config.get("keep_file", False)
             else:
-                self.notification_manager.notify(
-                    "PasteMD",
-                    t("workflow.document.open_failed", path=output_path),
-                    ok=False
-                )
-        except PandocError as e:
-            log(f"Pandoc conversion failed: {e}")
-            self.notification_manager.notify(
-                "PasteMD",
-                t("workflow.markdown.convert_failed"),
-                ok=False
-            )
-        except Exception as e:
-            log(f"Failed to generate document: {e}")
-            self.notification_manager.notify(
-                "PasteMD",
-                t("workflow.document.generate_failed"),
-                ok=False
-            )
-    
-    def _generate_and_open_html_document(self, md_text: str, config: dict, html_text: Optional[str] = None) -> None:
-        """生成 DOCX 文件（来源 HTML）并用默认应用打开"""
-        try:
-            docx_bytes, output_path = self._generate_docx_from_html(
-                md_text, config, html_text=html_text
-            )
+                # open 和 save 动作始终保留文件
+                keep_file = True
             
-            # 写入文件
-            with open(output_path, "wb") as f:
-                f.write(docx_bytes)
-            log(f"Generated DOCX from HTML: {output_path}")
-            
-            # 用默认应用打开
-            if AppLauncher.awaken_and_open_document(output_path):
-                self.notification_manager.notify(
-                    "PasteMD",
-                    t("workflow.html.generated_and_opened", path=output_path),
-                    ok=True
+            # 生成 DOCX 字节流和输出路径（使用 DocumentGeneratorService）
+            if from_html:
+                docx_bytes, output_path = self.doc_generator.generate_docx_file_from_html(
+                    md_text, config, html_text=html_text, keep_file=keep_file
                 )
             else:
-                self.notification_manager.notify(
-                    "PasteMD",
-                    t("workflow.document.open_failed", path=output_path),
-                    ok=False
+                docx_bytes, output_path = self.doc_generator.generate_docx_file_from_markdown(
+                    md_text, config, keep_file=keep_file
                 )
+            
+            # 调用统一执行器
+            self.output_executor.execute_docx(
+                action=action,
+                docx_bytes=docx_bytes,
+                output_path=output_path,
+                from_md_file=from_md_file,
+                from_html=from_html
+            )
+            
         except ClipboardError as e:
-            log(f"Failed to get HTML from clipboard: {e}")
+            log(f"Clipboard error in DOCX action: {e}")
             self.notification_manager.notify(
                 "PasteMD",
                 t("workflow.html.clipboard_failed"),
                 ok=False
             )
         except PandocError as e:
-            log(f"HTML to DOCX conversion failed: {e}")
-            self.notification_manager.notify(
-                "PasteMD",
-                t("workflow.html.convert_failed_format"),
-                ok=False
-            )
+            log(f"Pandoc error in DOCX action: {e}")
+            if from_html:
+                self.notification_manager.notify(
+                    "PasteMD",
+                    t("workflow.html.convert_failed_format"),
+                    ok=False
+                )
+            else:
+                self.notification_manager.notify(
+                    "PasteMD",
+                    t("workflow.markdown.convert_failed"),
+                    ok=False
+                )
         except Exception as e:
-            log(f"Failed to generate HTML document: {e}")
-            self.notification_manager.notify(
-                "PasteMD",
-                t("workflow.html.generate_failed"),
-                ok=False
-            )
+            log(f"Failed to execute DOCX action '{action}': {e}")
+            if action == "clipboard":
+                self.notification_manager.notify(
+                    "PasteMD",
+                    t("workflow.action.clipboard_failed"),
+                    ok=False
+                )
+            elif from_html:
+                self.notification_manager.notify(
+                    "PasteMD",
+                    t("workflow.html.generate_failed"),
+                    ok=False
+                )
+            else:
+                self.notification_manager.notify(
+                    "PasteMD",
+                    t("workflow.document.generate_failed"),
+                    ok=False
+                )
     
-    def _generate_and_open_spreadsheet(self, md_text: str, config: dict) -> None:
+    def _execute_xlsx_action(
+        self,
+        action: str,
+        md_text: str,
+        config: dict,
+        table_data: list
+    ) -> None:
         """
-        生成 XLSX 文件并用默认应用打开
+        统一执行 XLSX 输出动作
         
         Args:
-            md_text: Markdown文本
+            action: 输出动作 ("open" | "save" | "clipboard")
+            md_text: Markdown 文本（未使用，保留接口一致性）
             config: 配置字典
+            table_data: 已解析的表格数据
         """
         try:
-            # 1. 解析表格
-            table_data = parse_markdown_table(md_text)
+            # 验证表格数据
             if table_data is None:
                 self.notification_manager.notify(
                     "PasteMD",
@@ -919,261 +718,16 @@ class PasteWorkflow:
                 )
                 return
             
-            # 2. 生成输出路径（XLSX）
-            save_dir = config.get("save_dir", "")
-            save_dir = os.path.expandvars(save_dir)
-            os.makedirs(save_dir, exist_ok=True)
-            
-            output_path = generate_output_path(
-                keep_file=True,
-                save_dir=save_dir,
-                table_data=table_data
-            )
-            
-            # 3. 生成并打开 XLSX
-            keep_format = config.get("excel_keep_format", True)
-            if AppLauncher.generate_and_open_spreadsheet(table_data, output_path, keep_format):
-                self.notification_manager.notify(
-                    "PasteMD",
-                    t("workflow.table.export_success", rows=len(table_data), path=output_path),
-                    ok=True
-                )
+            # 确定 keep_file 策略
+            if action == "clipboard":
+                keep_file = config.get("keep_file", False)
             else:
-                self.notification_manager.notify(
-                    "PasteMD",
-                    t("workflow.table.export_open_failed", path=output_path),
-                    ok=False
-                )
-        except Exception as e:
-            log(f"Failed to generate spreadsheet: {e}")
-            self.notification_manager.notify(
-                "PasteMD",
-                t("workflow.table.export_failed"),
-                ok=False
-            )
-
-    def _generate_and_save_document(self, md_text: str, config: dict, from_md_file: bool = False) -> None:
-        """生成 DOCX 文件并保存（不打开）
-        
-        Args:
-            md_text: Markdown 文本
-            config: 配置字典
-            from_md_file: 是否来源于 MD 文件
-        """
-        try:
-            docx_bytes, output_path = self._generate_docx_from_markdown(md_text, config)
+                # open 和 save 动作始终保留文件
+                keep_file = True
             
-            # 写入文件
-            with open(output_path, "wb") as f:
-                f.write(docx_bytes)
-            log(f"Generated and saved DOCX: {output_path}")
-            
-            # 显示保存成功通知
-            if from_md_file:
-                msg = t("workflow.md_file.saved", path=output_path)
-            else:
-                msg = t("workflow.action.saved", path=output_path)
-            self.notification_manager.notify("PasteMD", msg, ok=True)
-        except PandocError as e:
-            log(f"Pandoc conversion failed: {e}")
-            self.notification_manager.notify(
-                "PasteMD",
-                t("workflow.markdown.convert_failed"),
-                ok=False
-            )
-        except Exception as e:
-            log(f"Failed to save document: {e}")
-            self.notification_manager.notify(
-                "PasteMD",
-                t("workflow.document.save_failed"),
-                ok=False
-            )
-
-    def _generate_and_save_html_document(self, md_text: str, config: dict, html_text: Optional[str] = None) -> None:
-        """生成 HTML 转换的 DOCX 文件并保存（不打开）"""
-        try:
-            docx_bytes, output_path = self._generate_docx_from_html(
-                md_text, config, html_text=html_text
-            )
-            
-            # 写入文件
-            with open(output_path, "wb") as f:
-                f.write(docx_bytes)
-            log(f"Generated and saved DOCX from HTML: {output_path}")
-            
-            # 显示保存成功通知
-            self.notification_manager.notify(
-                "PasteMD",
-                t("workflow.action.saved", path=output_path),
-                ok=True
-            )
-        except ClipboardError as e:
-            log(f"Failed to get HTML from clipboard: {e}")
-            self.notification_manager.notify(
-                "PasteMD",
-                t("workflow.html.clipboard_failed"),
-                ok=False
-            )
-        except PandocError as e:
-            log(f"HTML to DOCX conversion failed: {e}")
-            self.notification_manager.notify(
-                "PasteMD",
-                t("workflow.html.convert_failed_format"),
-                ok=False
-            )
-        except Exception as e:
-            log(f"Failed to save HTML document: {e}")
-            self.notification_manager.notify(
-                "PasteMD",
-                t("workflow.document.save_failed"),
-                ok=False
-            )
-
-    def _generate_and_save_spreadsheet(self, md_text: str, config: dict) -> None:
-        """
-        生成 XLSX 文件并保存（不打开）
-        
-        Args:
-            md_text: Markdown文本
-            config: 配置字典
-        """
-        try:
-            # 1. 解析表格
-            table_data = parse_markdown_table(md_text)
-            if table_data is None:
-                self.notification_manager.notify(
-                    "PasteMD",
-                    t("workflow.table.invalid_simple"),
-                    ok=False
-                )
-                return
-            
-            # 2. 生成输出路径（XLSX）
-            save_dir = config.get("save_dir", "")
-            save_dir = os.path.expandvars(save_dir)
-            os.makedirs(save_dir, exist_ok=True)
-            
-            output_path = generate_output_path(
-                keep_file=True,
-                save_dir=save_dir,
-                table_data=table_data
-            )
-            
-            # 3. 生成并保存 XLSX（不打开）
-            keep_format = config.get("excel_keep_format", True)
-            if AppLauncher.generate_spreadsheet(table_data, output_path, keep_format):
-                self.notification_manager.notify(
-                    "PasteMD",
-                    t("workflow.action.saved", path=output_path),
-                    ok=True
-                )
-            else:
-                self.notification_manager.notify(
-                    "PasteMD",
-                    t("workflow.table.export_failed"),
-                    ok=False
-                )
-        except Exception as e:
-            log(f"Failed to save spreadsheet: {e}")
-            self.notification_manager.notify(
-                "PasteMD",
-                t("workflow.table.export_failed"),
-                ok=False
-            )
-
-    def _generate_and_clipboard_document(self, md_text: str, config: dict, from_md_file: bool = False) -> None:
-        """生成 DOCX 文件并复制到剪贴板
-        
-        Args:
-            md_text: Markdown 文本
-            config: 配置字典
-            from_md_file: 是否来源于 MD 文件
-        """
-        try:
-            # clipboard 动作使用 keep_file 决定是否持久化
-            keep_file = config.get("keep_file", False)
-            docx_bytes, output_path = self._generate_docx_from_markdown(
-                md_text, config, keep_file=keep_file
-            )
-            
-            # 写入文件
-            with open(output_path, "wb") as f:
-                f.write(docx_bytes)
-            log(f"Generated DOCX for clipboard: {output_path}")
-            
-            # 复制文件到剪贴板
-            from ...utils.clipboard import copy_files_to_clipboard
-            copy_files_to_clipboard([output_path])
-            
-            # 显示复制成功通知
-            if from_md_file:
-                msg = t("workflow.md_file.clipboard_copied")
-            else:
-                msg = t("workflow.action.clipboard_copied")
-            self.notification_manager.notify("PasteMD", msg, ok=True)
-        except Exception as e:
-            log(f"Failed to copy document to clipboard: {e}")
-            self.notification_manager.notify(
-                "PasteMD",
-                t("workflow.action.clipboard_failed"),
-                ok=False
-            )
-
-    def _generate_and_clipboard_html_document(self, md_text: str, config: dict, html_text: Optional[str] = None) -> None:
-        """生成 HTML 转换的 DOCX 文件并复制到剪贴板"""
-        try:
-            # clipboard 动作使用 keep_file 决定是否持久化
-            keep_file = config.get("keep_file", False)
-            docx_bytes, output_path = self._generate_docx_from_html(
-                md_text, config, html_text=html_text, keep_file=keep_file
-            )
-            
-            # 写入文件
-            with open(output_path, "wb") as f:
-                f.write(docx_bytes)
-            log(f"Generated DOCX from HTML for clipboard: {output_path}")
-            
-            # 复制文件到剪贴板
-            from ...utils.clipboard import copy_files_to_clipboard
-            copy_files_to_clipboard([output_path])
-            
-            # 显示复制成功通知
-            self.notification_manager.notify(
-                "PasteMD",
-                t("workflow.action.clipboard_copied"),
-                ok=True
-            )
-        except Exception as e:
-            log(f"Failed to copy HTML document to clipboard: {e}")
-            self.notification_manager.notify(
-                "PasteMD",
-                t("workflow.action.clipboard_failed"),
-                ok=False
-            )
-
-    def _generate_and_clipboard_spreadsheet(self, md_text: str, config: dict) -> None:
-        """
-        生成 XLSX 文件并复制到剪贴板
-        
-        Args:
-            md_text: Markdown文本
-            config: 配置字典
-        """
-        try:
-            # 1. 解析表格
-            table_data = parse_markdown_table(md_text)
-            if table_data is None:
-                self.notification_manager.notify(
-                    "PasteMD",
-                    t("workflow.table.invalid_simple"),
-                    ok=False
-                )
-                return
-            
-            # 2. 生成输出路径（XLSX）
-            keep_file = config.get("keep_file", False)
+            # 准备输出路径
             save_dir = config.get("save_dir", "") if keep_file else ""
-            if keep_file:
+            if keep_file and save_dir:
                 save_dir = os.path.expandvars(save_dir)
                 os.makedirs(save_dir, exist_ok=True)
             
@@ -1183,17 +737,22 @@ class PasteWorkflow:
                 table_data=table_data
             )
             
-            # 3. 生成 XLSX（不打开）
+            # 调用统一执行器
             keep_format = config.get("excel_keep_format", True)
-            if AppLauncher.generate_spreadsheet(table_data, output_path, keep_format):
-                # 复制文件到剪贴板
-                from ...utils.clipboard import copy_files_to_clipboard
-                copy_files_to_clipboard([output_path])
-
+            self.output_executor.execute_xlsx(
+                action=action,
+                table_data=table_data,
+                output_path=output_path,
+                keep_format=keep_format
+            )
+            
+        except Exception as e:
+            log(f"Failed to execute XLSX action '{action}': {e}")
+            if action == "clipboard":
                 self.notification_manager.notify(
                     "PasteMD",
-                    t("workflow.action.clipboard_copied"),
-                    ok=True
+                    t("workflow.action.clipboard_failed"),
+                    ok=False
                 )
             else:
                 self.notification_manager.notify(
@@ -1201,10 +760,3 @@ class PasteWorkflow:
                     t("workflow.table.export_failed"),
                     ok=False
                 )
-        except Exception as e:
-            log(f"Failed to copy spreadsheet to clipboard: {e}")
-            self.notification_manager.notify(
-                "PasteMD",
-                t("workflow.action.clipboard_failed"),
-                ok=False
-            )
