@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-import importlib
+import json
 import locale
 import logging
+from importlib import resources
 from typing import Dict, Iterator, Optional
 
 
@@ -16,9 +17,10 @@ LANGUAGE_DISPLAY_NAMES: Dict[str, str] = {
     "en": "English",
 }
 
-_LOCALE_MODULES = {
-    "zh": "pastemd.i18n.locales.zh",
-    "en": "pastemd.i18n.locales.en",
+_LOCALE_PACKAGE = "pastemd.i18n.locales"
+_LOCALE_FILES = {
+    "zh": "zh.json",
+    "en": "en.json",
 }
 
 _loaded_translations: Dict[str, Dict[str, str]] = {}
@@ -40,14 +42,19 @@ def _load_translations(language: str) -> Dict[str, str]:
     if normalized in _loaded_translations:
         return _loaded_translations[normalized]
 
-    module_name = _LOCALE_MODULES.get(normalized)
     data: Dict[str, str] = {}
-    if module_name:
+    file_name = _LOCALE_FILES.get(normalized)
+
+    if file_name:
         try:
-            module = importlib.import_module(module_name)
-            loaded = getattr(module, "TRANSLATIONS", {})
+            locale_path = resources.files(_LOCALE_PACKAGE).joinpath(file_name)
+            with locale_path.open("r", encoding="utf-8") as fp:
+                loaded = json.load(fp)
+
             if isinstance(loaded, dict):
-                data = loaded
+                data = {str(k): str(v) for k, v in loaded.items()}
+        except FileNotFoundError:  # pragma: no cover - defensive logging only
+            _logger.warning("Translation file missing for %s: %s", normalized, file_name)
         except Exception as exc:  # pragma: no cover - defensive logging only
             _logger.warning("Failed to load translations for %s: %s", normalized, exc)
 

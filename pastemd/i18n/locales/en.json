@@ -1,14 +1,7 @@
-"""English translations."""
-
-TRANSLATIONS = {
-    "app.startup.success": "Started successfully and is running in the background.",
+{
+  "app.startup.success": "Started successfully and is running in the background.",
     "hotkey.dialog.cancel_button": "Cancel",
-    "hotkey.dialog.confirm_message": "Apply the new hotkey?\n"
-    "\n"
-    "Current: {old_hotkey}\n"
-    "New: {new_hotkey}\n"
-    "\n"
-    "The change takes effect immediately.",
+    "hotkey.dialog.confirm_message": "Apply the new hotkey?\n\nCurrent: {old_hotkey}\nNew: {new_hotkey}\n\nThe change takes effect immediately.",
     "hotkey.dialog.conflict_message": "Hotkey {hotkey} is already in use by another application.\n\nForcing it may cause it to stop working in the other application or fail to work in PasteMD.\n\nDo you still want to force use it?",
     "hotkey.dialog.conflict_title": "Hotkey Conflict",
     "hotkey.dialog.confirm_title": "Confirm change",
@@ -28,16 +21,9 @@ TRANSLATIONS = {
     "hotkey.recorder.error.no_key_detected": "No key press detected.",
     "hotkey.recorder.error.no_modifier": "The hotkey must include at least one modifier key (Ctrl, Shift, Alt).",
     "hotkey.recorder.error.no_normal_key": "The hotkey must include at least one regular key.",
-    "hotkey.recorder.error.shift_only_long": "Shift cannot be the only modifier because it conflicts with input.\n"
-    "Include Ctrl, Alt, or the Win key.",
+    "hotkey.recorder.error.shift_only_long": "Shift cannot be the only modifier because it conflicts with input.\nInclude Ctrl, Alt, or the Win key.",
     "hotkey.recorder.error.shift_only_short": "Shift cannot be the only modifier; it conflicts with system input.",
-    "hotkey.recorder.error.system_reserved_long": "{combo} is a system reserved shortcut.\n"
-    "pynput cannot override its default behavior and will conflict.\n"
-    "\n"
-    "Try uncommon combinations such as:\n"
-    "• Ctrl+Shift+V\n"
-    "• Ctrl+Alt+V\n"
-    "• Ctrl+B (default)",
+    "hotkey.recorder.error.system_reserved_long": "{combo} is a system reserved shortcut.\npynput cannot override its default behavior and will conflict.\n\nTry uncommon combinations such as:\n• Ctrl+Shift+V\n• Ctrl+Alt+V\n• Ctrl+B (default)",
     "hotkey.recorder.error.system_reserved_short": "System reserved hotkey {combo} cannot be used.",
     "hotkey.recorder.system.alt_f4": "Alt+F4 (Close window)",
     "hotkey.recorder.system.ctrl_a": "Ctrl+A (Select all)",
@@ -174,5 +160,5 @@ TRANSLATIONS = {
     "workflow.table.insert_success": "Inserted {rows} rows into {app}.",
     "workflow.table.invalid_simple": "No valid Markdown table detected.",
     "workflow.table.invalid_with_app": "No valid Markdown table detected.\nCurrent app: {app}",
-    "workflow.word.insert_success": "Inserted into {app}.",
+    "workflow.word.insert_success": "Inserted into {app}."
 }

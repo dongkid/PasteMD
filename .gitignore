@@ -239,3 +239,10 @@ Output/
 /test
 .vscode/launch.json
 .vscode/settings.json
+
+# 排除 Nuitka 生成的文件
+/*.build
+/*.dist
+/*.onefile-build
+*.exe
+nuitka-crash-report.xml
