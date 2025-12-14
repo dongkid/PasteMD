@@ -246,3 +246,4 @@ Output/
 /*.onefile-build
 *.exe
 nuitka-crash-report.xml
+/nuitka/*

@@ -3,48 +3,50 @@
 import os
 import sys
 from typing import Dict, Any
+from .paths import resource_path
 
 
-DEFAULT_CONFIG: Dict[str, Any] = {}
-if os.path.exists(os.path.join(os.path.dirname(sys.executable), "pandoc", "pandoc.exe")):
-    DEFAULT_CONFIG = {
-        "hotkey": "<ctrl>+b",
-        "pandoc_path": os.path.join(os.path.dirname(sys.executable), "pandoc", "pandoc.exe"),
-        "reference_docx": None,  # 可选：Pandoc 参考模板；不需要就设为 None
-        "save_dir": r"%USERPROFILE%\Documents\pastemd",
-        "keep_file": False,
-        "notify": True,
-        "enable_excel": True,  # 是否启用智能识别 Markdown 表格并粘贴到 Excel
-        "excel_keep_format": True,  # Excel 粘贴时是否保留格式（粗体、斜体等）
-        "auto_open_on_no_app": True,  # 当未检测到应用时，自动创建文件并用默认应用打开
-        "md_disable_first_para_indent": True,  # Markdown 转换时是否禁用标题后第一段的特殊格式
-        "html_disable_first_para_indent": True,  # HTML 转换时是否禁用标题后第一段的特殊格式
-        "html_formatting": {
-            "strikethrough_to_del": True,
-        },
-        "move_cursor_to_end": True,  # 插入后光标移动到插入内容的末尾
-        "Keep_original_formula": False,  # 是否保留原始数学公式,不进行转换
-        "language": "zh",  # UI 语言（默认简体中文）
-        "enable_latex_replacements": True,  # 是否启用 LaTeX 公式自动替换（处理不兼容语法）
-    }
-else:
-    DEFAULT_CONFIG = {
-        "hotkey": "<ctrl>+b",
-        "pandoc_path": "pandoc",
-        "reference_docx": None,  # 可选：Pandoc 参考模板；不需要就设为 None
-        "save_dir": r"%USERPROFILE%\Documents\pastemd",
-        "keep_file": False,
-        "notify": True,
-        "enable_excel": True,  # 是否启用智能识别 Markdown 表格并粘贴到 Excel
-        "excel_keep_format": True,  # Excel 粘贴时是否保留格式（粗体、斜体等）
-        "auto_open_on_no_app": True,  # 当未检测到应用时，自动创建文件并用默认应用打开
-        "md_disable_first_para_indent": True,  # Markdown 转换时是否禁用标题后第一段的特殊格式
-        "html_disable_first_para_indent": True,  # HTML 转换时是否禁用标题后第一段的特殊格式
-        "html_formatting": {
-            "strikethrough_to_del": True,
-        },
-        "move_cursor_to_end": True,  # 插入后光标移动到插入内容的末尾
-        "Keep_original_formula": False,  # 是否保留原始数学公式,不进行转换
-        "language": "zh",  # UI 语言（默认简体中文）
-        "enable_latex_replacements": True,  # 是否启用 LaTeX 公式自动替换（处理不兼容语法）
-    }
+def find_pandoc() -> str:
+    """
+    查找 pandoc 路径，兼容：
+    - PyInstaller 单文件（exe 同级 pandoc）
+    - PyInstaller 非单文件
+    - Nuitka 单文件 / 非单文件
+    - Inno 安装
+    - 源码运行（系统 pandoc）
+    """
+    # exe 同级 pandoc
+    exe_dir = os.path.dirname(sys.executable)
+    candidate = os.path.join(exe_dir, "pandoc", "pandoc.exe")
+    if os.path.exists(candidate):
+        return candidate
+
+    # 打包资源路径（Nuitka / PyInstaller onedir / 新方案）
+    candidate = resource_path("pandoc/pandoc.exe")
+    if os.path.exists(candidate):
+        return candidate
+
+    # 兜底：系统 pandoc
+    return "pandoc"
+
+
+DEFAULT_CONFIG: Dict[str, Any] = {
+    "hotkey": "<ctrl>+b",
+    "pandoc_path": find_pandoc(),
+    "reference_docx": None,
+    "save_dir": os.path.expandvars(r"%USERPROFILE%\Documents\pastemd"),
+    "keep_file": False,
+    "notify": True,
+    "enable_excel": True,
+    "excel_keep_format": True,
+    "auto_open_on_no_app": True,
+    "md_disable_first_para_indent": True,
+    "html_disable_first_para_indent": True,
+    "html_formatting": {
+        "strikethrough_to_del": True,
+    },
+    "move_cursor_to_end": True,
+    "Keep_original_formula": False,
+    "language": "zh",
+    "enable_latex_replacements": True,
+}

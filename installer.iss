@@ -1,12 +1,11 @@
 #define MyAppName "PasteMD"
-#define MyAppVersion "0.1.6.0"
+#define MyAppVersion "0.1.6.2"
 #define MyAppPublisher "RichQAQ"
 #define MyAppExeName "PasteMD.exe"
 ; AppUserModelID 用于 Win11 通知归属与图标
 #define MyAUMID        "RichQAQ.PasteMD"
-
-; 如果是 onefile，发行物在 dist
-#define BuildDir       "dist"
+; Nuitka 构建目录
+#define BuildDir       "nuitka\\main.dist"
 ; 如果是 onedir，改为发行目录：例如
 ; #define BuildDir     "dist\\PasteMD"
 
@@ -26,6 +25,7 @@ Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
 ArchitecturesInstallIn64BitMode=x64
+Uninstallable=yes
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -48,15 +48,18 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Name: "autorun";     Description: "{cm:AutoStartup}";      GroupDescription: "{cm:AdditionalOptions}"
 
 [Files]
-; 主可执行文件
-Source: "{#BuildDir}\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-; Pandoc 打包目录
-Source: "third_party\pandoc\*"; DestDir: "{app}\pandoc"; Flags: ignoreversion recursesubdirs createallsubdirs
+; Nuitka onedir：完整拷贝运行目录
+Source: "{#BuildDir}\*"; DestDir: "{app}"; \
+    Flags: ignoreversion recursesubdirs createallsubdirs
 ; 安装时把图标拷到 {app}\icon.ico
 Source: "{#MyIconSrc}"; DestDir: "{app}"; DestName: "icon.ico"; Flags: ignoreversion
 
 ; 如果你是 onedir，并且有更多运行时文件需要带上，在下方取消注释：
 ; Source: "{#BuildDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+[InstallDelete]
+; 安装前清空安装目录下的所有文件和子目录
+Type: filesandordirs; Name: "{app}\*"
 
 [Icons]
 ; 为快捷方式写入 AppUserModelID，并指定图标，确保通知归属/图标正确

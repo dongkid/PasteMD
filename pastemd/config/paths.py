@@ -13,10 +13,23 @@ def get_base_dir() -> str:
 
 
 def resource_path(relative_path: str) -> str:
-    """获取资源文件路径（支持 PyInstaller)"""
+    """
+    支持：
+    - PyInstaller 单文件 / 非单文件
+    - Nuitka 单文件 / 非单文件
+    - 源码运行
+    """
     if hasattr(sys, "_MEIPASS"):
-        return os.path.join(sys._MEIPASS, relative_path)
-    return os.path.join(get_base_dir(), relative_path)
+        # PyInstaller（onefile / onedir）
+        base_dir = sys._MEIPASS
+    elif getattr(sys, "frozen", False):
+        # Nuitka（onefile / standalone）
+        base_dir = os.path.dirname(sys.executable)
+    else:
+        # 源码运行
+        base_dir = get_base_dir()
+
+    return os.path.join(base_dir, relative_path)
 
 
 def get_user_data_dir() -> str:

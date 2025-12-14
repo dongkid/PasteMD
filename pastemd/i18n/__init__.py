@@ -5,8 +5,9 @@ from __future__ import annotations
 import json
 import locale
 import logging
-from importlib import resources
+import os
 from typing import Dict, Iterator, Optional
+from ..config.paths import resource_path
 
 
 DEFAULT_LANGUAGE = "zh"
@@ -37,7 +38,7 @@ def _normalize_language_code(language: Optional[str]) -> Optional[str]:
 
 
 def _load_translations(language: str) -> Dict[str, str]:
-    """Load translation dictionary for a language (with caching)."""
+    """Load translation dictionary for a language (with caching) from file system."""
     normalized = _normalize_language_code(language) or DEFAULT_LANGUAGE
     if normalized in _loaded_translations:
         return _loaded_translations[normalized]
@@ -47,15 +48,17 @@ def _load_translations(language: str) -> Dict[str, str]:
 
     if file_name:
         try:
-            locale_path = resources.files(_LOCALE_PACKAGE).joinpath(file_name)
-            with locale_path.open("r", encoding="utf-8") as fp:
+            json_path = resource_path(os.path.join("pastemd", "i18n", "locales", file_name))
+
+            with open(json_path, "r", encoding="utf-8") as fp:
                 loaded = json.load(fp)
 
             if isinstance(loaded, dict):
                 data = {str(k): str(v) for k, v in loaded.items()}
-        except FileNotFoundError:  # pragma: no cover - defensive logging only
-            _logger.warning("Translation file missing for %s: %s", normalized, file_name)
-        except Exception as exc:  # pragma: no cover - defensive logging only
+        
+        except FileNotFoundError:
+            _logger.warning("Translation file missing for %s at %s", normalized, json_path)
+        except Exception as exc:
             _logger.warning("Failed to load translations for %s: %s", normalized, exc)
 
     _loaded_translations[normalized] = data or {}
