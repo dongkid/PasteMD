@@ -12,7 +12,7 @@ class AppState:
     running: bool = False
     last_fire: float = 0.0
     last_ok: bool = True
-    hotkey_str: str = "<ctrl>+b"
+    hotkey_str: str = "<ctrl>+<shift>+b"
     config: Dict[str, Any] = field(default_factory=dict)
 
     # UI组件引用

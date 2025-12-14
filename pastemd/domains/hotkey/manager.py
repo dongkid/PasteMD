@@ -18,7 +18,7 @@ class HotkeyManager:
         绑定全局热键
         
         Args:
-            hotkey: 热键字符串 (例如: "<ctrl>+b")
+            hotkey: 热键字符串 (例如: "<ctrl>+<shift>+b")
             callback: 热键触发时的回调函数
         """
         # 停止现有监听器

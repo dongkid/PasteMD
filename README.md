@@ -64,7 +64,7 @@
 </p>
 
 
-* 全局热键（默认 `Ctrl+B`）一键粘贴 Markdown → DOCX。
+* 全局热键（默认 `Ctrl+Shift+B`）一键粘贴 Markdown → DOCX。
 * **✨ 智能识别 Markdown 表格**，自动粘贴到 Excel。
 * 自动识别当前前台应用：Word 或 WPS。
 * 智能打开所需应用为Word/Excel。
@@ -112,7 +112,7 @@
 
 2. 打开 Word、WPS 或 Excel，光标放在需要插入的位置。
 
-3. 复制 **Markdown** 或者 **网页内容** 到剪贴板，按下热键 **Ctrl+B**。
+3. 复制 **Markdown** 或者 **网页内容** 到剪贴板，按下热键 **Ctrl+Shift+B**。
 
 4. 转换结果会自动插入到文档中：
    - **Markdown 表格** → 自动粘贴到 Excel（如果 Excel 已打开）
@@ -128,7 +128,7 @@
 
 ```json
 {
-  "hotkey": "<ctrl>+b",
+  "hotkey": "<ctrl>+<shift>+b",
   "pandoc_path": "pandoc",
   "reference_docx": null,
   "save_dir": "%USERPROFILE%\\Documents\\pastemd",

@@ -31,7 +31,7 @@ def find_pandoc() -> str:
 
 
 DEFAULT_CONFIG: Dict[str, Any] = {
-    "hotkey": "<ctrl>+b",
+    "hotkey": "<ctrl>+<shift>+b",
     "pandoc_path": find_pandoc(),
     "reference_docx": None,
     "save_dir": os.path.expandvars(r"%USERPROFILE%\Documents\pastemd"),

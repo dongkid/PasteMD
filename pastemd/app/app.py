@@ -30,7 +30,7 @@ def initialize_application() -> Container:
     config_loader = ConfigLoader()
     config = config_loader.load()
     app_state.config = config
-    app_state.hotkey_str = config.get("hotkey", "<ctrl>+b")
+    app_state.hotkey_str = config.get("hotkey", "<ctrl>+<shift>+b")
 
     language_value = config.get("language", DEFAULT_LANGUAGE) or DEFAULT_LANGUAGE
     language = str(language_value)

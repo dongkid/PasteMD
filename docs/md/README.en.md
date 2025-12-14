@@ -60,7 +60,7 @@ PasteMD is a lightweight tray app that watches your clipboard, converts Markdown
 
 ### Workflow Boosters
 
-- Global hotkey (default `Ctrl+B`) to paste the latest Markdown/HTML clipboard snapshot as DOCX.
+- Global hotkey (default `Ctrl+Shift+B`) to paste the latest Markdown/HTML clipboard snapshot as DOCX.
 - Automatically recognizes Markdown tables, converts them to spreadsheets, and pastes into Excel while keeping bold/italic/code formats.
 - Recognizes HTML rich text copied from web pages and converts/pastes into Word/WPS.
 - Detects the foreground target app (Word, WPS, or Excel) and opens the correct program when needed.
@@ -104,7 +104,7 @@ Test description:
    - **PasteMD_vx.x.x.exe** — portable build, requires Pandoc to be installed and accessible from `PATH`.
    - **PasteMD_pandoc-Setup.exe** — bundled installer that ships with Pandoc and works out of the box.
 2. Open Word, WPS, or Excel and place the caret where you want to paste.
-3. Copy Markdown or HTML-rich text, then press the global hotkey (`Ctrl+B` by default).
+3. Copy Markdown or HTML-rich text, then press the global hotkey (`Ctrl+Shift+B` by default).
 4. PasteMD will:
    - Send Markdown tables to Excel (when Excel is already open).
    - Convert regular Markdown/HTML to DOCX and insert it into Word/WPS.
@@ -118,7 +118,7 @@ The first launch creates a `config.json` file. Edit it directly, then use the tr
 
 ```json
 {
-  "hotkey": "<ctrl>+b",
+  "hotkey": "<ctrl>+<shift>+b",
   "pandoc_path": "pandoc",
   "reference_docx": null,
   "save_dir": "%USERPROFILE%\\Documents\\pastemd",
