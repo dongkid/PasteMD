@@ -3,6 +3,8 @@
 import os
 import sys
 
+from ..utils.system_detect import is_macos, is_windows
+
 
 def get_base_dir() -> str:
     """获取应用程序基础目录"""
@@ -34,8 +36,14 @@ def resource_path(relative_path: str) -> str:
 
 def get_user_data_dir() -> str:
     """获取用户数据目录（跨平台）"""
-    if sys.platform == "win32":
-        return os.path.join(os.environ.get("APPDATA", os.path.expanduser("~")), "PasteMD")
+    if is_windows():
+        return os.path.join(
+            os.environ.get("APPDATA", os.path.expanduser("~")), "PasteMD"
+        )
+    elif is_macos():
+        return os.path.join(
+            os.path.expanduser("~"), "Library", "Application Support", "PasteMD"
+        )
     else:
         return os.path.join(os.path.expanduser("~"), ".pastemd")
 
@@ -54,15 +62,27 @@ def get_config_path() -> str:
     return os.path.join(data_dir, "config.json")
 
 
+def get_log_dir() -> str:
+    if is_macos():
+        return os.path.join(os.path.expanduser("~"), "Library", "Logs", "PasteMD")
+    else:
+        return get_user_data_dir()
+
+
 def get_log_path() -> str:
-    """获取日志文件路径"""
-    data_dir = ensure_user_data_dir()
-    return os.path.join(data_dir, "pastemd.log")
+    log_dir = get_log_dir()
+    os.makedirs(log_dir, exist_ok=True)
+    return os.path.join(log_dir, "pastemd.log")
 
 
 def get_app_icon_path() -> str:
-    """获取应用图标路径 (.ico)"""
-    return resource_path(os.path.join("assets", "icons", "logo.ico"))
+    """获取应用图标路径"""
+    if is_macos():
+        return resource_path(os.path.join("assets", "icons", "logo.icns"))
+    elif is_windows():
+        return resource_path(os.path.join("assets", "icons", "logo.ico"))
+    else:
+        return resource_path(os.path.join("assets", "icons", "logo.png"))
 
 
 def get_app_png_path() -> str:

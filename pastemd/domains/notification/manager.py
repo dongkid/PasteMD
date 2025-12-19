@@ -9,6 +9,8 @@ import time
 import warnings
 from typing import Optional
 
+from pastemd.utils.system_detect import is_windows, is_macos
+
 from ...core.constants import NOTIFICATION_TIMEOUT
 from ...config.paths import get_app_icon_path
 from ...utils.logging import log
@@ -27,14 +29,14 @@ except Exception:
 # --- Win11 优先 ---
 try:
     from win11toast import toast as _win11_toast
-    _WIN11_OK = (sys.platform == "win32")
+    _WIN11_OK = is_windows()
 except Exception:
     _WIN11_OK = False
 
 # --- Win10 次选（单例） ---
 _WIN10_OK = False
 _win10_toaster = None
-if sys.platform == "win32":
+if is_windows():
     try:
         from win10toast import ToastNotifier as _ToastNotifier
         _win10_toaster = _ToastNotifier()
@@ -42,6 +44,19 @@ if sys.platform == "win32":
     except Exception:
         _win10_toaster = None
         _WIN10_OK = False
+
+# --- mac ---
+_PYNC_OK = False
+_pync_notify = None
+if is_macos():
+    try:
+        from pync import Notifier as _PyncNotifier
+        _pync_notify = _PyncNotifier
+        _PYNC_OK = True
+    except Exception:
+        _PYNC_OK = False
+        _pync_notify = None
+
 
 
 def _icon_or_none(path: Optional[str]) -> Optional[str]:
@@ -68,7 +83,7 @@ class NotificationManager:
         self._worker.start()
 
     # ---- 公共接口：立即返回 ----
-    def notify(self, title: str, message: str, ok: bool = True) -> None:
+    def notify(self, title: str, message: str, ok: bool = True, **kwargs) -> None:
         """
         发送系统通知（异步）
         """
@@ -132,7 +147,7 @@ class NotificationManager:
                 self._q.task_done()
 
     # ---- 具体发送实现（Win11→Win10→plyer）----
-    def _send_one(self, title: str, message: str) -> None:
+    def _send_one(self, title: str, message: str, **kwargs) -> None:
         # 1) Win11
         if _WIN11_OK:
             try:
@@ -162,6 +177,19 @@ class NotificationManager:
             except Exception as e:
                 log(f"win10toast error, fallback to plyer: {e}")
 
+        if is_macos() and _PYNC_OK and _pync_notify is not None:
+            try:
+                _pync_notify.notify(
+                    message=message,
+                    title=title,
+                    group="com.richqaq.pastemd",
+                    appIcon=_icon_or_none(self.icon_path),
+                    timeout=NOTIFICATION_TIMEOUT,
+                )
+                return
+            except Exception as e:
+                log(f"pync notify error: {e}")
+
         # 3) 其它平台/全部失败：plyer（避免托盘重复，仍建议不传图标）
         if _PLYER_OK:
             try:
@@ -173,3 +201,11 @@ class NotificationManager:
                 )
             except Exception as e:
                 log(f"plyer notify error: {e}")
+
+if __name__ == "__main__":
+    # 简单测试
+    nm = NotificationManager()
+    nm.notify("测试通知", "这是一条测试通知内容。", ok=True)
+    time.sleep(3)
+    nm.notify("错误通知", "这是一条错误通知内容。", ok=False)
+    time.sleep(5)

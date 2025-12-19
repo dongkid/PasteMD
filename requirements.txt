@@ -1,7 +1,6 @@
 psutil
 pyperclip
 pynput
-pywin32
 pystray
 Pillow
 plyer
@@ -9,3 +8,6 @@ openpyxl
 python-docx
 beautifulsoup4
 lxml
+
+pywin32 ; platform_system == "Windows"
+pync ; platform_system == "Darwin"
