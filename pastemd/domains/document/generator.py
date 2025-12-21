@@ -79,7 +79,8 @@ class DocumentGeneratorService:
         md_text = normalize_markdown(md_text)
         
         # 2. 处理 LaTeX 公式
-        md_text = convert_latex_delimiters(md_text)
+        fix_dollar = config.get("fix_single_dollar_block", True)
+        md_text = convert_latex_delimiters(md_text, fix_single_dollar_block=fix_dollar)
         
         # 3. 转换为 DOCX 字节流
         self._ensure_pandoc_integration()
@@ -166,7 +167,8 @@ class DocumentGeneratorService:
         md_text = normalize_markdown(md_text)
         
         # 2. 处理 LaTeX 公式
-        md_text = convert_latex_delimiters(md_text)
+        fix_dollar = config.get("fix_single_dollar_block", True)
+        md_text = convert_latex_delimiters(md_text, fix_single_dollar_block=fix_dollar)
         
         # 3. 生成输出路径
         output_path = generate_output_path(

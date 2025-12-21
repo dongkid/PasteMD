@@ -285,6 +285,16 @@ class SettingsDialog:
         note_label = ttk.Label(frame, text=note_text, foreground="gray", font=("", 8))
         note_label.grid(row=2, column=0, sticky=tk.W, padx=(20, 0), pady=(0, 5))
 
+        # 单行 $ 块级公式修复开关
+        self.fix_single_dollar_block_var = tk.BooleanVar(value=self.current_config.get("fix_single_dollar_block", True))
+        fix_dollar_check = ttk.Checkbutton(frame, text=t("settings.conversion.fix_single_dollar_block"), variable=self.fix_single_dollar_block_var)
+        fix_dollar_check.grid(row=3, column=0, sticky=tk.W, pady=5)
+
+        # 说明文本
+        fix_dollar_note = t("settings.conversion.fix_single_dollar_block_note")
+        fix_dollar_label = ttk.Label(frame, text=fix_dollar_note, foreground="gray", font=("", 8))
+        fix_dollar_label.grid(row=4, column=0, sticky=tk.W, padx=(20, 0), pady=(0, 5))
+
     def _browse_save_dir(self):
         """浏览保存目录"""
         path = filedialog.askdirectory(
@@ -375,6 +385,7 @@ class SettingsDialog:
             new_config["html_disable_first_para_indent"] = self.html_indent_var.get()
             new_config["Keep_original_formula"] = self.keep_formula_var.get()
             new_config["enable_latex_replacements"] = self.enable_latex_replacements_var.get()
+            new_config["fix_single_dollar_block"] = self.fix_single_dollar_block_var.get()
             
             new_config["enable_excel"] = self.excel_enable_var.get()
             new_config["excel_keep_format"] = self.excel_format_var.get()

@@ -76,6 +76,8 @@
     "settings.conversion.keep_formula": "保留原始数学公式 (不转换)",
     "settings.conversion.enable_latex_replacements": "自动修复不兼容的 LaTeX 语法",
     "settings.conversion.latex_replacements_note": "（例如：将 {\\kern 10pt} 替换为 \\qquad）",
+    "settings.conversion.fix_single_dollar_block": "自动识别非标准块级公式",
+    "settings.conversion.fix_single_dollar_block_note": "（将单独一行的 $ ... $ 转换为 $$ ... $$）",
     "settings.advanced.excel_enable": "启用 Excel 智能粘贴",
     "settings.advanced.excel_format": "Excel 粘贴保留格式",
     "settings.buttons.save": "保存",
