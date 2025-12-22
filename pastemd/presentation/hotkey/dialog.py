@@ -10,7 +10,7 @@ from ...config.paths import get_app_icon_path
 from ...utils.logging import log
 from ...utils.hotkey_checker import HotkeyChecker
 from ...utils.dpi import get_dpi_scale
-from ...utils.system_detect import is_windows
+from ...utils.system_detect import is_windows, is_macos
 from ...domains.hotkey.recorder import HotkeyRecorder
 from ...i18n import t
 from ...core.state import app_state
@@ -32,6 +32,13 @@ class HotkeyDialog:
         self.on_save = on_save
         self.on_close_callback = on_close
         self.new_hotkey: Optional[str] = None
+        self._close_callback_called = False
+        self._tk_recording = False
+        self._tk_pressed_keys: set[str] = set()
+        self._tk_released_keys: set[str] = set()
+        self._tk_all_pressed_keys: set[str] = set()
+        self._tk_press_binding: Optional[str] = None
+        self._tk_release_binding: Optional[str] = None
         
         if app_state.root:
             self.root = tk.Toplevel(app_state.root)
@@ -86,8 +93,145 @@ class HotkeyDialog:
         self._create_widgets()
         
         # 热键录制器
-        self.recorder = HotkeyRecorder()
-    
+        # macOS: 录制仅用 Tk 事件，避免 pynput 触发系统输入法/队列断言崩溃
+        self.recorder = None if is_macos() else HotkeyRecorder()
+
+    def _call_on_close_callback(self):
+        """确保关闭回调只调用一次（用于恢复热键监听）"""
+        if self._close_callback_called:
+            return
+        self._close_callback_called = True
+        if self.on_close_callback:
+            try:
+                self.on_close_callback()
+            except Exception as e:
+                log(f"Error in close callback: {e}")
+
+    def _schedule_on_close_callback(self):
+        """在 Tk 主循环中调用关闭回调（避免与窗口销毁时序打架）"""
+        if self._close_callback_called:
+            return
+        try:
+            if app_state.root and app_state.root.winfo_exists():
+                app_state.root.after(0, self._call_on_close_callback)
+            else:
+                self._call_on_close_callback()
+        except Exception as e:
+            log(f"Error scheduling close callback: {e}")
+            self._call_on_close_callback()
+
+    @staticmethod
+    def _tk_key_to_name(event: tk.Event) -> Optional[str]:
+        keysym = getattr(event, "keysym", "") or ""
+        lower = keysym.lower()
+
+        # Modifiers
+        if lower in {"control_l", "control_r", "control"}:
+            return "ctrl"
+        if lower in {"shift_l", "shift_r", "shift"}:
+            return "shift"
+        if lower in {"alt_l", "alt_r", "option_l", "option_r", "option"}:
+            return "alt"
+        if lower in {"command", "command_l", "command_r", "meta_l", "meta_r", "super_l", "super_r"}:
+            return "cmd"
+
+        # Common keys
+        if lower in {"return", "enter"}:
+            return "enter"
+        if lower in {"escape"}:
+            return "esc"
+        if lower in {"space"}:
+            return "space"
+        if lower in {"tab"}:
+            return "tab"
+        if lower in {"backspace"}:
+            return "backspace"
+        if lower in {"delete"}:
+            return "delete"
+
+        # Normal printable keys
+        if len(lower) == 1:
+            return lower
+        return lower or None
+
+    def _tk_on_key_press(self, event: tk.Event):
+        if not self._tk_recording:
+            return
+
+        key_name = self._tk_key_to_name(event)
+        if not key_name:
+            return
+        if key_name in self._tk_pressed_keys:
+            return
+
+        self._tk_pressed_keys.add(key_name)
+        self._tk_all_pressed_keys.add(key_name)
+        self._notify_tk_update()
+
+    def _tk_on_key_release(self, event: tk.Event):
+        if not self._tk_recording:
+            return
+
+        key_name = self._tk_key_to_name(event)
+        if not key_name:
+            return
+
+        self._tk_released_keys.add(key_name)
+        self._tk_pressed_keys.discard(key_name)
+        self._notify_tk_update()
+
+        if self._tk_all_pressed_keys and self._tk_all_pressed_keys == self._tk_released_keys:
+            self._finish_tk_recording()
+
+    def _notify_tk_update(self):
+        if not self._tk_all_pressed_keys:
+            return
+
+        modifier_order = ["ctrl", "shift", "alt", "cmd"]
+        modifiers = [m for m in modifier_order if m in self._tk_all_pressed_keys]
+        keys = sorted(k for k in self._tk_all_pressed_keys if k not in modifier_order)
+        all_keys = modifiers + keys
+        display_text = " + ".join(k.title() for k in all_keys)
+        self.root.after(0, lambda: self._set_entry_text(display_text))
+
+    def _finish_tk_recording(self):
+        keys = set(self._tk_all_pressed_keys)
+        self._stop_tk_recording()
+
+        if not keys:
+            self._on_recording_finish(None, t("hotkey.recorder.error.no_key_detected"))
+            return
+
+        hotkey_preview = " + ".join(k.title() for k in ["ctrl", "shift", "alt", "cmd"] if k in keys)
+        error = HotkeyChecker.validate_hotkey_keys(keys, hotkey_repr=hotkey_preview.replace(" + ", "+"), detailed=True)
+        hotkey_str = None
+        if not error:
+            modifier_order = ["ctrl", "shift", "alt", "cmd"]
+            modifiers = [f"<{m}>" for m in modifier_order if m in keys]
+            normal_keys = sorted(k for k in keys if k not in modifier_order)
+            wrapped = [f"<{k}>" if len(k) > 1 else k for k in normal_keys]
+            hotkey_str = "+".join(modifiers + wrapped)
+
+        self._on_recording_finish(hotkey_str, error)
+
+    def _stop_tk_recording(self):
+        self._tk_recording = False
+        if self._tk_press_binding is not None:
+            try:
+                self.root.unbind("<KeyPress>", self._tk_press_binding)
+            except Exception:
+                pass
+            self._tk_press_binding = None
+        if self._tk_release_binding is not None:
+            try:
+                self.root.unbind("<KeyRelease>", self._tk_release_binding)
+            except Exception:
+                pass
+            self._tk_release_binding = None
+        self._tk_pressed_keys.clear()
+        self._tk_released_keys.clear()
+        self._tk_all_pressed_keys.clear()
+
     def is_alive(self) -> bool:
         """判断窗口是否仍然存在"""
         try:
@@ -204,11 +348,19 @@ class HotkeyDialog:
         self.hotkey_entry.insert(0, t("hotkey.dialog.waiting_input"))
         self.hotkey_entry.config(state="readonly")
         
-        # 使用录制器开始录制
-        self.recorder.start_recording(
-            on_update=self._on_recording_update,
-            on_finish=self._on_recording_finish
-        )
+        if is_macos():
+            self._stop_tk_recording()
+            self._tk_recording = True
+            self.root.focus_force()
+            self._tk_press_binding = self.root.bind("<KeyPress>", self._tk_on_key_press, add="+")
+            self._tk_release_binding = self.root.bind("<KeyRelease>", self._tk_on_key_release, add="+")
+        else:
+            # 使用录制器开始录制
+            assert self.recorder is not None
+            self.recorder.start_recording(
+                on_update=self._on_recording_update,
+                on_finish=self._on_recording_finish
+            )
     
     def _on_recording_update(self, display_text: str):
         """录制更新回调（实时显示）"""
@@ -273,11 +425,13 @@ class HotkeyDialog:
                 return
 
         try:
-            # 调用保存回调
-            self.on_save(self.new_hotkey)
-            messagebox.showinfo("成功", f"热键已更新为：{self._format_hotkey(self.new_hotkey)}\n\n请使用新热键测试功能。")
             self._cleanup()
+            # 调用保存回调（可能会重启全局热键），确保录制监听先停止，避免 pynput 多监听器并行
+            self.on_save(self.new_hotkey)
+            if not is_macos():
+                messagebox.showinfo("成功", f"热键已更新为：{self._format_hotkey(self.new_hotkey)}\n\n请使用新热键测试功能。")
             self._safe_destroy()
+            self._schedule_on_close_callback()
         except Exception as e:
             log(f"Failed to save hotkey: {e}")
             messagebox.showerror("错误", f"保存热键失败：{str(e)}")
@@ -285,7 +439,10 @@ class HotkeyDialog:
     def _cleanup(self):
         """清理资源"""
         try:
-            self.recorder.stop_recording()
+            if is_macos():
+                self._stop_tk_recording()
+            elif self.recorder is not None:
+                self.recorder.stop_recording()
         except Exception as e:
             log(f"Error stopping recorder: {e}")
     
@@ -301,27 +458,22 @@ class HotkeyDialog:
     def _on_close(self):
         """窗口关闭事件"""
         self._cleanup()
-        if self.on_close_callback:
-            try:
-                self.on_close_callback()
-            except Exception as e:
-                log(f"Error in close callback: {e}")
         self._safe_destroy()
+        self._schedule_on_close_callback()
     
     def _on_cancel(self):
         """取消设置"""
         self._cleanup()
-        if self.on_close_callback:
-            try:
-                self.on_close_callback()
-            except Exception as e:
-                log(f"Error in close callback: {e}")
         self._safe_destroy()
+        self._schedule_on_close_callback()
     
     def show(self):
         """显示对话框"""
         try:
-            self.root.transient(app_state.root)
+            if app_state.root and app_state.root.winfo_exists():
+                self.root.transient(app_state.root)
+            else:
+                self.root.transient(None)
             self.root.deiconify()
             self.restore_and_focus()
         except Exception as e:

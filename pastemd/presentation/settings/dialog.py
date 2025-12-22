@@ -30,6 +30,7 @@ class SettingsDialog:
         """
         self.on_save_callback = on_save
         self.on_close_callback = on_close
+        self._close_callback_called = False
         self.config_loader = ConfigLoader()
         
         # 加载当前配置的副本，避免直接修改 app_state
@@ -87,6 +88,17 @@ class SettingsDialog:
         
         # 创建UI组件
         self._create_widgets()
+
+    def _call_on_close_callback(self):
+        """确保关闭回调只调用一次"""
+        if self._close_callback_called:
+            return
+        self._close_callback_called = True
+        if self.on_close_callback:
+            try:
+                self.on_close_callback()
+            except Exception as e:
+                log(f"Error in close callback: {e}")
     
     def is_alive(self) -> bool:
         """判断窗口是否仍存在"""
@@ -421,7 +433,7 @@ class SettingsDialog:
             
             if self.on_save_callback:
                 self.on_save_callback()
-                
+            self._call_on_close_callback()
             self._safe_destroy()
             
         except Exception as e:
@@ -430,11 +442,11 @@ class SettingsDialog:
             self._show_topmost_message(t("settings.title.error"), t("settings.error.save_failed", error=str(e)), "error")
 
     def _on_cancel(self):
+        self._call_on_close_callback()
         self._safe_destroy()
 
     def _on_close(self):
-        if self.on_close_callback:
-            self.on_close_callback()
+        self._call_on_close_callback()
         self._safe_destroy()
 
     def _safe_destroy(self):

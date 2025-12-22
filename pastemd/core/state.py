@@ -10,6 +10,7 @@ class AppState:
     """全局应用状态"""
     enabled: bool = True
     running: bool = False
+    ui_block_hotkeys: bool = False
     last_fire: float = 0.0
     last_ok: bool = True
     hotkey_str: str = "<ctrl>+<shift>+b"

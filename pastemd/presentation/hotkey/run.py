@@ -54,7 +54,7 @@ class HotkeyRunner:
                 )
         
         def on_hotkey():
-            if app_state.enabled:
+            if app_state.enabled and not getattr(app_state, "ui_block_hotkeys", False):
                 self.debounce_manager.trigger_async(self.controller_callback)
         
         try:
