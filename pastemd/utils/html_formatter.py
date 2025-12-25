@@ -179,10 +179,10 @@ def postprocess_pandoc_html_macwps(html: str) -> str:
     _fix_pandoc_code_blocks(soup)
     
     # 清理 Pandoc 扩展语法残留（如 ::: 语法块）
-    _clean_pandoc_fenced_divs(soup)
+    # _clean_pandoc_fenced_divs(soup)
     
     # 清理多余的属性（style, class, data-* 等）
-    _clean_pandoc_attributes(soup)
+    # _clean_pandoc_attributes(soup)
 
     _fix_task_list_math_issue(soup)
     
@@ -384,6 +384,7 @@ def _clean_pandoc_fenced_divs(soup) -> None:
 
 def clean_html_for_wps(html: str) -> str:
     """
+    弃用
     专门为 WPS 工作流清理输入的 HTML，去除所有样式和扩展属性。
     
     这个函数在 Pandoc 转换之前调用，清理输入 HTML 中的：
@@ -431,13 +432,34 @@ def clean_html_for_wps(html: str) -> str:
     return str(soup)
 
 
+def protect_task_list_brackets(html: str) -> str:
+    """
+    保护 HTML 中的任务列表标记，避免被 Pandoc 转义和误识别。
+    
+    将 [x] 和 [ ] 替换为特殊标记：
+    - [x] -> {{TASK_CHECKED}}
+    - [ ] -> {{TASK_UNCHECKED}}
+    
+    这些特殊标记不会被 Pandoc 识别为 Markdown 语法或数学公式。
+    
+    Args:
+        html: 原始 HTML 字符串
+        
+    Returns:
+        处理后的 HTML 字符串
+    """
+    soup = BeautifulSoup(html, "html.parser")
+    _protect_task_list_brackets(soup)
+    return str(soup)
+
+
 def _protect_task_list_brackets(soup) -> None:
     """
     保护 HTML 中的任务列表标记，避免被 Pandoc 转义和误识别。
     
     将 [x] 和 [ ] 替换为特殊标记：
-    - [x] -> ##TASK_CHECKED##
-    - [ ] -> ##TASK_UNCHECKED##
+    - [x] -> {{TASK_CHECKED}}
+    - [ ] -> {{TASK_UNCHECKED}}
     
     这些特殊标记不会被 Pandoc 识别为 Markdown 语法或数学公式。
     
@@ -451,32 +473,26 @@ def _protect_task_list_brackets(soup) -> None:
             # 只处理包含任务列表标记的文本
             if '[x]' in text or '[ ]' in text or '[X]' in text:
                 # 替换为特殊标记
-                text = text.replace('[x]', '##TASK_CHECKED##')
-                text = text.replace('[ ]', '##TASK_UNCHECKED##')
+                text = text.replace('[x]', '{{TASK_CHECKED}}')
+                text = text.replace('[ ]', '{{TASK_UNCHECKED}}')
                 text_node.replace_with(text)
 
 
 def _restore_task_list_brackets(soup) -> None:
     """
-    恢复被保护的任务列表标记。
-    
-    将特殊标记恢复为原始的方括号格式：
-    - ##TASK_CHECKED## -> [x]
-    - ##TASK_UNCHECKED## -> [ ]
-    
-    Args:
-        soup: BeautifulSoup 对象，会被原地修改。
+    将 HTML 中的 input checkbox 标签直接替换为 [x] 或 [ ] 文本。
     """
-    # 遍历所有文本节点
-    for text_node in soup.find_all(text=True):
-        if isinstance(text_node, NavigableString):
-            text = str(text_node)
-            # 只处理包含特殊标记的文本
-            if '##TASK_CHECKED##' in text or '##TASK_UNCHECKED##' in text:
-                # 恢复为原始标记
-                text = text.replace('##TASK_CHECKED##', '[x]')
-                text = text.replace('##TASK_UNCHECKED##', '[ ]')
-                text_node.replace_with(text)
+    # 1. 寻找所有的 input 标签
+    for checkbox in soup.find_all('input'):
+        # 更加鲁棒的判断：如果是 checkbox 或者它带有 checked 属性
+        is_checkbox = checkbox.get('type') == 'checkbox'
+        if is_checkbox:
+            # 判断是否选中
+            is_checked = checkbox.has_attr('checked')
+            replacement_text = "[x] " if is_checked else "[ ] "
+            
+            # 核心修复：使用 NavigableString 确保替换为纯文本
+            checkbox.replace_with(NavigableString(replacement_text))
 
 
 def _fix_task_list_math_issue(soup) -> None:

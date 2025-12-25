@@ -42,8 +42,6 @@ class WPSWorkflow(WordBaseWorkflow):
             config = self.config.copy()
             config["Keep_original_formula"] = True  # 保留公式为 LaTeX 文本
             if content_type == "html":
-                # 在 Pandoc 转换之前清理 HTML，去除样式和扩展属性
-                content = clean_html_for_wps(content)
                 content = self.html_preprocessor.process(content, config)
                 md_text = self.doc_generator.convert_html_to_markdown_text(
                     content, config
@@ -57,7 +55,6 @@ class WPSWorkflow(WordBaseWorkflow):
             )
             # 后处理 Pandoc 输出的 HTML，修复代码块格式等问题
             html_text = postprocess_pandoc_html_macwps(html_text)
-
             # 内容落地由 placer 负责（写剪贴板 + Cmd+V）
             result = self.placer.place(
                 None,

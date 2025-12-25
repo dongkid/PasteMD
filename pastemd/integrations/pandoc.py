@@ -1,8 +1,11 @@
 """Pandoc CLI tool integration."""
 
 import os
+import re
 import subprocess
 from typing import Optional, List
+
+from ..utils.html_formatter import protect_task_list_brackets
 
 from ..config.paths import resource_path
 
@@ -87,10 +90,11 @@ class PandocIntegration:
         """
         使用 Pandoc 将 HTML 转换为 Markdown。
         """
+        html_text = protect_task_list_brackets(html_text)
         cmd = [
             self.pandoc_path,
             "-f", "html+tex_math_dollars+raw_tex+tex_math_double_backslash+tex_math_single_backslash",
-            "-t", "markdown+tex_math_dollars+raw_tex",
+            "-t", "gfm-raw_html+tex_math_dollars",
             "-o", "-",          # 输出到 stdout
             "--wrap", "none",   # 不自动换行，方便你后处理
         ]
@@ -117,7 +121,16 @@ class PandocIntegration:
             raise PandocError(err or "Pandoc HTML to Markdown conversion failed")
 
         # stdout 也是 bytes，自行按 UTF-8 解码
-        return result.stdout.decode("utf-8", "ignore")
+        md = result.stdout.decode("utf-8", "ignore")
+        md = md.replace('\r\n', '\n').replace('\r', '\n')  # 统一换行符
+        md = re.sub(r'```\s*math\s*\n(.*?)\n\s*```', r'$$\n\1\n$$', md, flags=re.DOTALL)
+        md = re.sub(r'\$\s*`([^`]+)`\s*\$', r'$\1$', md)
+        md = re.sub(r'(```\s*\w+)\s+[^\n]+', r'\1', md)
+        # 处理\~~删除线文本\~~
+        md = re.sub(r'\\~~(.*?)\\~~', r'~~\1~~', md)
+
+        md = md.replace("{{TASK_CHECKED}}", "[x]").replace("{{TASK_UNCHECKED}}", "[ ]")
+        return md
 
     def convert_html_to_markdown_text(self, html_text: str) -> str:
         """
