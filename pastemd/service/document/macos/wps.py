@@ -8,9 +8,7 @@ from ..base import BaseDocumentPlacer
 from ....core.types import PlacementResult
 from ....utils.logging import log
 from ....i18n import t
-if sys.platform == "darwin":
-    from ....utils.macos.clipboard import set_clipboard_rich_text
-    from ....utils.macos.keystroke import simulate_cmd_v
+from ....utils.clipboard import set_clipboard_rich_text, simulate_paste
 
 
 class WPSPlacer(BaseDocumentPlacer):
@@ -39,7 +37,7 @@ class WPSPlacer(BaseDocumentPlacer):
             set_clipboard_rich_text(
                 html=html_text, rtf_bytes=None, text=plain_text, docx_bytes=None
             )
-            simulate_cmd_v()
+            simulate_paste()
 
             return PlacementResult(success=True, method="clipboard_rtf_html")
         except Exception as e:

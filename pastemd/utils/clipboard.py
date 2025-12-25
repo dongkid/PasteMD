@@ -15,12 +15,14 @@ if sys.platform == "darwin":
         is_clipboard_empty,
         is_clipboard_html,
         get_clipboard_html,
+        set_clipboard_rich_text,
         copy_files_to_clipboard,
         is_clipboard_files,
         get_clipboard_files,
         get_markdown_files_from_clipboard,
         read_markdown_files_from_clipboard,
     )
+    from .macos.keystroke import simulate_paste
     # read_file_with_encoding 从共享模块导入
     from .clipboard_file_utils import read_file_with_encoding
 elif sys.platform == "win32":
@@ -29,12 +31,14 @@ elif sys.platform == "win32":
         is_clipboard_empty,
         is_clipboard_html,
         get_clipboard_html,
+        set_clipboard_rich_text,
         copy_files_to_clipboard,
         is_clipboard_files,
         get_clipboard_files,
         get_markdown_files_from_clipboard,
         read_markdown_files_from_clipboard,
     )
+    from .win32.keystroke import simulate_paste
     # read_file_with_encoding 从共享模块导入
     from .clipboard_file_utils import read_file_with_encoding
 else:
@@ -96,6 +100,20 @@ else:
         """
         raise ClipboardError(f"HTML clipboard operations not supported on {sys.platform}")
 
+    def set_clipboard_rich_text(
+        *,
+        html: str | None = None,
+        rtf_bytes: bytes | None = None,
+        docx_bytes: bytes | None = None,
+        text: str | None = None,
+    ) -> None:
+        raise ClipboardError(
+            f"Rich-text clipboard operations not supported on {sys.platform}"
+        )
+
+    def simulate_paste(*, timeout_s: float = 5.0) -> None:
+        raise ClipboardError(f"Paste keystroke not supported on {sys.platform}")
+
 
 # 导出公共接口
 __all__ = [
@@ -106,9 +124,11 @@ __all__ = [
     "ClipboardError",
 ]
 
-# 条件导出文件操作功能 (Windows 和 macOS)
+# 条件导出文件操作/富文本/粘贴快捷键 (Windows 和 macOS)
 if sys.platform in ("win32", "darwin"):
     __all__.extend([
+        "set_clipboard_rich_text",
+        "simulate_paste",
         "copy_files_to_clipboard",
         "is_clipboard_files",
         "get_clipboard_files",

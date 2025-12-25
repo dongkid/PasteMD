@@ -15,6 +15,99 @@ from ...utils.logging import log
 from ...core.constants import CLIPBOARD_HTML_WAIT_MS, CLIPBOARD_POLL_INTERVAL_MS
 
 
+def _build_cf_html(html: str) -> bytes:
+    """
+    Build CF_HTML payload bytes for the Windows clipboard ("HTML Format").
+
+    CF_HTML is an ASCII header + UTF-8 HTML. Offsets are byte offsets from the
+    start of the payload.
+    """
+    start_marker = "<!--StartFragment-->"
+    end_marker = "<!--EndFragment-->"
+
+    if start_marker in html and end_marker in html:
+        html_doc = html
+    else:
+        html_doc = (
+            "<html><head><meta charset=\"utf-8\"></head><body>"
+            f"{start_marker}{html}{end_marker}"
+            "</body></html>"
+        )
+
+    html_bytes = html_doc.encode("utf-8")
+
+    header_template = (
+        "Version:1.0\r\n"
+        "StartHTML:{:010d}\r\n"
+        "EndHTML:{:010d}\r\n"
+        "StartFragment:{:010d}\r\n"
+        "EndFragment:{:010d}\r\n"
+    )
+
+    # Header length is stable because we always format 10-digit offsets.
+    header_placeholder = header_template.format(0, 0, 0, 0).encode("ascii")
+    start_html = len(header_placeholder)
+    end_html = start_html + len(html_bytes)
+
+    start_marker_b = start_marker.encode("ascii")
+    end_marker_b = end_marker.encode("ascii")
+    sf_index = html_bytes.find(start_marker_b)
+    ef_index = html_bytes.find(end_marker_b)
+    if sf_index == -1 or ef_index == -1 or ef_index < sf_index:
+        start_fragment = start_html
+        end_fragment = end_html
+    else:
+        start_fragment = start_html + sf_index + len(start_marker_b)
+        end_fragment = start_html + ef_index
+
+    header = header_template.format(start_html, end_html, start_fragment, end_fragment).encode(
+        "ascii"
+    )
+    return header + html_bytes
+
+
+def set_clipboard_rich_text(
+    *,
+    html: str | None = None,
+    rtf_bytes: bytes | None = None,
+    docx_bytes: bytes | None = None,
+    text: str | None = None,
+) -> None:
+    """
+    Write rich-text clipboard content (HTML/RTF/Plain) on Windows.
+
+    Note:
+        - The target application will choose its preferred available format.
+        - `docx_bytes` is currently ignored on Windows (no reliable standard clipboard format).
+    """
+    try:
+        fmt_html = wc.RegisterClipboardFormat("HTML Format")
+        fmt_rtf = wc.RegisterClipboardFormat("Rich Text Format")
+
+        wc.OpenClipboard(None)
+        try:
+            wc.EmptyClipboard()
+
+            if html is not None:
+                wc.SetClipboardData(fmt_html, _build_cf_html(html))
+                log(f"set HTML type=HTML Format len={len(html.encode('utf-8'))}")
+
+            if rtf_bytes is not None:
+                wc.SetClipboardData(fmt_rtf, rtf_bytes)
+                log(f"set RTF type=Rich Text Format len={len(rtf_bytes)}")
+
+            if text is not None:
+                wc.SetClipboardData(wc.CF_UNICODETEXT, text)
+                log(f"set PLAIN type=CF_UNICODETEXT len={len(text)}")
+
+            if docx_bytes is not None:
+                log(f"docx_bytes provided (len={len(docx_bytes)}), ignored on Windows clipboard")
+        finally:
+            wc.CloseClipboard()
+    except Exception as e:
+        raise ClipboardError(f"Failed to write rich text to clipboard: {e}") from e
+
+
 def _try_read_cf_html(wait_ms: int, interval_ms: int) -> bytes | str | None:
     """
     在短窗口内轮询读取 CF_HTML（"HTML Format"）。

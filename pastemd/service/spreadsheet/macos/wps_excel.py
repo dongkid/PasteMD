@@ -12,9 +12,7 @@ from ....core.types import PlacementResult
 from ....i18n import t
 from ....utils.logging import log
 
-if sys.platform == "darwin":
-    from ....utils.macos.clipboard import set_clipboard_rich_text
-    from ....utils.macos.keystroke import simulate_cmd_v
+from ....utils.clipboard import set_clipboard_rich_text, simulate_paste
 
 
 def _wrap_tag(tag: str, content: str) -> str:
@@ -135,7 +133,7 @@ class WPSExcelPlacer(BaseSpreadsheetPlacer):
 
             # WPS 表格通常能吃下 HTML table；Plain TSV 作为兜底。
             set_clipboard_rich_text(html=html_text, text=tsv_text)
-            simulate_cmd_v()
+            simulate_paste()
 
             return PlacementResult(
                 success=True,

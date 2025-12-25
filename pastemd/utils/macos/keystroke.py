@@ -7,7 +7,7 @@ import subprocess
 from ...core.errors import ClipboardError
 
 
-def simulate_cmd_v(*, timeout_s: float = 5.0) -> None:
+def simulate_paste(*, timeout_s: float = 5.0) -> None:
     """
     Simulate ⌘V in the frontmost app.
 
@@ -27,4 +27,3 @@ def simulate_cmd_v(*, timeout_s: float = 5.0) -> None:
         raise ClipboardError(f"Failed to simulate Cmd+V: {msg}") from e
     except subprocess.TimeoutExpired as e:
         raise ClipboardError("Failed to simulate Cmd+V: timeout") from e
-
