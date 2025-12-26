@@ -85,6 +85,11 @@ def get_app_icon_path() -> str:
         return resource_path(os.path.join("assets", "icons", "logo.png"))
 
 
+def get_app_white_png_path() -> str:
+    """获取应用白色图标路径 (.png)"""
+    return resource_path(os.path.join("assets", "icons", "logo_white.png"))
+
+
 def get_app_png_path() -> str:
     """获取应用图标路径 (.png)"""
     return resource_path(os.path.join("assets", "icons", "logo.png"))

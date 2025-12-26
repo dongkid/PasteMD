@@ -12,7 +12,7 @@ from typing import Optional
 from pastemd.utils.system_detect import is_windows, is_macos
 
 from ...core.constants import NOTIFICATION_TIMEOUT
-from ...config.paths import get_app_icon_path, get_app_png_path
+from ...config.paths import get_app_icon_path, get_app_white_png_path
 from ...utils.logging import log
 from ...core.state import app_state
 
@@ -112,7 +112,7 @@ class NotificationManager:
         if is_windows():
             self.icon_path = get_app_icon_path()
         else:
-            self.icon_path = get_app_png_path()
+            self.icon_path = get_app_white_png_path()
         self._q: "queue.Queue[tuple[str,str,bool]]" = queue.Queue(maxsize=max_queue)
         self._stop = threading.Event()
         self._worker = threading.Thread(target=self._worker_loop, name="NotifyWorker", daemon=True)
