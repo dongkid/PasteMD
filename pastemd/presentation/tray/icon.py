@@ -3,8 +3,9 @@
 import os
 from PIL import Image, ImageDraw
 
-from ...config.paths import get_app_png_path
+from ...config.paths import get_tray_icon_path
 from ...utils.dpi import get_dpi_scale
+from ...utils.system_detect import is_macos
 
 
 def create_fallback_icon(ok: bool = True, flash: bool = False) -> Image.Image:
@@ -58,7 +59,7 @@ def load_base_icon() -> Image.Image:
         PIL 图像对象
     """
     try:
-        icon_path = get_app_png_path()
+        icon_path = get_tray_icon_path()
         if os.path.exists(icon_path):
             return Image.open(icon_path).convert("RGBA")
     except Exception:
@@ -71,32 +72,37 @@ def load_base_icon() -> Image.Image:
 def create_status_icon(ok: bool) -> Image.Image:
     """
     创建带状态指示的托盘图标
-    
+
     Args:
         ok: 是否为正常状态
-        
+
     Returns:
         PIL 图像对象
     """
     base = load_base_icon().copy()
+
+    # macOS 不添加状态点，直接返回基础图标
+    if is_macos():
+        return base
+
     width, height = base.size
     draw = ImageDraw.Draw(base)
-    
+
     # 计算状态角标的位置和大小
     radius = int(min(width, height) * 0.28)
     padding = int(radius * 0.25)
-    
+
     # 右下角位置
     x1 = width - radius - padding
     y1 = height - radius - padding
     x2 = width - padding
     y2 = height - padding
-    
+
     # 绘制白色边框
     draw.ellipse([x1 - 2, y1 - 2, x2 + 2, y2 + 2], fill=(255, 255, 255, 255))
-    
+
     # 绘制状态色彩
     status_color = (60, 200, 80, 255) if ok else (220, 70, 70, 255)
     draw.ellipse([x1, y1, x2, y2], fill=status_color)
-    
+
     return base

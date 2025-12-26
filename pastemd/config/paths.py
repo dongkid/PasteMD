@@ -90,6 +90,14 @@ def get_app_png_path() -> str:
     return resource_path(os.path.join("assets", "icons", "logo.png"))
 
 
+def get_tray_icon_path() -> str:
+    """获取托盘图标路径（macOS 使用 logoTemplate.png）"""
+    if is_macos():
+        return resource_path(os.path.join("assets", "icons", "logoTemplate.png"))
+    else:
+        return get_app_png_path()
+
+
 def is_first_launch() -> bool:
     """检测是否为首次启动（通过检查配置文件和日志文件是否存在）"""
     config_path = get_config_path()
