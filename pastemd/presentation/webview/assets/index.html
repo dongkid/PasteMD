@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PasteMD 设置</title>
+    <title data-i18n="settings.dialog.title">PasteMD 设置</title>
     <link rel="stylesheet" href="css/theme.css">
     <link rel="stylesheet" href="css/base.css">
     <link rel="stylesheet" href="css/components.css">
@@ -42,7 +42,7 @@
                 </div>
 
                 <div class="section">
-                    <div class="section-title">选项</div>
+                    <div class="section-title" data-i18n="settings.general.options">选项</div>
                     <div class="checkbox-item">
                         <input type="checkbox" id="keep-file">
                         <label for="keep-file" data-i18n="settings.general.keep_file">保留生成的文件</label>
@@ -101,7 +101,7 @@
                 <div class="section">
                     <div class="section-title" data-i18n="settings.conversion.reference_docx">参考文档</div>
                     <div class="path-row">
-                        <input type="text" id="reference-docx" placeholder="可选：用于设置样式的参考 .docx 文件">
+                        <input type="text" id="reference-docx" data-i18n-placeholder="settings.conversion.reference_docx_placeholder" placeholder="可选：用于设置样式的参考 .docx 文件">
                         <div class="btn-group">
                             <button class="btn btn-secondary btn-sm" onclick="browseRefDocx()" data-i18n="settings.general.browse">浏览</button>
                             <button class="btn btn-secondary btn-sm" onclick="clearRefDocx()" data-i18n="settings.general.clear">清除</button>
@@ -153,7 +153,7 @@
             <!-- 高级设置 -->
             <section id="panel-advanced" class="panel">
                 <div class="section">
-                    <div class="section-title">Excel 选项</div>
+                    <div class="section-title" data-i18n="settings.advanced.excel_options">Excel 选项</div>
                     <div class="checkbox-item">
                         <input type="checkbox" id="enable-excel" checked>
                         <label for="enable-excel" data-i18n="settings.advanced.excel_enable">启用 Excel 表格插入</label>
@@ -168,7 +168,7 @@
             <!-- 实验性功能 -->
             <section id="panel-experimental" class="panel">
                 <div class="section">
-                    <div class="section-title">公式处理</div>
+                    <div class="section-title" data-i18n="settings.experimental.formula_processing">公式处理</div>
                     <div class="checkbox-item">
                         <input type="checkbox" id="keep-formula">
                         <label for="keep-formula" data-i18n="settings.conversion.keep_formula">保留原始公式格式</label>
@@ -191,7 +191,7 @@
                         <input type="checkbox" id="enable-request-headers" onchange="toggleRequestHeadersState()">
                         <label for="enable-request-headers" data-i18n="settings.conversion.pandoc_request_headers_enable">启用自定义请求头</label>
                     </div>
-                    <textarea id="request-headers" rows="4" placeholder="每行一个请求头，格式：Header-Name: value" disabled></textarea>
+                    <textarea id="request-headers" rows="4" data-i18n-placeholder="settings.conversion.pandoc_request_headers_placeholder" placeholder="每行一个请求头，格式：Header-Name: value" disabled></textarea>
                     <div class="note" data-i18n="settings.conversion.pandoc_request_headers_note">下载远程图片等资源时附加的 HTTP 请求头</div>
                     <button class="btn btn-secondary btn-sm" style="margin-top: 8px;" onclick="fillRequestHeadersExample()" data-i18n="settings.conversion.pandoc_request_headers_fill_example">填入示例</button>
                 </div>
@@ -200,10 +200,10 @@
             <!-- macOS 权限 -->
             <section id="panel-permissions" class="panel macos-only">
                 <div class="section">
-                    <p id="permissions-intro" style="margin-bottom: 12px; color: var(--text-secondary);">
+                    <p id="permissions-intro" style="margin-bottom: 12px; color: var(--text-secondary);" data-i18n="settings.permissions.intro">
                         PasteMD 需要以下系统权限才能正常工作。请点击"打开设置"按钮授予相应权限。
                     </p>
-                    <p id="permissions-hint" style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">
+                    <p id="permissions-hint" style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;" data-i18n="settings.permissions.add_hint">
                         提示：如果看不到 PasteMD，请点击"+"按钮手动添加。
                     </p>
                 </div>
@@ -212,71 +212,71 @@
                     <!-- 辅助功能 -->
                     <div class="permission-item" data-permission="accessibility">
                         <div class="permission-header">
-                            <span class="permission-title">
+                            <span class="permission-title" data-i18n="settings.permissions.accessibility.title">
                                 <span class="status-dot unknown"></span>
                                 辅助功能
                             </span>
-                            <span class="permission-status" style="color: #666;">检查中...</span>
+                            <span class="permission-status" style="color: #666;" data-i18n="settings.permissions.status.checking">检查中...</span>
                         </div>
-                        <div class="permission-desc">用于模拟键盘输入和控制其他应用程序</div>
+                        <div class="permission-desc" data-i18n="settings.permissions.accessibility.desc">用于模拟键盘输入和控制其他应用程序</div>
                         <div class="permission-actions">
-                            <button class="btn btn-secondary btn-sm btn-request" style="display: none;" onclick="permissionsManager.requestPermission('accessibility')">请求权限</button>
-                            <button class="btn btn-secondary btn-sm" onclick="permissionsManager.openSettings('accessibility')">打开设置</button>
+                            <button class="btn btn-secondary btn-sm btn-request" style="display: none;" onclick="permissionsManager.requestPermission('accessibility')" data-i18n="settings.permissions.request_access">请求权限</button>
+                            <button class="btn btn-secondary btn-sm" onclick="permissionsManager.openSettings('accessibility')" data-i18n="settings.permissions.open_settings">打开设置</button>
                         </div>
                     </div>
 
                     <!-- 屏幕录制 -->
                     <div class="permission-item" data-permission="screen_recording">
                         <div class="permission-header">
-                            <span class="permission-title">
+                            <span class="permission-title" data-i18n="settings.permissions.screen_recording.title">
                                 <span class="status-dot unknown"></span>
                                 屏幕录制
                             </span>
-                            <span class="permission-status" style="color: #666;">检查中...</span>
+                            <span class="permission-status" style="color: #666;" data-i18n="settings.permissions.status.checking">检查中...</span>
                         </div>
-                        <div class="permission-desc">用于检测当前活跃的应用程序窗口</div>
+                        <div class="permission-desc" data-i18n="settings.permissions.screen_recording.desc">用于检测当前活跃的应用程序窗口</div>
                         <div class="permission-actions">
-                            <button class="btn btn-secondary btn-sm btn-request" style="display: none;" onclick="permissionsManager.requestPermission('screen_recording')">请求权限</button>
-                            <button class="btn btn-secondary btn-sm" onclick="permissionsManager.openSettings('screen_recording')">打开设置</button>
+                            <button class="btn btn-secondary btn-sm btn-request" style="display: none;" onclick="permissionsManager.requestPermission('screen_recording')" data-i18n="settings.permissions.request_access">请求权限</button>
+                            <button class="btn btn-secondary btn-sm" onclick="permissionsManager.openSettings('screen_recording')" data-i18n="settings.permissions.open_settings">打开设置</button>
                         </div>
                     </div>
 
                     <!-- 输入监控 -->
                     <div class="permission-item" data-permission="input_monitoring">
                         <div class="permission-header">
-                            <span class="permission-title">
+                            <span class="permission-title" data-i18n="settings.permissions.input_monitoring.title">
                                 <span class="status-dot unknown"></span>
                                 输入监控
                             </span>
-                            <span class="permission-status" style="color: #666;">检查中...</span>
+                            <span class="permission-status" style="color: #666;" data-i18n="settings.permissions.status.checking">检查中...</span>
                         </div>
-                        <div class="permission-desc">用于监听全局热键</div>
+                        <div class="permission-desc" data-i18n="settings.permissions.input_monitoring.desc">用于监听全局热键</div>
                         <div class="permission-actions">
-                            <button class="btn btn-secondary btn-sm btn-request" style="display: none;" onclick="permissionsManager.requestPermission('input_monitoring')">请求权限</button>
-                            <button class="btn btn-secondary btn-sm" onclick="permissionsManager.openSettings('input_monitoring')">打开设置</button>
+                            <button class="btn btn-secondary btn-sm btn-request" style="display: none;" onclick="permissionsManager.requestPermission('input_monitoring')" data-i18n="settings.permissions.request_access">请求权限</button>
+                            <button class="btn btn-secondary btn-sm" onclick="permissionsManager.openSettings('input_monitoring')" data-i18n="settings.permissions.open_settings">打开设置</button>
                         </div>
                     </div>
 
                     <!-- 自动化 -->
                     <div class="permission-item" data-permission="automation">
                         <div class="permission-header">
-                            <span class="permission-title">
+                            <span class="permission-title" data-i18n="settings.permissions.automation.title">
                                 <span class="status-dot unknown"></span>
                                 自动化
                             </span>
-                            <span class="permission-status" style="color: #666;">检查中...</span>
+                            <span class="permission-status" style="color: #666;" data-i18n="settings.permissions.status.checking">检查中...</span>
                         </div>
-                        <div class="permission-desc">用于控制 Microsoft Word 和 Excel</div>
+                        <div class="permission-desc" data-i18n="settings.permissions.automation.desc">用于控制 Microsoft Word 和 Excel</div>
                         <div class="permission-actions">
-                            <button class="btn btn-secondary btn-sm btn-request" style="display: none;" onclick="permissionsManager.requestPermission('automation')">请求权限</button>
-                            <button class="btn btn-secondary btn-sm" onclick="permissionsManager.openSettings('automation')">打开设置</button>
+                            <button class="btn btn-secondary btn-sm btn-request" style="display: none;" onclick="permissionsManager.requestPermission('automation')" data-i18n="settings.permissions.request_access">请求权限</button>
+                            <button class="btn btn-secondary btn-sm" onclick="permissionsManager.openSettings('automation')" data-i18n="settings.permissions.open_settings">打开设置</button>
                         </div>
                     </div>
                 </div>
 
                 <div class="section" style="margin-top: 16px;">
-                    <button class="btn btn-secondary" onclick="permissionsManager.refresh()">刷新状态</button>
-                    <span id="last-checked" style="margin-left: 12px; color: var(--text-secondary); font-size: 12px;">最后检查：--:--:--</span>
+                    <button class="btn btn-secondary" onclick="permissionsManager.refresh()" data-i18n="settings.permissions.refresh">刷新状态</button>
+                    <span id="last-checked" style="margin-left: 12px; color: var(--text-secondary); font-size: 12px;" data-i18n="settings.permissions.last_checked">最后检查：--:--:--</span>
                 </div>
             </section>
         </main>
@@ -296,11 +296,16 @@
                 <button class="modal-close" onclick="closeHotkeyModal()">&times;</button>
             </div>
             <div class="modal-body">
-                <p style="margin-bottom: 16px;">点击"录制"按钮，然后按下您想要设置的快捷键组合。</p>
+                <p style="margin-bottom: 16px;" data-i18n="hotkey.dialog.instruction">点击"录制"按钮，然后按下您想要设置的快捷键组合。</p>
+
+                <div class="setting-item">
+                    <span data-i18n="hotkey.dialog.current_hotkey">当前热键：</span>
+                    <span id="current-hotkey-display" style="font-weight: bold; color: var(--text-primary);">--</span>
+                </div>
 
                 <div class="setting-item">
                     <span data-i18n="hotkey.dialog.new_hotkey">新热键：</span>
-                    <input type="text" id="hotkey-input" class="hotkey-input" readonly placeholder="点击录制...">
+                    <input type="text" id="hotkey-input" class="hotkey-input" readonly data-i18n-placeholder="hotkey.dialog.input_placeholder" placeholder="点击录制...">
                 </div>
 
                 <div style="text-align: center; margin-top: 16px;">

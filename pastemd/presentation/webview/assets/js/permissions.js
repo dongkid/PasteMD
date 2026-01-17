@@ -103,7 +103,7 @@ class PermissionsManager {
             const now = new Date();
             const time = now.toLocaleTimeString();
             el.textContent = this.info.last_checked?.replace('--:--:--', time) ||
-                `Last checked: ${time}`;
+                t('settings.permissions.last_checked', { time });
         }
     }
 

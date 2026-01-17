@@ -7,6 +7,7 @@ class ApiWrapper {
     constructor() {
         this._ready = false;
         this._pendingCalls = [];
+        this._queuePollingInterval = null;
     }
 
     /**
@@ -22,6 +23,8 @@ class ApiWrapper {
                     // 执行等待中的调用
                     this._pendingCalls.forEach(fn => fn());
                     this._pendingCalls = [];
+                    // 启动 UI 队列轮询
+                    this._startQueuePolling();
                     resolve();
                 } else {
                     setTimeout(check, 50);
@@ -29,6 +32,35 @@ class ApiWrapper {
             };
             check();
         });
+    }
+
+    /**
+     * 启动 UI 队列轮询
+     * 定时调用 Python 端的 process_ui_queue 方法，
+     * 确保跨线程的 GUI 操作在正确的线程执行
+     */
+    _startQueuePolling() {
+        if (this._queuePollingInterval) return;
+
+        this._queuePollingInterval = setInterval(async () => {
+            try {
+                if (window.pywebview && window.pywebview.api && window.pywebview.api.process_ui_queue) {
+                    await window.pywebview.api.process_ui_queue();
+                }
+            } catch (e) {
+                // 静默处理错误，避免控制台刷屏
+            }
+        }, 100); // 100ms 轮询间隔
+    }
+
+    /**
+     * 停止 UI 队列轮询
+     */
+    _stopQueuePolling() {
+        if (this._queuePollingInterval) {
+            clearInterval(this._queuePollingInterval);
+            this._queuePollingInterval = null;
+        }
     }
 
     /**

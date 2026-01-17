@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import threading
 from typing import Optional, Callable, TYPE_CHECKING
@@ -229,12 +230,14 @@ class WebViewManager:
                 begin_ui_session()
                 activate_app()
 
-            # 通知前端切换到指定选项卡
+            # 通知前端切换到指定选项卡（通过队列安全调用）
             if tab:
-                try:
-                    self._settings_window.evaluate_js(f"window.selectTab && window.selectTab('{tab}')")
-                except Exception as e:
-                    log(f"Failed to select tab: {e}")
+                def task():
+                    try:
+                        self._settings_window.evaluate_js(f"window.selectTab && window.selectTab({json.dumps(tab)})")
+                    except Exception as e:
+                        log(f"Failed to select tab: {e}")
+                app_state.queue_ui_task(task)
 
             self._settings_window.show()
             self._is_settings_visible = True
@@ -272,10 +275,12 @@ class WebViewManager:
     def refresh_hotkey_display(self) -> None:
         """刷新热键显示"""
         if self._settings_window and self._is_settings_visible:
-            try:
-                self._settings_window.evaluate_js("window.refreshHotkeyDisplay && window.refreshHotkeyDisplay()")
-            except Exception as e:
-                log(f"Failed to refresh hotkey display: {e}")
+            def task():
+                try:
+                    self._settings_window.evaluate_js("window.refreshHotkeyDisplay && window.refreshHotkeyDisplay()")
+                except Exception as e:
+                    log(f"Failed to refresh hotkey display: {e}")
+            app_state.queue_ui_task(task)
 
     def get_hotkey_api(self):
         """获取热键 API"""

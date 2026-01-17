@@ -68,24 +68,28 @@ class HotkeyApi(BaseApi):
             self._recorder = HotkeyRecorder()
 
             def on_update(display_text: str):
-                # 通过 evaluate_js 发送更新到前端
+                # 通过队列安全调用 evaluate_js（跨线程安全）
                 if self._window:
-                    try:
-                        self._window.evaluate_js(f"window.onHotkeyUpdate('{display_text}')")
-                    except Exception as e:
-                        log(f"Failed to send hotkey update: {e}")
+                    def task():
+                        try:
+                            self._window.evaluate_js(f"window.onHotkeyUpdate({json.dumps(display_text)})")
+                        except Exception as e:
+                            log(f"Failed to send hotkey update: {e}")
+                    app_state.queue_ui_task(task)
 
             def on_finish(hotkey_str: Optional[str], error: Optional[str]):
                 self._is_recording = False
                 if self._window:
-                    try:
-                        result = json.dumps({
-                            "hotkey": hotkey_str,
-                            "error": error
-                        }, ensure_ascii=False)
-                        self._window.evaluate_js(f"window.onHotkeyFinish({result})")
-                    except Exception as e:
-                        log(f"Failed to send hotkey finish: {e}")
+                    def task():
+                        try:
+                            result = json.dumps({
+                                "hotkey": hotkey_str,
+                                "error": error
+                            }, ensure_ascii=False)
+                            self._window.evaluate_js(f"window.onHotkeyFinish({result})")
+                        except Exception as e:
+                            log(f"Failed to send hotkey finish: {e}")
+                    app_state.queue_ui_task(task)
 
             self._recorder.start_recording(on_update=on_update, on_finish=on_finish)
             return self._success(message="recording started")

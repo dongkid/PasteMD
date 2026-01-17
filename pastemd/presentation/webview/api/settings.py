@@ -98,6 +98,14 @@ class SettingsApi(BaseApi):
             # 合并到现有配置
             config = copy.deepcopy(app_state.config)
 
+            # 检测语言是否改变（在更新config之前）
+            language_changed = False
+            if "language" in new_settings:
+                old_language = config.get("language", "en-US")
+                new_language = new_settings["language"]
+                if old_language != new_language:
+                    language_changed = True
+
             # 更新各项配置
             if "language" in new_settings:
                 config["language"] = new_settings["language"]
@@ -177,6 +185,13 @@ class SettingsApi(BaseApi):
                     self._on_save_callback()
                 except Exception as e:
                     log(f"Save callback error: {e}")
+
+            # 如果语言改变，通知前端刷新翻译
+            if language_changed and self._window:
+                try:
+                    self._window.evaluate_js("window.onLanguageChanged && window.onLanguageChanged()")
+                except Exception as e:
+                    log(f"Failed to notify frontend of language change: {e}")
 
             log("Settings saved successfully")
             return self._success(message=t("settings.success.saved"))
@@ -321,6 +336,51 @@ class SettingsApi(BaseApi):
                 "settings.success.saved": t("settings.success.saved"),
                 "settings.title.success": t("settings.title.success"),
                 "settings.title.error": t("settings.title.error"),
+
+                # 热键对话框
+                "hotkey.dialog.title": t("hotkey.dialog.title"),
+                "hotkey.dialog.current_hotkey": t("hotkey.dialog.current_hotkey"),
+                "hotkey.dialog.new_hotkey": t("hotkey.dialog.new_hotkey"),
+                "hotkey.dialog.record_button": t("hotkey.dialog.record_button"),
+                "hotkey.dialog.recording_button": t("hotkey.dialog.recording_button"),
+                "hotkey.dialog.record_again": t("hotkey.dialog.record_again"),
+                "hotkey.dialog.waiting_input": t("hotkey.dialog.waiting_input"),
+                "hotkey.dialog.cancel_button": t("hotkey.dialog.cancel_button"),
+                "hotkey.dialog.save_button": t("hotkey.dialog.save_button"),
+                "hotkey.dialog.instruction": t("hotkey.dialog.instruction"),
+                "hotkey.dialog.input_placeholder": t("hotkey.dialog.input_placeholder"),
+
+                # 权限相关
+                "settings.permissions.intro": t("settings.permissions.intro"),
+                "settings.permissions.add_hint": t("settings.permissions.add_hint"),
+                "settings.permissions.refresh": t("settings.permissions.refresh"),
+                "settings.permissions.last_checked": t("settings.permissions.last_checked"),
+                "settings.permissions.open_settings": t("settings.permissions.open_settings"),
+                "settings.permissions.request_access": t("settings.permissions.request_access"),
+                "settings.permissions.status.checking": t("settings.permissions.status.checking"),
+                "settings.permissions.accessibility.title": t("settings.permissions.accessibility.title"),
+                "settings.permissions.accessibility.desc": t("settings.permissions.accessibility.desc"),
+                "settings.permissions.screen_recording.title": t("settings.permissions.screen_recording.title"),
+                "settings.permissions.screen_recording.desc": t("settings.permissions.screen_recording.desc"),
+                "settings.permissions.input_monitoring.title": t("settings.permissions.input_monitoring.title"),
+                "settings.permissions.input_monitoring.desc": t("settings.permissions.input_monitoring.desc"),
+                "settings.permissions.automation.title": t("settings.permissions.automation.title"),
+                "settings.permissions.automation.desc": t("settings.permissions.automation.desc"),
+
+                # 错误和成功消息
+                "settings.error.init_failed": t("settings.error.init_failed"),
+                "settings.error.load_failed": t("settings.error.load_failed"),
+                "settings.error.save_failed": t("settings.error.save_failed"),
+                "settings.error.hotkey_save_failed": t("settings.error.hotkey_save_failed"),
+                "settings.error.hotkey_not_recorded": t("settings.error.hotkey_not_recorded"),
+                "settings.success.hotkey_saved": t("settings.success.hotkey_saved"),
+
+                # 其他UI文本
+                "settings.general.options": t("settings.general.options"),
+                "settings.advanced.excel_options": t("settings.advanced.excel_options"),
+                "settings.experimental.formula_processing": t("settings.experimental.formula_processing"),
+                "settings.conversion.reference_docx_placeholder": t("settings.conversion.reference_docx_placeholder"),
+                "settings.conversion.pandoc_request_headers_placeholder": t("settings.conversion.pandoc_request_headers_placeholder"),
             }
 
             return self._success(translations)

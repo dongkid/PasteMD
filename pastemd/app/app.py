@@ -114,6 +114,8 @@ def check_update_in_background(notification_manager: NotificationManager, tray_m
 
 def main() -> None:
     """应用程序主入口点"""
+    launcher = None  # 提升到 try 块外部，以便在 finally 中访问
+
     try:
         # 设置 DPI 感知（尽早调用）
         set_dpi_awareness()
@@ -182,6 +184,16 @@ def main() -> None:
         log(f"Fatal error: {e}")
         raise
     finally:
+        # 销毁 WebView 窗口（修复 P0-5）
+        if launcher:
+            try:
+                manager = launcher.get_manager()
+                if manager:
+                    manager.destroy()
+                    log("WebView manager destroyed")
+            except Exception as e:
+                log(f"Failed to destroy WebView manager: {e}")
+
         # 释放锁
         if app_state.instance_checker:
             app_state.instance_checker.release_lock()

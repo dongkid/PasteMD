@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from typing import Any, Optional, TYPE_CHECKING
 
+from ....core.state import app_state
+
 if TYPE_CHECKING:
     from ....app.wiring import Container
 
@@ -25,6 +27,22 @@ class BaseApi:
     def set_window(self, window) -> None:
         """设置关联的 webview 窗口"""
         self._window = window
+
+    def process_ui_queue(self) -> str:
+        """
+        处理 UI 任务队列 (由前端 JS 定时调用)
+
+        此方法在 WebView 的 GUI 线程中执行，确保所有队列中的
+        evaluate_js() 等 GUI 操作都在正确的线程上下文中运行。
+
+        Returns:
+            JSON 响应，包含处理的任务数量
+        """
+        try:
+            count = app_state.process_ui_queue()
+            return self._success({"processed": count})
+        except Exception as e:
+            return self._error(str(e), "QUEUE_PROCESS_ERROR")
 
     def _success(self, data: Any = None, message: str = "") -> str:
         """返回成功响应"""

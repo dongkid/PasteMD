@@ -57,7 +57,7 @@ async function initApp() {
 
     } catch (e) {
         console.error('Failed to initialize app:', e);
-        showToast('初始化失败: ' + e.message, 'error');
+        showToast(t('settings.error.init_failed', { error: e.message }), 'error');
     }
 }
 
@@ -86,7 +86,7 @@ async function loadSettings() {
 
     } catch (e) {
         console.error('Failed to load settings:', e);
-        showToast('加载设置失败', 'error');
+        showToast(t('settings.error.load_failed'), 'error');
     }
 }
 
@@ -244,7 +244,7 @@ async function saveSettings() {
 
     } catch (e) {
         console.error('Failed to save settings:', e);
-        showToast('保存失败: ' + e.message, 'error');
+        showToast(t('settings.error.save_failed', { error: e.message }), 'error');
     }
 }
 
@@ -264,7 +264,7 @@ async function closeWindow() {
 let hotkeyModalVisible = false;
 let pendingHotkey = null;
 
-function openHotkeyModal() {
+async function openHotkeyModal() {
     const modal = document.getElementById('hotkey-modal');
     if (!modal) return;
 
@@ -277,6 +277,21 @@ function openHotkeyModal() {
     document.getElementById('hotkey-record-btn').textContent = t('hotkey.dialog.record_button') || '录制';
     document.getElementById('hotkey-input').value = '';
     document.getElementById('hotkey-save-btn').disabled = true;
+
+    // 获取并显示当前热键
+    try {
+        const result = await window.api.getCurrentHotkey();
+        const currentHotkeyDisplay = document.getElementById('current-hotkey-display');
+        if (currentHotkeyDisplay) {
+            currentHotkeyDisplay.textContent = result.formatted || '--';
+        }
+    } catch (e) {
+        console.error('Failed to get current hotkey:', e);
+        const currentHotkeyDisplay = document.getElementById('current-hotkey-display');
+        if (currentHotkeyDisplay) {
+            currentHotkeyDisplay.textContent = '--';
+        }
+    }
 }
 
 function closeHotkeyModal() {
@@ -324,7 +339,7 @@ function startHotkeyRecording() {
 
 async function saveHotkey() {
     if (!pendingHotkey) {
-        showToast('请先录制热键', 'warning');
+        showToast(t('settings.error.hotkey_not_recorded'), 'warning');
         return;
     }
 
@@ -344,12 +359,12 @@ async function saveHotkey() {
         document.getElementById('hotkey-display').value = formatHotkey(pendingHotkey);
         state.settings.hotkey = pendingHotkey;
 
-        showToast('热键已保存');
+        showToast(t('settings.success.hotkey_saved'));
         closeHotkeyModal();
 
     } catch (e) {
         console.error('Failed to save hotkey:', e);
-        showToast('保存热键失败: ' + e.message, 'error');
+        showToast(t('settings.error.hotkey_save_failed', { error: e.message }), 'error');
     }
 }
 
@@ -367,6 +382,18 @@ window.refreshHotkeyDisplay = async function() {
         state.settings.hotkey = result.raw;
     } catch (e) {
         console.error('Failed to refresh hotkey display:', e);
+    }
+};
+
+// 语言切换处理函数
+window.onLanguageChanged = async function() {
+    try {
+        await window.i18n.load();
+        await loadLanguages();
+        await loadNoAppActions();
+        window.i18n.updateAllElements();
+    } catch (e) {
+        console.error('Failed to handle language change:', e);
     }
 };
 

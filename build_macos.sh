@@ -127,6 +127,7 @@ NUITKA_CMD=(
   --include-data-dir=assets/icons=assets/icons
   --include-data-dir=pastemd/lua=lua
   --include-data-files=pastemd/i18n/locales/*.json=i18n/locales/
+  --include-data-dir=pastemd/presentation/webview/assets=pastemd/presentation/webview/assets
   --include-data-dir=third_party/pandoc/macos=pandoc
 
   # 显式包含的包/模块（按你当前项目需要）
