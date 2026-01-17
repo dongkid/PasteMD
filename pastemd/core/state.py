@@ -199,6 +199,62 @@ class AppState:
                 pass
         return count
 
+    # ==================== 资源清理 ====================
+
+    def cleanup(self) -> None:
+        """
+        P2-2: 清理所有资源
+
+        在应用退出时调用，确保所有 WebView 相关资源被正确释放。
+        """
+        from ..utils.logging import log
+
+        # 清空 UI 队列
+        while not self.ui_queue.empty():
+            try:
+                self.ui_queue.get_nowait()
+            except Exception:
+                pass
+
+        # 清理 WebView 管理器
+        if self.webview_manager:
+            try:
+                self.webview_manager.destroy()
+                log("WebView manager cleaned up")
+            except Exception as e:
+                log(f"Error cleaning up WebView manager: {e}")
+            finally:
+                self.webview_manager = None
+
+        # 清理 WebView 窗口引用
+        self.webview_window = None
+
+        # 清理热键监听器
+        if self.listener:
+            try:
+                self.listener.stop()
+                log("Hotkey listener cleaned up")
+            except Exception as e:
+                log(f"Error cleaning up hotkey listener: {e}")
+            finally:
+                self.listener = None
+
+        # 清理托盘图标
+        if self.icon:
+            try:
+                self.icon.stop()
+                log("Tray icon cleaned up")
+            except Exception as e:
+                log(f"Error cleaning up tray icon: {e}")
+            finally:
+                self.icon = None
+
+        # 设置退出事件（如果存在）
+        if self.quit_event:
+            self.quit_event.set()
+
+        log("AppState cleanup completed")
+
 
 # 全局状态实例
 app_state = AppState()

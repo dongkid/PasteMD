@@ -1,6 +1,8 @@
 import json
 import os
 import copy  # 用于深拷贝
+import tempfile
+import threading
 from .defaults import DEFAULT_CONFIG
 from .paths import get_config_path
 from ..core.types import ConfigDict
@@ -10,6 +12,9 @@ from ..utils.logging import log
 
 class ConfigLoader:
     """配置加载器"""
+
+    # 类级别的写入锁，确保单进程内线程安全
+    _save_lock = threading.Lock()
 
     def __init__(self):
         self.config_path = get_config_path()
@@ -93,10 +98,37 @@ class ConfigLoader:
         return has_changes
 
     def save(self, config: ConfigDict) -> None:
-        """保存配置文件"""
-        try:
-            with open(self.config_path, "w", encoding="utf-8") as f:
-                json.dump(config, f, ensure_ascii=False, indent=2)
-        except Exception as e:
-            log(f"Save config error: {e}")
-            raise ConfigError(f"Failed to save config: {e}")
+        """
+        保存配置文件（原子写入 + 线程锁）
+
+        使用临时文件 + os.replace 实现原子写入，
+        配合线程锁确保单进程内并发安全。
+        """
+        with self._save_lock:
+            dir_name = os.path.dirname(self.config_path)
+            temp_path = None
+            try:
+                # 写入临时文件
+                with tempfile.NamedTemporaryFile(
+                    mode="w",
+                    dir=dir_name,
+                    delete=False,
+                    encoding="utf-8",
+                    suffix=".tmp"
+                ) as tf:
+                    json.dump(config, tf, ensure_ascii=False, indent=2)
+                    temp_path = tf.name
+
+                # 原子替换（Windows 和 POSIX 上通常是原子的）
+                os.replace(temp_path, self.config_path)
+                temp_path = None  # 替换成功，标记为无需清理
+            except Exception as e:
+                log(f"Save config error: {e}")
+                raise ConfigError(f"Failed to save config: {e}")
+            finally:
+                # 清理临时文件（如果替换失败）
+                if temp_path and os.path.exists(temp_path):
+                    try:
+                        os.remove(temp_path)
+                    except Exception:
+                        pass

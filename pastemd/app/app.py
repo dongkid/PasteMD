@@ -114,7 +114,7 @@ def check_update_in_background(notification_manager: NotificationManager, tray_m
 
 def main() -> None:
     """应用程序主入口点"""
-    launcher = None  # 提升到 try 块外部，以便在 finally 中访问
+    container = None  # 提升到 try 块外部，以便在 finally 中访问
 
     try:
         # 设置 DPI 感知（尽早调用）
@@ -150,9 +150,8 @@ def main() -> None:
             except Exception as exc:
                 log(f"Failed to hide Dock icon: {exc}")
 
-        # 使用 WebViewLauncher 启动应用
-        from ..presentation.webview import WebViewLauncher
-        launcher = WebViewLauncher(container)
+        # 从 Container 获取 WebView 启动器
+        launcher = container.get_webview_launcher()
 
         def on_started():
             """WebView 初始化完成后的回调"""
@@ -184,15 +183,11 @@ def main() -> None:
         log(f"Fatal error: {e}")
         raise
     finally:
-        # 销毁 WebView 窗口（修复 P0-5）
-        if launcher:
-            try:
-                manager = launcher.get_manager()
-                if manager:
-                    manager.destroy()
-                    log("WebView manager destroyed")
-            except Exception as e:
-                log(f"Failed to destroy WebView manager: {e}")
+        # P2-2: 统一资源清理
+        try:
+            app_state.cleanup()
+        except Exception as e:
+            log(f"Error during cleanup: {e}")
 
         # 释放锁
         if app_state.instance_checker:

@@ -10,7 +10,6 @@ from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 from .base import BaseApi
 from ....core.state import app_state
-from ....config.loader import ConfigLoader
 from ....config.defaults import DEFAULT_CONFIG
 from ....i18n import t, iter_languages, get_language_label, get_no_app_action_map, set_language
 from ....utils.logging import log
@@ -25,7 +24,7 @@ class SettingsApi(BaseApi):
 
     def __init__(self, container: "Container"):
         super().__init__(container)
-        self.config_loader = ConfigLoader()
+        self.config_loader = container.config_loader
         self._on_save_callback = None
         self._on_close_callback = None
 
@@ -206,11 +205,19 @@ class SettingsApi(BaseApi):
     def browse_directory(self, initial_dir: str = "") -> str:
         """打开目录选择对话框"""
         try:
+            if not self._window:
+                return self._error("Window not available", "WINDOW_NOT_READY")
+
             if initial_dir:
                 initial_dir = os.path.expandvars(initial_dir)
 
+            # 使用新的 FileDialog API（兼容旧版本）
+            dialog_type = getattr(webview, 'FOLDER_DIALOG', None)
+            if hasattr(webview, 'FileDialog'):
+                dialog_type = webview.FileDialog.FOLDER
+
             result = self._window.create_file_dialog(
-                webview.FOLDER_DIALOG,
+                dialog_type,
                 directory=initial_dir if initial_dir and os.path.isdir(initial_dir) else ""
             )
 
@@ -224,26 +231,50 @@ class SettingsApi(BaseApi):
     def browse_file(self, file_types: str = "", initial_dir: str = "") -> str:
         """打开文件选择对话框"""
         try:
+            if not self._window:
+                return self._error("Window not available", "WINDOW_NOT_READY")
+
+            # 处理初始目录
+            start_dir = ""
             if initial_dir:
                 initial_dir = os.path.expandvars(initial_dir)
+                # 如果是文件路径，取其父目录
+                if os.path.isfile(initial_dir):
+                    start_dir = os.path.dirname(initial_dir)
+                elif os.path.isdir(initial_dir):
+                    start_dir = initial_dir
+                else:
+                    # 尝试取父目录
+                    parent = os.path.dirname(initial_dir)
+                    if parent and os.path.isdir(parent):
+                        start_dir = parent
 
-            # 解析文件类型
-            file_types_list = []
+            # 解析文件类型 - pywebview 期望格式: ('Description (*.ext)', 'Description2 (*.ext2)')
+            file_types_tuple = ()
             if file_types:
                 try:
                     types = json.loads(file_types)
+                    # 构建 pywebview 期望的格式: "Name (*.ext)"
+                    patterns = []
                     for ft in types:
-                        file_types_list.append((ft.get("name", "Files"), ft.get("pattern", "*")))
+                        name = ft.get("name", "Files")
+                        pattern = ft.get("pattern", "*")
+                        if pattern:
+                            patterns.append(f"{name} ({pattern})")
+                    if patterns:
+                        file_types_tuple = tuple(patterns)
                 except (json.JSONDecodeError, TypeError):
                     pass
 
-            if not file_types_list:
-                file_types_list = [("All Files", "*")]
+            # 使用新的 FileDialog API（兼容旧版本）
+            dialog_type = getattr(webview, 'OPEN_DIALOG', None)
+            if hasattr(webview, 'FileDialog'):
+                dialog_type = webview.FileDialog.OPEN
 
             result = self._window.create_file_dialog(
-                webview.OPEN_DIALOG,
-                directory=initial_dir if initial_dir and os.path.isdir(os.path.dirname(initial_dir)) else "",
-                file_types=tuple(file_types_list)
+                dialog_type,
+                directory=start_dir,
+                file_types=file_types_tuple
             )
 
             if result and len(result) > 0:

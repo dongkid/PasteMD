@@ -36,6 +36,7 @@ class TabManager {
      * @param {string} tabId - 选项卡 ID
      */
     select(tabId) {
+        const previousTab = this.currentTab;
         this.currentTab = tabId;
 
         // 更新选项卡状态
@@ -55,6 +56,15 @@ class TabManager {
                 panel.classList.remove('active');
             }
         });
+
+        // P1-9: 权限轮询优化 - 仅在 permissions 选项卡可见时轮询
+        if (window.permissionsManager) {
+            if (tabId === 'permissions') {
+                window.permissionsManager.startAutoRefresh();
+            } else if (previousTab === 'permissions') {
+                window.permissionsManager.stopAutoRefresh();
+            }
+        }
     }
 
     /**

@@ -89,7 +89,7 @@ class WebViewManager:
 
     def create_settings_window(self) -> webview.Window:
         """创建设置窗口"""
-        from .api import SettingsApi, HotkeyApi, PermissionsApi
+        from .api import SettingsApi, HotkeyApi, PermissionsApi, CombinedApi
 
         # 创建 API 实例
         self._settings_api = SettingsApi(self._container)
@@ -103,19 +103,7 @@ class WebViewManager:
                 self._on_settings_close_callback
             )
 
-        # 创建综合 API 类
-        class CombinedApi:
-            def __init__(self, settings_api, hotkey_api, permissions_api):
-                self.settings = settings_api
-                self.hotkey = hotkey_api
-                self.permissions = permissions_api
-
-                # 直接暴露 settings 的方法到顶层 (兼容性)
-                for attr in dir(settings_api):
-                    if not attr.startswith('_') and callable(getattr(settings_api, attr)):
-                        if not hasattr(self, attr):
-                            setattr(self, attr, getattr(settings_api, attr))
-
+        # 创建综合 API
         combined_api = CombinedApi(
             self._settings_api,
             self._hotkey_api,

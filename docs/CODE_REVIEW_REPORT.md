@@ -292,14 +292,14 @@ class AppState:
 - **位置**: `pastemd/presentation/webview/api/settings.py:191-207`
 - **问题**: `initial_dir` 参数可展开任意环境变量
 
-### P1-12: pandoc_path 和 pandoc_filters 未验证
+### P1-12: pandoc_path 和 pandoc_filters 未验证 （不是问题）
 - **位置**: `pastemd/presentation/webview/api/settings.py:120-156`
 - **影响**: 可能执行恶意文件
 
 ### P1-13: Filters 列表双击编辑功能缺失
 - **问题**: 用户如需修改已添加的 Filter 路径，必须先删除再重新添加
 
-### P1-14: 热键保存确认对话框缺失
+### P1-14: 热键保存确认对话框缺失 （不是问题）
 - **问题**: Tkinter 版本保存前显示确认，WebView 版本直接保存
 
 ### P1-15: quit_event 监听缺失

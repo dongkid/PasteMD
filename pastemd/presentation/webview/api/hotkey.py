@@ -8,7 +8,6 @@ from typing import Optional, Set, TYPE_CHECKING
 
 from .base import BaseApi
 from ....core.state import app_state
-from ....config.loader import ConfigLoader
 from ....utils.logging import log
 from ....utils.system_detect import is_windows, is_macos
 from ....utils.hotkey_checker import HotkeyChecker
@@ -23,7 +22,7 @@ class HotkeyApi(BaseApi):
 
     def __init__(self, container: "Container"):
         super().__init__(container)
-        self.config_loader = ConfigLoader()
+        self.config_loader = container.config_loader
         self._is_recording = False
         self._recorder = None
         self._pressed_keys: Set[str] = set()

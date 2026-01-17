@@ -415,6 +415,8 @@ function refreshFiltersList() {
         item.className = 'list-item';
         item.textContent = filter;
         item.onclick = () => selectFilter(index);
+        // P1-13: 双击编辑功能
+        item.ondblclick = () => editFilter(index);
         if (index === state.selectedFilterIndex) {
             item.classList.add('selected');
         }
@@ -488,6 +490,29 @@ function moveFilterDown() {
         state.filters[selectedFilterIndex + 1] = temp;
         selectedFilterIndex++;
         refreshFiltersList();
+    }
+}
+
+/**
+ * P1-13: 编辑选中的 Filter
+ */
+async function editFilter(index) {
+    if (index < 0 || index >= state.filters.length) return;
+
+    try {
+        const currentPath = state.filters[index];
+        const fileTypes = JSON.stringify([
+            { name: 'Lua Script', pattern: '*.lua' },
+            { name: 'All Files', pattern: '*' }
+        ]);
+        // 使用当前路径作为初始目录
+        const path = await window.api.browseFile(fileTypes, currentPath);
+        if (path) {
+            state.filters[index] = path;
+            refreshFiltersList();
+        }
+    } catch (e) {
+        console.error('Failed to edit filter:', e);
     }
 }
 

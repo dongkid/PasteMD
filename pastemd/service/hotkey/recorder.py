@@ -56,11 +56,13 @@ class HotkeyRecorder:
         if self.recording_listener:
             try:
                 self.recording_listener.stop()
+                # P1-10: 等待监听器线程结束，确保正确清理
+                self.recording_listener.join(timeout=1.0)
             except Exception as e:
                 log(f"Error stopping recorder listener: {e}")
             finally:
                 self.recording_listener = None
-        
+
         self.pressed_keys.clear()
         self.released_keys.clear()
         self.all_pressed_keys.clear()

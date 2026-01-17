@@ -37,6 +37,31 @@ class WebViewLauncher:
             self._manager = WebViewManager(self._container)
         return self._manager
 
+    def _start_quit_event_listener(self) -> None:
+        """
+        P1-15: 启动 quit_event 监听器
+
+        在后台线程中监听 quit_event，当触发时停止 webview 主循环。
+        """
+        def _listen():
+            quit_event = app_state.quit_event
+            if quit_event:
+                # 等待退出事件
+                quit_event.wait()
+                log("Quit event received, stopping webview...")
+                try:
+                    # 停止权限轮询（如果存在）
+                    if self._manager:
+                        self._manager.destroy()
+                    # 停止 webview 主循环
+                    webview.destroy_all_windows()
+                except Exception as e:
+                    log(f"Error during quit cleanup: {e}")
+
+        thread = threading.Thread(target=_listen, daemon=True)
+        thread.start()
+        log("Quit event listener started")
+
     def _post_start_init(self, on_started: Optional[Callable] = None) -> None:
         """
         webview 启动后的初始化任务
@@ -45,6 +70,7 @@ class WebViewLauncher:
         - 启动热键监听
         - 启动托盘图标
         - 启动 IPC 服务器 (macOS)
+        - 启动 quit_event 监听器
         - 调用用户回调
         """
         try:
@@ -97,6 +123,9 @@ class WebViewLauncher:
                 except Exception as e:
                     log(f"Failed to install reopen handler: {e}")
 
+            # P1-15: 启动 quit_event 监听器
+            self._start_quit_event_listener()
+
             # 调用用户回调
             if on_started:
                 try:
@@ -110,7 +139,7 @@ class WebViewLauncher:
     def start(
         self,
         on_started: Optional[Callable] = None,
-        debug: bool = False
+        debug: bool = True  # 默认开启调试模式以便排查问题
     ) -> None:
         """
         启动 webview 应用
@@ -119,7 +148,7 @@ class WebViewLauncher:
 
         Args:
             on_started: webview 初始化完成后调用的回调函数
-            debug: 是否启用调试模式
+            debug: 是否启用调试模式 (默认 True，开启开发者控制台)
         """
         if self._started:
             log("WebView already started")
@@ -177,10 +206,6 @@ class WebViewLauncher:
             except Exception as e:
                 log(f"Failed to restart hotkey: {e}")
 
-        hotkey_api = self._manager.get_hotkey_api()
-        if hotkey_api:
-            hotkey_api.set_hotkey_saved_callback(on_hotkey_saved)
-
         # 创建设置窗口 (隐藏状态)
         try:
             window = self._manager.create_settings_window()
@@ -189,6 +214,11 @@ class WebViewLauncher:
         except Exception as e:
             log(f"Failed to create settings window: {e}")
             raise
+
+        # 设置热键保存回调（必须在 create_settings_window 之后，此时 hotkey_api 才存在）
+        hotkey_api = self._manager.get_hotkey_api()
+        if hotkey_api:
+            hotkey_api.set_hotkey_saved_callback(on_hotkey_saved)
 
         # 启动 webview 主循环
         # func 参数会在 webview 初始化完成后在后台线程中执行

@@ -161,10 +161,8 @@ class TrayMenuManager:
                     window = app_state.webview_window
                     if window:
                         window.evaluate_js("openHotkeyModal()")
-                # 延迟执行，等待窗口加载完成
-                import time
-                time.sleep(0.3)
-                app_state.queue_ui_task(task)
+                # 使用 Timer 非阻塞延迟，避免阻塞托盘线程
+                threading.Timer(0.3, lambda: app_state.queue_ui_task(task)).start()
         except Exception as e:
             log(f"Failed to open hotkey settings: {e}")
             self.notification_manager.notify("PasteMD", t("tray.error.open_hotkey_dialog", error=str(e)), ok=False)

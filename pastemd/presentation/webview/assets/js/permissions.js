@@ -30,8 +30,12 @@ class PermissionsManager {
             // 初始刷新
             await this.refresh();
 
-            // 设置定时刷新
-            this.startAutoRefresh();
+            // P1-9: 仅在 permissions 选项卡可见时才开始轮询
+            // 初始化时检查当前选项卡
+            const currentTab = window.tabManager?.getCurrent();
+            if (currentTab === 'permissions') {
+                this.startAutoRefresh();
+            }
 
         } catch (e) {
             console.error('Failed to init permissions:', e);

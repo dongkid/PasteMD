@@ -6,8 +6,62 @@
 class ApiWrapper {
     constructor() {
         this._ready = false;
-        this._pendingCalls = [];
+        this._readyPromise = null;
+        this._readyResolve = null;
         this._queuePollingInterval = null;
+
+        // P2-3: 使用事件驱动替代繁忙等待
+        this._initReadyPromise();
+    }
+
+    /**
+     * P2-3: 初始化就绪 Promise
+     */
+    _initReadyPromise() {
+        this._readyPromise = new Promise((resolve) => {
+            this._readyResolve = resolve;
+
+            // 检查是否已经就绪
+            if (window.pywebview && window.pywebview.api) {
+                this._onReady();
+                return;
+            }
+
+            // 监听 pywebviewready 事件
+            window.addEventListener('pywebviewready', () => {
+                this._onReady();
+            }, { once: true });
+
+            // 备用：如果事件未触发，使用短暂轮询（最多等待 5 秒）
+            let attempts = 0;
+            const maxAttempts = 100; // 5秒 / 50ms
+            const fallbackCheck = () => {
+                if (this._ready) return;
+                if (window.pywebview && window.pywebview.api) {
+                    this._onReady();
+                } else if (attempts < maxAttempts) {
+                    attempts++;
+                    setTimeout(fallbackCheck, 50);
+                }
+            };
+            // 延迟启动备用检查，优先使用事件
+            setTimeout(fallbackCheck, 100);
+        });
+    }
+
+    /**
+     * P2-3: API 就绪时的处理
+     */
+    _onReady() {
+        if (this._ready) return;
+        this._ready = true;
+        // 启动 UI 队列轮询
+        this._startQueuePolling();
+        // 解析 Promise
+        if (this._readyResolve) {
+            this._readyResolve();
+            this._readyResolve = null;
+        }
     }
 
     /**
@@ -15,23 +69,7 @@ class ApiWrapper {
      */
     async waitReady() {
         if (this._ready) return;
-
-        return new Promise((resolve) => {
-            const check = () => {
-                if (window.pywebview && window.pywebview.api) {
-                    this._ready = true;
-                    // 执行等待中的调用
-                    this._pendingCalls.forEach(fn => fn());
-                    this._pendingCalls = [];
-                    // 启动 UI 队列轮询
-                    this._startQueuePolling();
-                    resolve();
-                } else {
-                    setTimeout(check, 50);
-                }
-            };
-            check();
-        });
+        return this._readyPromise;
     }
 
     /**
