@@ -8,6 +8,9 @@ openpyxl
 python-docx
 beautifulsoup4
 lxml
+pywebview
 
 pywin32 ; platform_system == "Windows"
 pync ; platform_system == "Darwin"
+pyobjc-framework-Cocoa ; platform_system == "Darwin"
+pyobjc-framework-WebKit ; platform_system == "Darwin"

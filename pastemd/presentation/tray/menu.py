@@ -18,8 +18,6 @@ from ...utils.version_checker import VersionChecker
 from ...utils.system_detect import is_windows, is_macos
 from ...i18n import t, iter_languages, get_language, set_language, get_language_label, get_no_app_action_map
 from .icon import create_status_icon
-from ..hotkey.dialog import HotkeyDialog
-from ..settings.dialog import SettingsDialog
 
 try:
     if is_macos():
@@ -32,7 +30,7 @@ except Exception:  # pragma: no cover
 
 class TrayMenuManager:
     """托盘菜单管理器"""
-    
+
     def __init__(self, config_loader: ConfigLoader, notification_manager: NotificationManager):
         self.config_loader = config_loader
         self.notification_manager = notification_manager
@@ -42,8 +40,6 @@ class TrayMenuManager:
         self.version_checker = None  # 将由外部设置或按需创建
         self.latest_version = None  # 存储最新版本号
         self.latest_release_url = None  # 存储最新版本的下载链接
-        self.hotkey_dialog = None
-        self.settings_dialog = None
     
     def set_restart_hotkey_callback(self, callback):
         """设置重启热键的回调函数"""
@@ -151,109 +147,25 @@ class TrayMenuManager:
         self.notification_manager.notify("PasteMD", status, ok=app_state.enabled)
     
     def _on_set_hotkey(self, icon, item):
-        """设置热键，确保 Tk 对话框在主线程 UI 队列中运行"""
-        def save_hotkey(new_hotkey: str):
-            """保存新热键并重启热键绑定"""
-            try:
-                # 更新配置
-                app_state.config["hotkey"] = new_hotkey
-                app_state.hotkey_str = new_hotkey
-                self._save_config()
-                
-                # 重启热键绑定
-                def _restart():
-                    if self.restart_hotkey_callback:
-                        self.restart_hotkey_callback()
-                try:
-                    if app_state.root and app_state.root.winfo_exists():
-                        app_state.root.after(200, _restart)
-                    else:
-                        _restart()
-                except Exception as e:
-                    log(f"Failed to schedule hotkey restart: {e}")
-                    _restart()
-                
-                # 刷新菜单
-                try:
-                    icon.menu = self.build_menu()
-                    if hasattr(icon, "update_menu"):
-                        icon.update_menu()
-                except Exception as e:
-                    log(f"Failed to refresh tray menu after hotkey save: {e}")
+        """设置热键，使用 webview 打开设置窗口"""
+        # 使用 WebView 打开设置窗口并显示热键模态框
+        try:
+            begin_ui_session()
+            activate_app()
 
-                # 如果设置窗口正在打开，实时刷新里面的热键展示
-                try:
-                    if self.settings_dialog and self.settings_dialog.is_alive():
-                        self.settings_dialog.refresh_hotkey_display()
-                except Exception as e:
-                    log(f"Failed to refresh settings hotkey display: {e}")
-                
-                log(f"Hotkey changed to: {new_hotkey}")
-                self.notification_manager.notify(
-                    "PasteMD",
-                    t("tray.status.hotkey_saved", hotkey=new_hotkey),
-                    ok=True)
-            except Exception as e:
-                log(f"Failed to save hotkey: {e}")
-                self.notification_manager.notify(
-                    "PasteMD",
-                    t("tray.error.hotkey_save_failed", error=str(e)),
-                    ok=False)
-                raise
-
-        def show_dialog_on_main():
-            """在主线程打开/销毁 Tk 对话框"""
-            dialog_shown = False
-            previous_block = bool(getattr(app_state, "ui_block_hotkeys", False))
-            try:
-                if self.hotkey_dialog and self.hotkey_dialog.is_alive():
-                    activate_app()
-                    self.hotkey_dialog.restore_and_focus()
-                    return
-                
-                # 打开弹窗期间屏蔽热键触发（macOS 下不做 stop/start，避免崩溃）
-                app_state.ui_block_hotkeys = True
-                if is_windows() and self.pause_hotkey_callback:
-                    self.pause_hotkey_callback()
-
-                begin_ui_session()
-
-                def _on_dialog_close():
-                    end_ui_session()
-                    if is_windows() and self.resume_hotkey_callback:
-                        self.resume_hotkey_callback()
-
-                dialog = HotkeyDialog(
-                    current_hotkey=app_state.hotkey_str,
-                    on_save=save_hotkey,
-                    on_close=_on_dialog_close,
-                )
-                self.hotkey_dialog = dialog
-
-                def _clear_dialog_ref(event=None):
-                    if getattr(event, "widget", None) is dialog.root or event is None:
-                        self.hotkey_dialog = None
-                        app_state.ui_block_hotkeys = previous_block
-
-                dialog.root.bind("<Destroy>", _clear_dialog_ref)
-                dialog.show()
-                dialog_shown = True
-            except Exception as e:
-                log(f"Failed to show hotkey dialog: {e}")
-                self.notification_manager.notify("PasteMD", t("tray.error.open_hotkey_dialog", error=str(e)), ok=False)
-            finally:
-                if not dialog_shown:
-                    app_state.ui_block_hotkeys = previous_block
-                    end_ui_session()
-                    if is_windows() and self.resume_hotkey_callback:
-                        self.resume_hotkey_callback()
-
-        ui_queue = getattr(app_state, "ui_queue", None)
-        if ui_queue is not None:
-            ui_queue.put(show_dialog_on_main)
-        else:
-            # 兜底：未获取到 UI 队列时，仍在当前线程执行
-            show_dialog_on_main()
+            manager = app_state.webview_manager
+            if manager:
+                manager.show_settings()
+                # 延迟打开热键模态框，等待窗口加载完成
+                import time
+                time.sleep(0.3)
+                window = app_state.webview_window
+                if window:
+                    window.evaluate_js("openHotkeyModal()")
+        except Exception as e:
+            log(f"Failed to open hotkey settings: {e}")
+            self.notification_manager.notify("PasteMD", t("tray.error.open_hotkey_dialog", error=str(e)), ok=False)
+            end_ui_session()
     
     def _on_toggle_notify(self, icon, item):
         """切换通知状态"""
@@ -326,70 +238,22 @@ class TrayMenuManager:
         self._open_settings(getattr(app_state, "icon", None), None, tab_key)
 
     def _open_settings(self, icon, item, select_tab: Optional[str]) -> None:
-        """打开设置界面"""
-        def on_settings_save():
-            """设置保存后的回调"""
-            # 刷新菜单以反映可能的配置更改（如语言）
-            set_language(app_state.config.get("language", "en-US"))
-            try:
-                tray_icon = icon or getattr(app_state, "icon", None)
-                if tray_icon is not None:
-                    tray_icon.menu = self.build_menu()
-                    if hasattr(tray_icon, "update_menu"):
-                        tray_icon.update_menu()
-            except Exception as e:
-                log(f"Failed to refresh tray menu after settings save: {e}")
+        """打开设置界面 (使用 webview)"""
+        try:
+            begin_ui_session()
+            activate_app()
 
-        def show_dialog_on_main():
-            """在主线程显示设置对话框"""
-            try:
-                if self.settings_dialog and self.settings_dialog.is_alive():
-                    activate_app()
-                    if select_tab:
-                        try:
-                            self.settings_dialog.select_tab(select_tab)
-                        except Exception as e:
-                            log(f"Failed to select settings tab: {e}")
-                    self.settings_dialog.restore_and_focus()
-                    return
-
-                begin_ui_session()
-
-                def _on_dialog_close():
-                    end_ui_session()
-                    if self.resume_hotkey_callback:
-                        self.resume_hotkey_callback()
-
-                dialog = SettingsDialog(
-                    on_save=on_settings_save,
-                    on_close=_on_dialog_close,
-                    initial_tab=select_tab,
-                )
-                self.settings_dialog = dialog
-
-                try:
-                    dialog.set_open_hotkey_dialog(
-                        lambda: self._on_set_hotkey(icon, None)
-                    )
-                except Exception:
-                    pass
-
-                def _clear_settings_dialog(event=None):
-                    if getattr(event, "widget", None) is dialog.root or event is None:
-                        self.settings_dialog = None
-
-                dialog.root.bind("<Destroy>", _clear_settings_dialog)
-                dialog.show()
-            except Exception as e:
-                log(f"Failed to show settings dialog: {e}")
-                self.notification_manager.notify("PasteMD", f"Error opening settings: {e}", ok=False)
+            manager = app_state.webview_manager
+            if manager:
+                manager.show_settings(select_tab)
+            else:
+                log("WebView manager not available")
+                self.notification_manager.notify("PasteMD", "Settings not available", ok=False)
                 end_ui_session()
-
-        ui_queue = getattr(app_state, "ui_queue", None)
-        if ui_queue is not None:
-            ui_queue.put(show_dialog_on_main)
-        else:
-            show_dialog_on_main()
+        except Exception as e:
+            log(f"Failed to open settings: {e}")
+            self.notification_manager.notify("PasteMD", f"Error opening settings: {e}", ok=False)
+            end_ui_session()
 
     def _build_html_formatting_menu(self) -> pystray.MenuItem:
         """构建 HTML 格式化子菜单"""
@@ -590,20 +454,21 @@ class TrayMenuManager:
     def _on_quit(self, icon, item):
         """退出应用程序"""
         icon.stop()
-        
-        # 设置退出事件（AppState 中已经声明了这个属性）
+
+        # 设置退出事件
         if app_state.quit_event is None:
             import threading
             app_state.quit_event = threading.Event()
-        
+
         app_state.quit_event.set()
-        
-        # 发送退出信号到主程序
-        if getattr(app_state, "ui_queue", None):
-            try:
-                app_state.ui_queue.put(None)
-            except Exception as e:
-                log(f"Failed to send quit signal: {e}")
+
+        # 销毁 webview 窗口
+        try:
+            manager = app_state.webview_manager
+            if manager:
+                manager.destroy()
+        except Exception as e:
+            log(f"Failed to destroy webview: {e}")
     
     def _save_config(self):
         """保存配置"""

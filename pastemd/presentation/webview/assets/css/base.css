@@ -1,0 +1,155 @@
+/* PasteMD Settings - Base Styles */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+    overflow: hidden;
+}
+
+body {
+    font-family: var(--font-family);
+    font-size: 14px;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.5;
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: var(--radius-sm);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--border-light);
+}
+
+/* 选中文本 */
+::selection {
+    background: var(--accent);
+    color: var(--bg-primary);
+}
+
+/* 链接 */
+a {
+    color: var(--accent);
+    text-decoration: none;
+    cursor: pointer;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* 隐藏元素 */
+.hidden {
+    display: none !important;
+}
+
+/* macOS 特有元素 */
+.macos-only {
+    display: none;
+}
+
+body.platform-macos .macos-only {
+    display: block;
+}
+
+body.platform-macos .tab.macos-only {
+    display: inline-flex;
+}
+
+/* Windows 特有元素 */
+.windows-only {
+    display: none;
+}
+
+body.platform-windows .windows-only {
+    display: block;
+}
+
+/* 禁用状态 */
+.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+/* 应用容器 */
+.app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* 加载状态 */
+.loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* 通用图标类 */
+.icon {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+}
+
+/* 工具提示 */
+[data-tooltip] {
+    position: relative;
+}
+
+[data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-size: 12px;
+    white-space: nowrap;
+    border-radius: var(--radius-sm);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s, visibility 0.2s;
+    z-index: 1000;
+}
+
+[data-tooltip]:hover::after {
+    opacity: 1;
+    visibility: visible;
+}

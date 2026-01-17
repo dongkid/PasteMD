@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PasteMD 设置</title>
+    <link rel="stylesheet" href="css/theme.css">
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/components.css">
+</head>
+<body class="loading">
+    <div class="app">
+        <!-- 选项卡导航 -->
+        <nav class="tabs">
+            <button class="tab active" data-tab="general" data-i18n="settings.tab.general">常规</button>
+            <button class="tab" data-tab="conversion" data-i18n="settings.tab.conversion">转换</button>
+            <button class="tab" data-tab="advanced" data-i18n="settings.tab.advanced">高级</button>
+            <button class="tab" data-tab="experimental" data-i18n="settings.tab.experimental">实验性</button>
+            <button class="tab macos-only" data-tab="permissions" data-i18n="settings.tab.permissions">权限</button>
+        </nav>
+
+        <!-- 选项卡内容 -->
+        <main class="tab-content">
+            <!-- 常规设置 -->
+            <section id="panel-general" class="panel active">
+                <div class="section">
+                    <div class="section-title" data-i18n="settings.general.save_dir">保存目录</div>
+                    <div class="path-row">
+                        <input type="text" id="save-dir" placeholder="输入保存目录路径...">
+                        <div class="btn-group">
+                            <button class="btn btn-secondary btn-sm" onclick="browseSaveDir()" data-i18n="settings.general.browse">浏览</button>
+                            <button class="btn btn-secondary btn-sm" onclick="restoreDefaultSaveDir()" data-i18n="settings.general.restore_default">恢复默认</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title" data-i18n="settings.general.no_app_action">无应用时动作</div>
+                    <select id="no-app-action">
+                        <!-- 动态填充 -->
+                    </select>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">选项</div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="keep-file">
+                        <label for="keep-file" data-i18n="settings.general.keep_file">保留生成的文件</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="notify">
+                        <label for="notify" data-i18n="settings.general.notify">显示操作通知</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="startup-notify">
+                        <label for="startup-notify" data-i18n="settings.general.startup_notify">启动时显示通知</label>
+                    </div>
+                    <div class="checkbox-item windows-only">
+                        <input type="checkbox" id="move-cursor">
+                        <label for="move-cursor" data-i18n="settings.general.move_cursor">插入后移动光标到末尾</label>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title" data-i18n="settings.general.hotkey">热键</div>
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span class="title">粘贴热键</span>
+                            <span class="desc">全局快捷键触发 Markdown 转换粘贴</span>
+                        </div>
+                        <div class="setting-control">
+                            <div class="input-group">
+                                <input type="text" id="hotkey-display" class="hotkey-display" readonly value="Ctrl + Shift + B">
+                                <button class="btn btn-secondary btn-sm" onclick="openHotkeyModal()" data-i18n="settings.general.set_hotkey">设置热键</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title" data-i18n="settings.general.language">语言</div>
+                    <select id="language">
+                        <!-- 动态填充 -->
+                    </select>
+                </div>
+            </section>
+
+            <!-- 转换设置 -->
+            <section id="panel-conversion" class="panel">
+                <div class="section">
+                    <div class="section-title" data-i18n="settings.conversion.pandoc_path">Pandoc 路径</div>
+                    <div class="path-row">
+                        <input type="text" id="pandoc-path" placeholder="pandoc">
+                        <div class="btn-group">
+                            <button class="btn btn-secondary btn-sm" onclick="browsePandocPath()" data-i18n="settings.general.browse">浏览</button>
+                            <button class="btn btn-secondary btn-sm" onclick="restoreDefaultPandocPath()" data-i18n="settings.general.restore_default">恢复默认</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title" data-i18n="settings.conversion.reference_docx">参考文档</div>
+                    <div class="path-row">
+                        <input type="text" id="reference-docx" placeholder="可选：用于设置样式的参考 .docx 文件">
+                        <div class="btn-group">
+                            <button class="btn btn-secondary btn-sm" onclick="browseRefDocx()" data-i18n="settings.general.browse">浏览</button>
+                            <button class="btn btn-secondary btn-sm" onclick="clearRefDocx()" data-i18n="settings.general.clear">清除</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title" data-i18n="settings.conversion.pandoc_filters">Pandoc Filters</div>
+                    <div class="note">
+                        <a href="https://github.com/jgm/pandoc/wiki/Pandoc-Filters" target="_blank">Pandoc Filters Wiki</a> |
+                        <a href="https://pandoc.org/lua-filters.html" target="_blank">Lua Filters</a>
+                    </div>
+                    <div style="display: flex; gap: 12px; margin-top: 8px;">
+                        <div id="filters-list" class="list" style="flex: 1; min-height: 120px;">
+                            <div class="list-empty">无 Filter</div>
+                        </div>
+                        <div class="btn-group" style="flex-direction: column;">
+                            <button class="btn btn-secondary btn-sm" onclick="addFilter()" data-i18n="settings.conversion.add_filter">添加</button>
+                            <button class="btn btn-secondary btn-sm" id="filter-remove-btn" disabled onclick="removeFilter()" data-i18n="settings.conversion.remove_filter">移除</button>
+                            <button class="btn btn-secondary btn-sm" id="filter-up-btn" disabled onclick="moveFilterUp()" data-i18n="settings.conversion.move_up">上移</button>
+                            <button class="btn btn-secondary btn-sm" id="filter-down-btn" disabled onclick="moveFilterDown()" data-i18n="settings.conversion.move_down">下移</button>
+                        </div>
+                    </div>
+                    <div class="note" data-i18n="settings.conversion.pandoc_filters_note">Filters 按顺序执行，支持 Lua 脚本和可执行文件</div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title" data-i18n="settings.conversion.html_formatting">HTML 格式化</div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="strikethrough-to-del" checked>
+                        <label for="strikethrough-to-del" data-i18n="settings.conversion.strikethrough">删除线转换为 &lt;del&gt; 标签</label>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title" data-i18n="settings.conversion.first_paragraph_heading">首段缩进</div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="md-disable-indent" checked>
+                        <label for="md-disable-indent" data-i18n="settings.conversion.md_indent">Markdown 转换时禁用首段缩进</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="html-disable-indent" checked>
+                        <label for="html-disable-indent" data-i18n="settings.conversion.html_indent">HTML 转换时禁用首段缩进</label>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 高级设置 -->
+            <section id="panel-advanced" class="panel">
+                <div class="section">
+                    <div class="section-title">Excel 选项</div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="enable-excel" checked>
+                        <label for="enable-excel" data-i18n="settings.advanced.excel_enable">启用 Excel 表格插入</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="excel-keep-format" checked>
+                        <label for="excel-keep-format" data-i18n="settings.advanced.excel_format">保留 Excel 格式</label>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 实验性功能 -->
+            <section id="panel-experimental" class="panel">
+                <div class="section">
+                    <div class="section-title">公式处理</div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="keep-formula">
+                        <label for="keep-formula" data-i18n="settings.conversion.keep_formula">保留原始公式格式</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="enable-latex-replacements" checked>
+                        <label for="enable-latex-replacements" data-i18n="settings.conversion.enable_latex_replacements">启用 LaTeX 自动替换</label>
+                    </div>
+                    <div class="note" data-i18n="settings.conversion.latex_replacements_note">自动将常见 LaTeX 命令转换为 Word 兼容格式</div>
+                    <div class="checkbox-item" style="margin-top: 12px;">
+                        <input type="checkbox" id="fix-single-dollar-block" checked>
+                        <label for="fix-single-dollar-block" data-i18n="settings.conversion.fix_single_dollar_block">修复单行 $ 块级公式</label>
+                    </div>
+                    <div class="note" data-i18n="settings.conversion.fix_single_dollar_block_note">将独立行的 $...$ 公式转换为块级公式</div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title" data-i18n="settings.conversion.pandoc_request_headers">Pandoc 请求头</div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="enable-request-headers" onchange="toggleRequestHeadersState()">
+                        <label for="enable-request-headers" data-i18n="settings.conversion.pandoc_request_headers_enable">启用自定义请求头</label>
+                    </div>
+                    <textarea id="request-headers" rows="4" placeholder="每行一个请求头，格式：Header-Name: value" disabled></textarea>
+                    <div class="note" data-i18n="settings.conversion.pandoc_request_headers_note">下载远程图片等资源时附加的 HTTP 请求头</div>
+                    <button class="btn btn-secondary btn-sm" style="margin-top: 8px;" onclick="fillRequestHeadersExample()" data-i18n="settings.conversion.pandoc_request_headers_fill_example">填入示例</button>
+                </div>
+            </section>
+
+            <!-- macOS 权限 -->
+            <section id="panel-permissions" class="panel macos-only">
+                <div class="section">
+                    <p id="permissions-intro" style="margin-bottom: 12px; color: var(--text-secondary);">
+                        PasteMD 需要以下系统权限才能正常工作。请点击"打开设置"按钮授予相应权限。
+                    </p>
+                    <p id="permissions-hint" style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">
+                        提示：如果看不到 PasteMD，请点击"+"按钮手动添加。
+                    </p>
+                </div>
+
+                <div id="permissions-list">
+                    <!-- 辅助功能 -->
+                    <div class="permission-item" data-permission="accessibility">
+                        <div class="permission-header">
+                            <span class="permission-title">
+                                <span class="status-dot unknown"></span>
+                                辅助功能
+                            </span>
+                            <span class="permission-status" style="color: #666;">检查中...</span>
+                        </div>
+                        <div class="permission-desc">用于模拟键盘输入和控制其他应用程序</div>
+                        <div class="permission-actions">
+                            <button class="btn btn-secondary btn-sm btn-request" style="display: none;" onclick="permissionsManager.requestPermission('accessibility')">请求权限</button>
+                            <button class="btn btn-secondary btn-sm" onclick="permissionsManager.openSettings('accessibility')">打开设置</button>
+                        </div>
+                    </div>
+
+                    <!-- 屏幕录制 -->
+                    <div class="permission-item" data-permission="screen_recording">
+                        <div class="permission-header">
+                            <span class="permission-title">
+                                <span class="status-dot unknown"></span>
+                                屏幕录制
+                            </span>
+                            <span class="permission-status" style="color: #666;">检查中...</span>
+                        </div>
+                        <div class="permission-desc">用于检测当前活跃的应用程序窗口</div>
+                        <div class="permission-actions">
+                            <button class="btn btn-secondary btn-sm btn-request" style="display: none;" onclick="permissionsManager.requestPermission('screen_recording')">请求权限</button>
+                            <button class="btn btn-secondary btn-sm" onclick="permissionsManager.openSettings('screen_recording')">打开设置</button>
+                        </div>
+                    </div>
+
+                    <!-- 输入监控 -->
+                    <div class="permission-item" data-permission="input_monitoring">
+                        <div class="permission-header">
+                            <span class="permission-title">
+                                <span class="status-dot unknown"></span>
+                                输入监控
+                            </span>
+                            <span class="permission-status" style="color: #666;">检查中...</span>
+                        </div>
+                        <div class="permission-desc">用于监听全局热键</div>
+                        <div class="permission-actions">
+                            <button class="btn btn-secondary btn-sm btn-request" style="display: none;" onclick="permissionsManager.requestPermission('input_monitoring')">请求权限</button>
+                            <button class="btn btn-secondary btn-sm" onclick="permissionsManager.openSettings('input_monitoring')">打开设置</button>
+                        </div>
+                    </div>
+
+                    <!-- 自动化 -->
+                    <div class="permission-item" data-permission="automation">
+                        <div class="permission-header">
+                            <span class="permission-title">
+                                <span class="status-dot unknown"></span>
+                                自动化
+                            </span>
+                            <span class="permission-status" style="color: #666;">检查中...</span>
+                        </div>
+                        <div class="permission-desc">用于控制 Microsoft Word 和 Excel</div>
+                        <div class="permission-actions">
+                            <button class="btn btn-secondary btn-sm btn-request" style="display: none;" onclick="permissionsManager.requestPermission('automation')">请求权限</button>
+                            <button class="btn btn-secondary btn-sm" onclick="permissionsManager.openSettings('automation')">打开设置</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section" style="margin-top: 16px;">
+                    <button class="btn btn-secondary" onclick="permissionsManager.refresh()">刷新状态</button>
+                    <span id="last-checked" style="margin-left: 12px; color: var(--text-secondary); font-size: 12px;">最后检查：--:--:--</span>
+                </div>
+            </section>
+        </main>
+
+        <!-- 底部按钮栏 -->
+        <footer class="actions">
+            <button class="btn btn-secondary" onclick="closeWindow()" data-i18n="settings.buttons.cancel">取消</button>
+            <button class="btn btn-primary" onclick="saveSettings()" data-i18n="settings.buttons.save">保存</button>
+        </footer>
+    </div>
+
+    <!-- 热键录制模态框 -->
+    <div id="hotkey-modal" class="modal-overlay hidden" onclick="event.target === this && closeHotkeyModal()">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 data-i18n="hotkey.dialog.title">设置热键</h2>
+                <button class="modal-close" onclick="closeHotkeyModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 16px;">点击"录制"按钮，然后按下您想要设置的快捷键组合。</p>
+
+                <div class="setting-item">
+                    <span data-i18n="hotkey.dialog.new_hotkey">新热键：</span>
+                    <input type="text" id="hotkey-input" class="hotkey-input" readonly placeholder="点击录制...">
+                </div>
+
+                <div style="text-align: center; margin-top: 16px;">
+                    <button class="btn btn-secondary" id="hotkey-record-btn" onclick="startHotkeyRecording()" data-i18n="hotkey.dialog.record_button">录制</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeHotkeyModal()" data-i18n="hotkey.dialog.cancel_button">取消</button>
+                <button class="btn btn-primary" id="hotkey-save-btn" disabled onclick="saveHotkey()" data-i18n="hotkey.dialog.save_button">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast 通知 -->
+    <div id="toast" class="toast"></div>
+
+    <!-- JavaScript -->
+    <script src="js/api.js"></script>
+    <script src="js/i18n.js"></script>
+    <script src="js/tabs.js"></script>
+    <script src="js/hotkey.js"></script>
+    <script src="js/permissions.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,590 @@
+/* PasteMD Settings - Component Styles */
+
+/* ==================== 标题栏 ==================== */
+.titlebar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-md);
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    -webkit-app-region: drag;
+}
+
+.titlebar h1 {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.titlebar .version {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.titlebar-buttons {
+    display: flex;
+    gap: var(--spacing-sm);
+    -webkit-app-region: no-drag;
+}
+
+/* ==================== 选项卡 ==================== */
+.tabs {
+    display: flex;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    flex-shrink: 0;
+}
+
+.tab {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.tab:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.tab.active {
+    background: var(--accent);
+    color: #000;
+}
+
+/* ==================== 选项卡内容 ==================== */
+.tab-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--spacing-md);
+}
+
+.panel {
+    display: none;
+    animation: fadeIn 0.2s ease;
+}
+
+.panel.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* ==================== 分组区块 ==================== */
+.section {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+}
+
+.section-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: var(--spacing-md);
+}
+
+/* ==================== 设置项 ==================== */
+.setting-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-sm) 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.setting-item:last-child {
+    border-bottom: none;
+}
+
+.setting-label {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+}
+
+.setting-label .title {
+    font-weight: 500;
+    margin-bottom: 2px;
+}
+
+.setting-label .desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.setting-control {
+    flex-shrink: 0;
+    margin-left: var(--spacing-md);
+}
+
+/* ==================== 输入框 ==================== */
+input[type="text"],
+input[type="password"],
+input[type="number"],
+textarea {
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    color: var(--text-primary);
+    font-size: 13px;
+    font-family: inherit;
+    width: 100%;
+    transition: border-color 0.2s;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+input[type="text"]:disabled,
+textarea:disabled {
+    background: var(--bg-tertiary);
+    color: var(--text-muted);
+}
+
+textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+/* 带按钮的输入框组 */
+.input-group {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.input-group input {
+    flex: 1;
+}
+
+/* ==================== 下拉框 ==================== */
+select {
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    padding-right: 32px;
+    color: var(--text-primary);
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23a0a0a0' d='M6 8L2 4h8z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    min-width: 150px;
+}
+
+select:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+/* ==================== 复选框 ==================== */
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    padding: var(--spacing-sm) 0;
+    cursor: pointer;
+}
+
+.checkbox-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    margin-right: var(--spacing-sm);
+    accent-color: var(--accent);
+    cursor: pointer;
+}
+
+.checkbox-item label {
+    cursor: pointer;
+    user-select: none;
+}
+
+/* ==================== 按钮 ==================== */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.btn-primary {
+    background: var(--accent);
+    color: #000;
+}
+
+.btn-primary:hover {
+    background: var(--accent-hover);
+}
+
+.btn-primary:active {
+    background: var(--accent-active);
+}
+
+.btn-secondary {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+}
+
+.btn-secondary:hover {
+    background: var(--bg-hover);
+}
+
+.btn-danger {
+    background: var(--error);
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #d32f2f;
+}
+
+.btn-sm {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: 12px;
+}
+
+.btn-lg {
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: 14px;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* 按钮组 */
+.btn-group {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+/* ==================== 底部操作栏 ==================== */
+.actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    justify-content: flex-end;
+    padding: var(--spacing-md);
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+}
+
+/* ==================== 模态框 ==================== */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.2s ease;
+}
+
+.modal {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    min-width: 400px;
+    max-width: 90%;
+    max-height: 90%;
+    overflow: hidden;
+    animation: slideUp 0.2s ease;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-md);
+    border-bottom: 1px solid var(--border);
+}
+
+.modal-header h2 {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.modal-close {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+}
+
+.modal-close:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.modal-body {
+    padding: var(--spacing-md);
+    overflow-y: auto;
+}
+
+.modal-footer {
+    display: flex;
+    gap: var(--spacing-sm);
+    justify-content: flex-end;
+    padding: var(--spacing-md);
+    border-top: 1px solid var(--border);
+}
+
+/* ==================== 热键输入 ==================== */
+.hotkey-display {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    font-family: var(--font-mono);
+    font-size: 13px;
+}
+
+.hotkey-input {
+    text-align: center;
+    font-family: var(--font-mono);
+    cursor: pointer;
+}
+
+.hotkey-input.recording {
+    border-color: var(--warning);
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+/* ==================== 列表 ==================== */
+.list {
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.list-item {
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.1s;
+}
+
+.list-item:last-child {
+    border-bottom: none;
+}
+
+.list-item:hover {
+    background: var(--bg-hover);
+}
+
+.list-item.selected {
+    background: var(--accent);
+    color: #000;
+}
+
+.list-empty {
+    padding: var(--spacing-md);
+    text-align: center;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+/* ==================== Toast 通知 ==================== */
+.toast {
+    position: fixed;
+    bottom: var(--spacing-lg);
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    background: var(--success);
+    color: #000;
+    font-weight: 500;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 2000;
+}
+
+.toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+.toast.error {
+    background: var(--error);
+    color: white;
+}
+
+.toast.warning {
+    background: var(--warning);
+    color: #000;
+}
+
+/* ==================== 状态指示器 ==================== */
+.status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: var(--spacing-sm);
+}
+
+.status-dot.granted {
+    background: var(--success);
+}
+
+.status-dot.missing {
+    background: var(--error);
+}
+
+.status-dot.unknown {
+    background: var(--text-muted);
+}
+
+/* ==================== 权限项 ==================== */
+.permission-item {
+    padding: var(--spacing-md);
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--spacing-sm);
+}
+
+.permission-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-xs);
+}
+
+.permission-title {
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+}
+
+.permission-status {
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.permission-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-sm);
+}
+
+.permission-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+/* ==================== 注释/说明文本 ==================== */
+.note {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: var(--spacing-xs);
+}
+
+.note.warning {
+    color: var(--warning);
+}
+
+/* ==================== 链接 ==================== */
+.link {
+    color: var(--accent);
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.link:hover {
+    text-decoration: underline;
+}
+
+/* ==================== 分隔线 ==================== */
+.divider {
+    height: 1px;
+    background: var(--border);
+    margin: var(--spacing-md) 0;
+}
+
+/* ==================== 标签 ==================== */
+.label {
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: var(--spacing-xs);
+    display: block;
+}
+
+/* ==================== 路径输入行 ==================== */
+.path-row {
+    margin-bottom: var(--spacing-md);
+}
+
+.path-row .label {
+    margin-bottom: var(--spacing-sm);
+}
+
+.path-row .btn-group {
+    margin-top: var(--spacing-sm);
+}

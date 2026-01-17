@@ -17,14 +17,18 @@ class AppState:
     config: Dict[str, Any] = field(default_factory=dict)
 
     # UI组件引用
-    root: Optional[Any] = None      # tkinter.Tk (Global root window)
+    root: Optional[Any] = None      # tkinter.Tk (Global root window) - 保留用于兼容
     listener: Optional[Any] = None  # pynput.keyboard.GlobalHotKeys
     icon: Optional[Any] = None      # pystray.Icon
+
+    # WebView 组件引用
+    webview_window: Optional[Any] = None   # webview.Window (Settings window)
+    webview_manager: Optional[Any] = None  # WebViewManager
 
     # 单实例检查器
     instance_checker: Optional[Any] = None  # SingleInstanceChecker
 
-    # UI 任务队列，确保 Tk 等 UI 操作仅在主线程运行
+    # UI 任务队列，确保 Tk 等 UI 操作仅在主线程运行 (保留用于兼容)
     ui_queue: Optional[Any] = None
 
     # 退出事件，用于线程间同步退出
