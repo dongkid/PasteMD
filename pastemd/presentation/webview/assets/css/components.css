@@ -1,31 +1,36 @@
 /* PasteMD Settings - Component Styles */
 
-/* ==================== 标题栏 ==================== */
-.titlebar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: var(--spacing-md);
-    background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border);
-    -webkit-app-region: drag;
-}
+/* ==================== 工具类 ==================== */
 
-.titlebar h1 {
-    font-size: 16px;
-    font-weight: 600;
-}
+/* 显示 */
+.d-flex { display: flex; }
+.d-none { display: none; }
 
-.titlebar .version {
-    font-size: 12px;
-    color: var(--text-secondary);
-}
+/* Flex */
+.flex-column { flex-direction: column; }
+.flex-1 { flex: 1; }
+.gap-sm { gap: var(--spacing-sm); }
+.gap-md { gap: var(--spacing-md); }
 
-.titlebar-buttons {
-    display: flex;
-    gap: var(--spacing-sm);
-    -webkit-app-region: no-drag;
-}
+/* 间距 */
+.mt-sm { margin-top: var(--spacing-sm); }
+.mt-md { margin-top: var(--spacing-md); }
+.mt-lg { margin-top: var(--spacing-lg); }
+.mb-sm { margin-bottom: var(--spacing-sm); }
+.mb-md { margin-bottom: var(--spacing-md); }
+.mb-lg { margin-bottom: var(--spacing-lg); }
+.ml-md { margin-left: var(--spacing-md); }
+
+/* 文本 */
+.text-center { text-align: center; }
+.text-primary { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-muted { color: var(--text-muted); }
+.text-sm { font-size: 12px; }
+.font-bold { font-weight: bold; }
+
+/* 尺寸 */
+.min-h-120 { min-height: 120px; }
 
 /* ==================== 选项卡 ==================== */
 .tabs {
@@ -275,11 +280,6 @@ select:focus {
 .btn-sm {
     padding: var(--spacing-xs) var(--spacing-sm);
     font-size: 12px;
-}
-
-.btn-lg {
-    padding: var(--spacing-md) var(--spacing-lg);
-    font-size: 14px;
 }
 
 .btn:disabled {
@@ -550,39 +550,9 @@ select:focus {
     color: var(--warning);
 }
 
-/* ==================== 链接 ==================== */
-.link {
-    color: var(--accent);
-    cursor: pointer;
-    font-size: 12px;
-}
-
-.link:hover {
-    text-decoration: underline;
-}
-
-/* ==================== 分隔线 ==================== */
-.divider {
-    height: 1px;
-    background: var(--border);
-    margin: var(--spacing-md) 0;
-}
-
-/* ==================== 标签 ==================== */
-.label {
-    font-size: 13px;
-    font-weight: 500;
-    margin-bottom: var(--spacing-xs);
-    display: block;
-}
-
 /* ==================== 路径输入行 ==================== */
 .path-row {
     margin-bottom: var(--spacing-md);
-}
-
-.path-row .label {
-    margin-bottom: var(--spacing-sm);
 }
 
 .path-row .btn-group {

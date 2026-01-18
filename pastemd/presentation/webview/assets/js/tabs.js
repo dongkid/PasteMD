@@ -11,11 +11,37 @@ class TabManager {
     }
 
     /**
+     * 检查元素是否在当前平台可用
+     * @param {Element} element - 要检查的元素
+     * @returns {boolean} - 是否可用
+     */
+    _isAvailableOnPlatform(element) {
+        const platform = window.state?.platform || {};
+
+        // macOS 专属元素：仅在 macOS 可用
+        if (element.classList.contains('macos-only')) {
+            return platform.is_macos === true;
+        }
+
+        // Windows 专属元素：仅在 Windows 可用
+        if (element.classList.contains('windows-only')) {
+            return platform.is_windows === true;
+        }
+
+        // 无平台限制
+        return true;
+    }
+
+    /**
      * 初始化选项卡
      */
     init() {
-        this.tabs = document.querySelectorAll('.tab');
-        this.panels = document.querySelectorAll('.panel');
+        // 获取所有选项卡和面板，但只处理当前平台可用的
+        const allTabs = document.querySelectorAll('.tab');
+        const allPanels = document.querySelectorAll('.panel');
+
+        this.tabs = Array.from(allTabs).filter(tab => this._isAvailableOnPlatform(tab));
+        this.panels = Array.from(allPanels).filter(panel => this._isAvailableOnPlatform(panel));
 
         this.tabs.forEach(tab => {
             tab.addEventListener('click', () => {
@@ -24,7 +50,7 @@ class TabManager {
             });
         });
 
-        // 默认选中第一个
+        // 默认选中第一个可用的选项卡
         if (this.tabs.length > 0) {
             const firstTab = this.tabs[0].getAttribute('data-tab');
             this.select(firstTab);

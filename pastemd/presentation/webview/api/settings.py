@@ -6,17 +6,78 @@ import copy
 import json
 import os
 import webview
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from enum import Enum, auto
+from typing import Any, Optional, TYPE_CHECKING
 
 from .base import BaseApi
 from ....core.state import app_state
 from ....config.defaults import DEFAULT_CONFIG
-from ....i18n import t, iter_languages, get_language_label, get_no_app_action_map, set_language
+from ....i18n import t, iter_languages, get_language_label, get_no_app_action_map, set_language, get_all_translations
 from ....utils.logging import log
 from ....utils.system_detect import is_windows, is_macos
 
 if TYPE_CHECKING:
     from ....app.wiring import Container
+
+
+class FieldType(Enum):
+    """设置字段类型"""
+    STRING = auto()
+    BOOL = auto()
+    NULLABLE_STRING = auto()
+    STRING_LIST = auto()
+    NESTED = auto()
+
+
+class Platform(Enum):
+    """平台限制"""
+    ALL = auto()      # 全平台
+    WINDOWS = auto()  # 仅 Windows
+    MACOS = auto()    # 仅 macOS
+
+
+# 设置字段映射表: key -> (FieldType, Platform)
+# Platform.ALL 表示全平台可用，Platform.WINDOWS/MACOS 表示平台限制
+SETTINGS_FIELD_MAP = {
+    # 字符串型 - 全平台
+    "language": (FieldType.STRING, Platform.ALL),
+    "save_dir": (FieldType.STRING, Platform.ALL),
+    "pandoc_path": (FieldType.STRING, Platform.ALL),
+    "no_app_action": (FieldType.STRING, Platform.ALL),
+
+    # 布尔型 - 全平台
+    "keep_file": (FieldType.BOOL, Platform.ALL),
+    "notify": (FieldType.BOOL, Platform.ALL),
+    "startup_notify": (FieldType.BOOL, Platform.ALL),
+    "md_disable_first_para_indent": (FieldType.BOOL, Platform.ALL),
+    "html_disable_first_para_indent": (FieldType.BOOL, Platform.ALL),
+    "Keep_original_formula": (FieldType.BOOL, Platform.ALL),
+    "enable_latex_replacements": (FieldType.BOOL, Platform.ALL),
+    "fix_single_dollar_block": (FieldType.BOOL, Platform.ALL),
+    "enable_excel": (FieldType.BOOL, Platform.ALL),
+    "excel_keep_format": (FieldType.BOOL, Platform.ALL),
+
+    # 布尔型 - Windows 专属（UI 仅在 Windows 显示，macOS 待实现）
+    "move_cursor_to_end": (FieldType.BOOL, Platform.WINDOWS),
+
+    # 可空字符串 - 全平台
+    "reference_docx": (FieldType.NULLABLE_STRING, Platform.ALL),
+
+    # 列表型 - 全平台
+    "pandoc_filters": (FieldType.STRING_LIST, Platform.ALL),
+    "pandoc_request_headers": (FieldType.STRING_LIST, Platform.ALL),
+}
+
+
+def _is_field_available(platform: Platform) -> bool:
+    """检查字段是否在当前平台可用"""
+    if platform == Platform.ALL:
+        return True
+    if platform == Platform.WINDOWS:
+        return is_windows()
+    if platform == Platform.MACOS:
+        return is_macos()
+    return False
 
 
 class SettingsApi(BaseApi):
@@ -89,6 +150,39 @@ class SettingsApi(BaseApi):
             return self._error(str(e), "GET_ACTIONS_ERROR")
 
     # ==================== 配置保存 ====================
+    def _apply_field(self, config: dict, new_settings: dict, key: str) -> None:
+        """应用单个字段到配置（带平台过滤）"""
+        if key not in new_settings:
+            return
+
+        field_info = SETTINGS_FIELD_MAP.get(key)
+        if not field_info:
+            return
+
+        field_type, platform = field_info
+
+        # 平台过滤：仅在当前平台可用时才应用
+        if not _is_field_available(platform):
+            return
+
+        value = new_settings[key]
+
+        if field_type == FieldType.STRING:
+            config[key] = value
+        elif field_type == FieldType.BOOL:
+            config[key] = bool(value)
+        elif field_type == FieldType.NULLABLE_STRING:
+            config[key] = value if value else None
+        elif field_type == FieldType.STRING_LIST:
+            if isinstance(value, str):
+                value = [v.strip() for v in value.split("\n") if v.strip()]
+            config[key] = value
+
+    def _apply_all_fields(self, config: dict, new_settings: dict) -> None:
+        """应用所有映射字段到配置（自动过滤平台不可用字段）"""
+        for key in SETTINGS_FIELD_MAP:
+            self._apply_field(config, new_settings, key)
+
     def save_settings(self, settings_json: str) -> str:
         """保存设置"""
         try:
@@ -105,32 +199,10 @@ class SettingsApi(BaseApi):
                 if old_language != new_language:
                     language_changed = True
 
-            # 更新各项配置
-            if "language" in new_settings:
-                config["language"] = new_settings["language"]
-            if "save_dir" in new_settings:
-                config["save_dir"] = new_settings["save_dir"]
-            if "keep_file" in new_settings:
-                config["keep_file"] = bool(new_settings["keep_file"])
-            if "notify" in new_settings:
-                config["notify"] = bool(new_settings["notify"])
-            if "startup_notify" in new_settings:
-                config["startup_notify"] = bool(new_settings["startup_notify"])
-            if "no_app_action" in new_settings:
-                config["no_app_action"] = new_settings["no_app_action"]
+            # 应用映射表中的字段（自动处理平台过滤）
+            self._apply_all_fields(config, new_settings)
 
-            # Windows 特有选项
-            if is_windows() and "move_cursor_to_end" in new_settings:
-                config["move_cursor_to_end"] = bool(new_settings["move_cursor_to_end"])
-
-            # 转换设置
-            if "pandoc_path" in new_settings:
-                config["pandoc_path"] = new_settings["pandoc_path"]
-            if "reference_docx" in new_settings:
-                ref = new_settings["reference_docx"]
-                config["reference_docx"] = ref if ref else None
-
-            # HTML 格式化
+            # HTML 格式化 (嵌套结构，需单独处理)
             if "html_formatting" in new_settings:
                 if "html_formatting" not in config:
                     config["html_formatting"] = {}
@@ -138,35 +210,6 @@ class SettingsApi(BaseApi):
                     config["html_formatting"]["strikethrough_to_del"] = bool(
                         new_settings["html_formatting"]["strikethrough_to_del"]
                     )
-
-            # 其他转换选项
-            if "md_disable_first_para_indent" in new_settings:
-                config["md_disable_first_para_indent"] = bool(new_settings["md_disable_first_para_indent"])
-            if "html_disable_first_para_indent" in new_settings:
-                config["html_disable_first_para_indent"] = bool(new_settings["html_disable_first_para_indent"])
-            if "Keep_original_formula" in new_settings:
-                config["Keep_original_formula"] = bool(new_settings["Keep_original_formula"])
-            if "enable_latex_replacements" in new_settings:
-                config["enable_latex_replacements"] = bool(new_settings["enable_latex_replacements"])
-            if "fix_single_dollar_block" in new_settings:
-                config["fix_single_dollar_block"] = bool(new_settings["fix_single_dollar_block"])
-
-            # Pandoc request headers
-            if "pandoc_request_headers" in new_settings:
-                headers = new_settings["pandoc_request_headers"]
-                if isinstance(headers, str):
-                    headers = [h.strip() for h in headers.split("\n") if h.strip()]
-                config["pandoc_request_headers"] = headers
-
-            # Pandoc filters
-            if "pandoc_filters" in new_settings:
-                config["pandoc_filters"] = new_settings["pandoc_filters"]
-
-            # Excel 选项
-            if "enable_excel" in new_settings:
-                config["enable_excel"] = bool(new_settings["enable_excel"])
-            if "excel_keep_format" in new_settings:
-                config["excel_keep_format"] = bool(new_settings["excel_keep_format"])
 
             # 保存到文件
             self.config_loader.save(config)
@@ -303,132 +346,12 @@ class SettingsApi(BaseApi):
             return self._error(str(e), "EXPAND_PATH_ERROR")
 
     def get_translations(self) -> str:
-        """获取当前语言的常用翻译文本"""
+        """获取当前语言的完整翻译文本"""
         try:
-            # 返回常用的翻译键
-            translations = {
-                # 设置对话框
-                "settings.dialog.title": t("settings.dialog.title"),
-                "settings.buttons.save": t("settings.buttons.save"),
-                "settings.buttons.cancel": t("settings.buttons.cancel"),
-
-                # 选项卡
-                "settings.tab.general": t("settings.tab.general"),
-                "settings.tab.conversion": t("settings.tab.conversion"),
-                "settings.tab.advanced": t("settings.tab.advanced"),
-                "settings.tab.experimental": t("settings.tab.experimental"),
-                "settings.tab.permissions": t("settings.tab.permissions"),
-
-                # 常规设置
-                "settings.general.save_dir": t("settings.general.save_dir"),
-                "settings.general.browse": t("settings.general.browse"),
-                "settings.general.restore_default": t("settings.general.restore_default"),
-                "settings.general.no_app_action": t("settings.general.no_app_action"),
-                "settings.general.keep_file": t("settings.general.keep_file"),
-                "settings.general.notify": t("settings.general.notify"),
-                "settings.general.startup_notify": t("settings.general.startup_notify"),
-                "settings.general.move_cursor": t("settings.general.move_cursor"),
-                "settings.general.hotkey": t("settings.general.hotkey"),
-                "settings.general.set_hotkey": t("settings.general.set_hotkey"),
-                "settings.general.language": t("settings.general.language"),
-
-                # 转换设置
-                "settings.conversion.pandoc_path": t("settings.conversion.pandoc_path"),
-                "settings.conversion.reference_docx": t("settings.conversion.reference_docx"),
-                "settings.general.clear": t("settings.general.clear"),
-                "settings.conversion.pandoc_filters": t("settings.conversion.pandoc_filters"),
-                "settings.conversion.add_filter": t("settings.conversion.add_filter"),
-                "settings.conversion.remove_filter": t("settings.conversion.remove_filter"),
-                "settings.conversion.move_up": t("settings.conversion.move_up"),
-                "settings.conversion.move_down": t("settings.conversion.move_down"),
-                "settings.conversion.pandoc_filters_note": t("settings.conversion.pandoc_filters_note"),
-                "settings.conversion.html_formatting": t("settings.conversion.html_formatting"),
-                "settings.conversion.strikethrough": t("settings.conversion.strikethrough"),
-                "settings.conversion.first_paragraph_heading": t("settings.conversion.first_paragraph_heading"),
-                "settings.conversion.md_indent": t("settings.conversion.md_indent"),
-                "settings.conversion.html_indent": t("settings.conversion.html_indent"),
-
-                # 高级设置
-                "settings.advanced.excel_enable": t("settings.advanced.excel_enable"),
-                "settings.advanced.excel_format": t("settings.advanced.excel_format"),
-
-                # 实验性功能
-                "settings.conversion.keep_formula": t("settings.conversion.keep_formula"),
-                "settings.conversion.enable_latex_replacements": t("settings.conversion.enable_latex_replacements"),
-                "settings.conversion.latex_replacements_note": t("settings.conversion.latex_replacements_note"),
-                "settings.conversion.fix_single_dollar_block": t("settings.conversion.fix_single_dollar_block"),
-                "settings.conversion.fix_single_dollar_block_note": t("settings.conversion.fix_single_dollar_block_note"),
-                "settings.conversion.pandoc_request_headers": t("settings.conversion.pandoc_request_headers"),
-                "settings.conversion.pandoc_request_headers_enable": t("settings.conversion.pandoc_request_headers_enable"),
-                "settings.conversion.pandoc_request_headers_note": t("settings.conversion.pandoc_request_headers_note"),
-                "settings.conversion.pandoc_request_headers_fill_example": t("settings.conversion.pandoc_request_headers_fill_example"),
-
-                # 消息
-                "settings.success.saved": t("settings.success.saved"),
-                "settings.title.success": t("settings.title.success"),
-                "settings.title.error": t("settings.title.error"),
-
-                # 热键对话框
-                "hotkey.dialog.title": t("hotkey.dialog.title"),
-                "hotkey.dialog.current_hotkey": t("hotkey.dialog.current_hotkey"),
-                "hotkey.dialog.new_hotkey": t("hotkey.dialog.new_hotkey"),
-                "hotkey.dialog.record_button": t("hotkey.dialog.record_button"),
-                "hotkey.dialog.recording_button": t("hotkey.dialog.recording_button"),
-                "hotkey.dialog.record_again": t("hotkey.dialog.record_again"),
-                "hotkey.dialog.waiting_input": t("hotkey.dialog.waiting_input"),
-                "hotkey.dialog.cancel_button": t("hotkey.dialog.cancel_button"),
-                "hotkey.dialog.save_button": t("hotkey.dialog.save_button"),
-                "hotkey.dialog.instruction": t("hotkey.dialog.instruction"),
-                "hotkey.dialog.input_placeholder": t("hotkey.dialog.input_placeholder"),
-
-                # 权限相关
-                "settings.permissions.intro": t("settings.permissions.intro"),
-                "settings.permissions.add_hint": t("settings.permissions.add_hint"),
-                "settings.permissions.refresh": t("settings.permissions.refresh"),
-                "settings.permissions.last_checked": t("settings.permissions.last_checked"),
-                "settings.permissions.open_settings": t("settings.permissions.open_settings"),
-                "settings.permissions.request_access": t("settings.permissions.request_access"),
-                "settings.permissions.status.checking": t("settings.permissions.status.checking"),
-                "settings.permissions.accessibility.title": t("settings.permissions.accessibility.title"),
-                "settings.permissions.accessibility.desc": t("settings.permissions.accessibility.desc"),
-                "settings.permissions.screen_recording.title": t("settings.permissions.screen_recording.title"),
-                "settings.permissions.screen_recording.desc": t("settings.permissions.screen_recording.desc"),
-                "settings.permissions.input_monitoring.title": t("settings.permissions.input_monitoring.title"),
-                "settings.permissions.input_monitoring.desc": t("settings.permissions.input_monitoring.desc"),
-                "settings.permissions.automation.title": t("settings.permissions.automation.title"),
-                "settings.permissions.automation.desc": t("settings.permissions.automation.desc"),
-
-                # 错误和成功消息
-                "settings.error.init_failed": t("settings.error.init_failed"),
-                "settings.error.load_failed": t("settings.error.load_failed"),
-                "settings.error.save_failed": t("settings.error.save_failed"),
-                "settings.error.hotkey_save_failed": t("settings.error.hotkey_save_failed"),
-                "settings.error.hotkey_not_recorded": t("settings.error.hotkey_not_recorded"),
-                "settings.success.hotkey_saved": t("settings.success.hotkey_saved"),
-
-                # 其他UI文本
-                "settings.general.options": t("settings.general.options"),
-                "settings.advanced.excel_options": t("settings.advanced.excel_options"),
-                "settings.experimental.formula_processing": t("settings.experimental.formula_processing"),
-                "settings.conversion.reference_docx_placeholder": t("settings.conversion.reference_docx_placeholder"),
-                "settings.conversion.pandoc_request_headers_placeholder": t("settings.conversion.pandoc_request_headers_placeholder"),
-            }
-
-            return self._success(translations)
+            return self._success(get_all_translations())
         except Exception as e:
             log(f"Failed to get translations: {e}")
             return self._error(str(e), "GET_TRANSLATIONS_ERROR")
-
-    def get_platform(self) -> str:
-        """获取当前平台信息"""
-        try:
-            return self._success({
-                "is_windows": is_windows(),
-                "is_macos": is_macos(),
-            })
-        except Exception as e:
-            log(f"Failed to get platform: {e}")
-            return self._error(str(e), "GET_PLATFORM_ERROR")
 
     # ==================== 窗口控制 ====================
     def close_window(self) -> str:

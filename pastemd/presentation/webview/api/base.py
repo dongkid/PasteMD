@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 from ....core.state import app_state
+from ....utils.system_detect import is_windows, is_macos
 
 if TYPE_CHECKING:
     from ....app.wiring import Container
@@ -61,3 +62,19 @@ class BaseApi:
                 "message": message
             }
         }, ensure_ascii=False)
+
+    def get_platform(self) -> str:
+        """获取当前平台信息"""
+        if is_macos():
+            platform = "macos"
+        elif is_windows():
+            platform = "windows"
+        else:
+            platform = "linux"
+
+        return self._success({
+            "platform": platform,
+            "is_windows": is_windows(),
+            "is_macos": is_macos(),
+            "is_linux": platform == "linux",
+        })

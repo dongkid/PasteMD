@@ -65,8 +65,8 @@
                     <div class="section-title" data-i18n="settings.general.hotkey">热键</div>
                     <div class="setting-item">
                         <div class="setting-label">
-                            <span class="title">粘贴热键</span>
-                            <span class="desc">全局快捷键触发 Markdown 转换粘贴</span>
+                            <span class="title" data-i18n="settings.general.hotkey_title">粘贴热键</span>
+                            <span class="desc" data-i18n="settings.general.hotkey_desc">全局快捷键触发 Markdown 转换粘贴</span>
                         </div>
                         <div class="setting-control">
                             <div class="input-group">
@@ -115,11 +115,11 @@
                         <a href="https://github.com/jgm/pandoc/wiki/Pandoc-Filters" target="_blank">Pandoc Filters Wiki</a> |
                         <a href="https://pandoc.org/lua-filters.html" target="_blank">Lua Filters</a>
                     </div>
-                    <div style="display: flex; gap: 12px; margin-top: 8px;">
-                        <div id="filters-list" class="list" style="flex: 1; min-height: 120px;">
-                            <div class="list-empty">无 Filter</div>
+                    <div class="d-flex gap-md mt-sm">
+                        <div id="filters-list" class="list flex-1 min-h-120">
+                            <div class="list-empty" data-i18n="settings.conversion.no_filters">无 Filter</div>
                         </div>
-                        <div class="btn-group" style="flex-direction: column;">
+                        <div class="btn-group flex-column">
                             <button class="btn btn-secondary btn-sm" onclick="addFilter()" data-i18n="settings.conversion.add_filter">添加</button>
                             <button class="btn btn-secondary btn-sm" id="filter-remove-btn" disabled onclick="removeFilter()" data-i18n="settings.conversion.remove_filter">移除</button>
                             <button class="btn btn-secondary btn-sm" id="filter-up-btn" disabled onclick="moveFilterUp()" data-i18n="settings.conversion.move_up">上移</button>
@@ -178,7 +178,7 @@
                         <label for="enable-latex-replacements" data-i18n="settings.conversion.enable_latex_replacements">启用 LaTeX 自动替换</label>
                     </div>
                     <div class="note" data-i18n="settings.conversion.latex_replacements_note">自动将常见 LaTeX 命令转换为 Word 兼容格式</div>
-                    <div class="checkbox-item" style="margin-top: 12px;">
+                    <div class="checkbox-item mt-md">
                         <input type="checkbox" id="fix-single-dollar-block" checked>
                         <label for="fix-single-dollar-block" data-i18n="settings.conversion.fix_single_dollar_block">修复单行 $ 块级公式</label>
                     </div>
@@ -193,17 +193,17 @@
                     </div>
                     <textarea id="request-headers" rows="4" data-i18n-placeholder="settings.conversion.pandoc_request_headers_placeholder" placeholder="每行一个请求头，格式：Header-Name: value" disabled></textarea>
                     <div class="note" data-i18n="settings.conversion.pandoc_request_headers_note">下载远程图片等资源时附加的 HTTP 请求头</div>
-                    <button class="btn btn-secondary btn-sm" style="margin-top: 8px;" onclick="fillRequestHeadersExample()" data-i18n="settings.conversion.pandoc_request_headers_fill_example">填入示例</button>
+                    <button class="btn btn-secondary btn-sm mt-sm" onclick="fillRequestHeadersExample()" data-i18n="settings.conversion.pandoc_request_headers_fill_example">填入示例</button>
                 </div>
             </section>
 
             <!-- macOS 权限 -->
             <section id="panel-permissions" class="panel macos-only">
                 <div class="section">
-                    <p id="permissions-intro" style="margin-bottom: 12px; color: var(--text-secondary);" data-i18n="settings.permissions.intro">
+                    <p id="permissions-intro" class="mb-md text-secondary" data-i18n="settings.permissions.intro">
                         PasteMD 需要以下系统权限才能正常工作。请点击"打开设置"按钮授予相应权限。
                     </p>
-                    <p id="permissions-hint" style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;" data-i18n="settings.permissions.add_hint">
+                    <p id="permissions-hint" class="text-sm text-muted mb-md" data-i18n="settings.permissions.add_hint">
                         提示：如果看不到 PasteMD，请点击"+"按钮手动添加。
                     </p>
                 </div>
@@ -216,11 +216,11 @@
                                 <span class="status-dot unknown"></span>
                                 辅助功能
                             </span>
-                            <span class="permission-status" style="color: #666;" data-i18n="settings.permissions.status.checking">检查中...</span>
+                            <span class="permission-status text-muted" data-i18n="settings.permissions.status.checking">检查中...</span>
                         </div>
                         <div class="permission-desc" data-i18n="settings.permissions.accessibility.desc">用于模拟键盘输入和控制其他应用程序</div>
                         <div class="permission-actions">
-                            <button class="btn btn-secondary btn-sm btn-request" style="display: none;" onclick="permissionsManager.requestPermission('accessibility')" data-i18n="settings.permissions.request_access">请求权限</button>
+                            <button class="btn btn-secondary btn-sm btn-request d-none" onclick="permissionsManager.requestPermission('accessibility')" data-i18n="settings.permissions.request_access">请求权限</button>
                             <button class="btn btn-secondary btn-sm" onclick="permissionsManager.openSettings('accessibility')" data-i18n="settings.permissions.open_settings">打开设置</button>
                         </div>
                     </div>
@@ -232,11 +232,11 @@
                                 <span class="status-dot unknown"></span>
                                 屏幕录制
                             </span>
-                            <span class="permission-status" style="color: #666;" data-i18n="settings.permissions.status.checking">检查中...</span>
+                            <span class="permission-status text-muted" data-i18n="settings.permissions.status.checking">检查中...</span>
                         </div>
                         <div class="permission-desc" data-i18n="settings.permissions.screen_recording.desc">用于检测当前活跃的应用程序窗口</div>
                         <div class="permission-actions">
-                            <button class="btn btn-secondary btn-sm btn-request" style="display: none;" onclick="permissionsManager.requestPermission('screen_recording')" data-i18n="settings.permissions.request_access">请求权限</button>
+                            <button class="btn btn-secondary btn-sm btn-request d-none" onclick="permissionsManager.requestPermission('screen_recording')" data-i18n="settings.permissions.request_access">请求权限</button>
                             <button class="btn btn-secondary btn-sm" onclick="permissionsManager.openSettings('screen_recording')" data-i18n="settings.permissions.open_settings">打开设置</button>
                         </div>
                     </div>
@@ -248,11 +248,11 @@
                                 <span class="status-dot unknown"></span>
                                 输入监控
                             </span>
-                            <span class="permission-status" style="color: #666;" data-i18n="settings.permissions.status.checking">检查中...</span>
+                            <span class="permission-status text-muted" data-i18n="settings.permissions.status.checking">检查中...</span>
                         </div>
                         <div class="permission-desc" data-i18n="settings.permissions.input_monitoring.desc">用于监听全局热键</div>
                         <div class="permission-actions">
-                            <button class="btn btn-secondary btn-sm btn-request" style="display: none;" onclick="permissionsManager.requestPermission('input_monitoring')" data-i18n="settings.permissions.request_access">请求权限</button>
+                            <button class="btn btn-secondary btn-sm btn-request d-none" onclick="permissionsManager.requestPermission('input_monitoring')" data-i18n="settings.permissions.request_access">请求权限</button>
                             <button class="btn btn-secondary btn-sm" onclick="permissionsManager.openSettings('input_monitoring')" data-i18n="settings.permissions.open_settings">打开设置</button>
                         </div>
                     </div>
@@ -264,19 +264,19 @@
                                 <span class="status-dot unknown"></span>
                                 自动化
                             </span>
-                            <span class="permission-status" style="color: #666;" data-i18n="settings.permissions.status.checking">检查中...</span>
+                            <span class="permission-status text-muted" data-i18n="settings.permissions.status.checking">检查中...</span>
                         </div>
                         <div class="permission-desc" data-i18n="settings.permissions.automation.desc">用于控制 Microsoft Word 和 Excel</div>
                         <div class="permission-actions">
-                            <button class="btn btn-secondary btn-sm btn-request" style="display: none;" onclick="permissionsManager.requestPermission('automation')" data-i18n="settings.permissions.request_access">请求权限</button>
+                            <button class="btn btn-secondary btn-sm btn-request d-none" onclick="permissionsManager.requestPermission('automation')" data-i18n="settings.permissions.request_access">请求权限</button>
                             <button class="btn btn-secondary btn-sm" onclick="permissionsManager.openSettings('automation')" data-i18n="settings.permissions.open_settings">打开设置</button>
                         </div>
                     </div>
                 </div>
 
-                <div class="section" style="margin-top: 16px;">
+                <div class="section mt-md">
                     <button class="btn btn-secondary" onclick="permissionsManager.refresh()" data-i18n="settings.permissions.refresh">刷新状态</button>
-                    <span id="last-checked" style="margin-left: 12px; color: var(--text-secondary); font-size: 12px;" data-i18n="settings.permissions.last_checked">最后检查：--:--:--</span>
+                    <span id="last-checked" class="ml-md text-secondary text-sm" data-i18n="settings.permissions.last_checked">最后检查：--:--:--</span>
                 </div>
             </section>
         </main>
@@ -296,11 +296,11 @@
                 <button class="modal-close" onclick="closeHotkeyModal()">&times;</button>
             </div>
             <div class="modal-body">
-                <p style="margin-bottom: 16px;" data-i18n="hotkey.dialog.instruction">点击"录制"按钮，然后按下您想要设置的快捷键组合。</p>
+                <p class="mb-md" data-i18n="hotkey.dialog.instruction">点击"录制"按钮，然后按下您想要设置的快捷键组合。</p>
 
                 <div class="setting-item">
                     <span data-i18n="hotkey.dialog.current_hotkey">当前热键：</span>
-                    <span id="current-hotkey-display" style="font-weight: bold; color: var(--text-primary);">--</span>
+                    <span id="current-hotkey-display" class="font-bold text-primary">--</span>
                 </div>
 
                 <div class="setting-item">
@@ -308,7 +308,7 @@
                     <input type="text" id="hotkey-input" class="hotkey-input" readonly data-i18n-placeholder="hotkey.dialog.input_placeholder" placeholder="点击录制...">
                 </div>
 
-                <div style="text-align: center; margin-top: 16px;">
+                <div class="text-center mt-md">
                     <button class="btn btn-secondary" id="hotkey-record-btn" onclick="startHotkeyRecording()" data-i18n="hotkey.dialog.record_button">录制</button>
                 </div>
             </div>

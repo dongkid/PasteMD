@@ -62,24 +62,28 @@ a:hover {
 
 /* macOS 特有元素 */
 .macos-only {
-    display: none;
+    display: none !important;
 }
 
 body.platform-macos .macos-only {
-    display: block;
+    display: block !important;
 }
 
 body.platform-macos .tab.macos-only {
-    display: inline-flex;
+    display: inline-flex !important;
 }
 
 /* Windows 特有元素 */
 .windows-only {
-    display: none;
+    display: none !important;
 }
 
 body.platform-windows .windows-only {
-    display: block;
+    display: block !important;
+}
+
+body.platform-windows .checkbox-item.windows-only {
+    display: flex !important;
 }
 
 /* 禁用状态 */
@@ -102,54 +106,4 @@ body.platform-windows .windows-only {
     justify-content: center;
     align-items: center;
     height: 100%;
-}
-
-.loading-spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid var(--border);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-/* 通用图标类 */
-.icon {
-    width: 16px;
-    height: 16px;
-    fill: currentColor;
-}
-
-/* 工具提示 */
-[data-tooltip] {
-    position: relative;
-}
-
-[data-tooltip]::after {
-    content: attr(data-tooltip);
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    padding: var(--spacing-xs) var(--spacing-sm);
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
-    font-size: 12px;
-    white-space: nowrap;
-    border-radius: var(--radius-sm);
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.2s, visibility 0.2s;
-    z-index: 1000;
-}
-
-[data-tooltip]:hover::after {
-    opacity: 1;
-    visibility: visible;
 }

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import os
-import threading
 from typing import Optional, Callable, TYPE_CHECKING
 
 import webview

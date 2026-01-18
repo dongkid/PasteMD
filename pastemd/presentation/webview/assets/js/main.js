@@ -11,7 +11,8 @@ const state = {
     noAppActions: [],
     platform: { is_windows: false, is_macos: false },
     filters: [],
-    isDirty: false
+    isDirty: false,
+    selectedFilterIndex: -1
 };
 
 /**
@@ -347,7 +348,7 @@ async function saveHotkey() {
         // 检查冲突
         const conflict = await window.api.checkHotkeyConflict(pendingHotkey);
         if (!conflict.is_available) {
-            if (!confirm('该热键可能与其他程序冲突，是否继续？')) {
+            if (!confirm(t('hotkey.dialog.conflict_confirm'))) {
                 return;
             }
         }
@@ -406,7 +407,7 @@ function refreshFiltersList() {
     list.innerHTML = '';
 
     if (state.filters.length === 0) {
-        list.innerHTML = '<div class="list-empty">无 Filter</div>';
+        list.innerHTML = '<div class="list-empty">' + t('settings.conversion.no_filters') + '</div>';
         return;
     }
 
@@ -426,10 +427,7 @@ function refreshFiltersList() {
     updateFilterButtons();
 }
 
-let selectedFilterIndex = -1;
-
 function selectFilter(index) {
-    selectedFilterIndex = index;
     state.selectedFilterIndex = index;
     refreshFiltersList();
 }
@@ -441,11 +439,11 @@ function updateFilterButtons() {
 
     if (!removeBtn) return;
 
-    const hasSelection = selectedFilterIndex >= 0 && selectedFilterIndex < state.filters.length;
+    const hasSelection = state.selectedFilterIndex >= 0 && state.selectedFilterIndex < state.filters.length;
 
     removeBtn.disabled = !hasSelection;
-    upBtn.disabled = !hasSelection || selectedFilterIndex === 0;
-    downBtn.disabled = !hasSelection || selectedFilterIndex === state.filters.length - 1;
+    upBtn.disabled = !hasSelection || state.selectedFilterIndex === 0;
+    downBtn.disabled = !hasSelection || state.selectedFilterIndex === state.filters.length - 1;
 }
 
 async function addFilter() {
@@ -457,7 +455,7 @@ async function addFilter() {
         const path = await window.api.browseFile(fileTypes, '');
         if (path) {
             state.filters.push(path);
-            selectedFilterIndex = state.filters.length - 1;
+            state.selectedFilterIndex = state.filters.length - 1;
             refreshFiltersList();
         }
     } catch (e) {
@@ -466,29 +464,29 @@ async function addFilter() {
 }
 
 function removeFilter() {
-    if (selectedFilterIndex >= 0 && selectedFilterIndex < state.filters.length) {
-        state.filters.splice(selectedFilterIndex, 1);
-        selectedFilterIndex = Math.min(selectedFilterIndex, state.filters.length - 1);
+    if (state.selectedFilterIndex >= 0 && state.selectedFilterIndex < state.filters.length) {
+        state.filters.splice(state.selectedFilterIndex, 1);
+        state.selectedFilterIndex = Math.min(state.selectedFilterIndex, state.filters.length - 1);
         refreshFiltersList();
     }
 }
 
 function moveFilterUp() {
-    if (selectedFilterIndex > 0) {
-        const temp = state.filters[selectedFilterIndex];
-        state.filters[selectedFilterIndex] = state.filters[selectedFilterIndex - 1];
-        state.filters[selectedFilterIndex - 1] = temp;
-        selectedFilterIndex--;
+    if (state.selectedFilterIndex > 0) {
+        const temp = state.filters[state.selectedFilterIndex];
+        state.filters[state.selectedFilterIndex] = state.filters[state.selectedFilterIndex - 1];
+        state.filters[state.selectedFilterIndex - 1] = temp;
+        state.selectedFilterIndex--;
         refreshFiltersList();
     }
 }
 
 function moveFilterDown() {
-    if (selectedFilterIndex >= 0 && selectedFilterIndex < state.filters.length - 1) {
-        const temp = state.filters[selectedFilterIndex];
-        state.filters[selectedFilterIndex] = state.filters[selectedFilterIndex + 1];
-        state.filters[selectedFilterIndex + 1] = temp;
-        selectedFilterIndex++;
+    if (state.selectedFilterIndex >= 0 && state.selectedFilterIndex < state.filters.length - 1) {
+        const temp = state.filters[state.selectedFilterIndex];
+        state.filters[state.selectedFilterIndex] = state.filters[state.selectedFilterIndex + 1];
+        state.filters[state.selectedFilterIndex + 1] = temp;
+        state.selectedFilterIndex++;
         refreshFiltersList();
     }
 }

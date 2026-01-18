@@ -6,6 +6,7 @@ import subprocess
 from typing import Optional, TYPE_CHECKING
 
 from .base import BaseApi
+from .decorators import macos_only
 from ....utils.logging import log
 from ....utils.system_detect import is_macos
 from ....i18n import t
@@ -19,6 +20,30 @@ class PermissionsApi(BaseApi):
 
     PERMISSION_TYPES = ["accessibility", "screen_recording", "input_monitoring", "automation"]
 
+    # 权限检查方法映射
+    _CHECK_METHODS = {
+        "accessibility": "_check_accessibility",
+        "screen_recording": "_check_screen_recording",
+        "input_monitoring": "_check_input_monitoring",
+        "automation": "_check_automation",
+    }
+
+    # 权限请求方法映射
+    _REQUEST_METHODS = {
+        "accessibility": "_request_accessibility",
+        "screen_recording": "_request_screen_recording",
+        "input_monitoring": "_request_input_monitoring",
+        "automation": "_request_automation",
+    }
+
+    # 系统设置 URL 映射
+    _SETTINGS_URLS = {
+        "accessibility": "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility",
+        "screen_recording": "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture",
+        "input_monitoring": "x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent",
+        "automation": "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation",
+    }
+
     def __init__(self, container: "Container"):
         super().__init__(container)
 
@@ -26,19 +51,18 @@ class PermissionsApi(BaseApi):
         """检查是否是 macOS 平台"""
         return self._success(is_macos())
 
+    @macos_only
     def get_all_permissions(self) -> str:
         """获取所有权限状态"""
-        if not is_macos():
-            return self._error("Not macOS", "PLATFORM_ERROR")
-
         try:
             results = {}
             for perm_type in self.PERMISSION_TYPES:
                 status = self._check_permission_internal(perm_type)
+                status_text, status_color = self._format_status(status)
                 results[perm_type] = {
                     "status": status,
-                    "status_text": self._format_status(status)[0],
-                    "status_color": self._format_status(status)[1]
+                    "status_text": status_text,
+                    "status_color": status_color
                 }
 
             return self._success(results)
@@ -46,11 +70,9 @@ class PermissionsApi(BaseApi):
             log(f"Failed to get all permissions: {e}")
             return self._error(str(e), "GET_PERMISSIONS_ERROR")
 
+    @macos_only
     def check_permission(self, permission_type: str) -> str:
         """检查单个权限状态"""
-        if not is_macos():
-            return self._error("Not macOS", "PLATFORM_ERROR")
-
         try:
             if permission_type not in self.PERMISSION_TYPES:
                 return self._error(f"Unknown permission type: {permission_type}", "UNKNOWN_PERMISSION")
@@ -68,11 +90,9 @@ class PermissionsApi(BaseApi):
             log(f"Failed to check permission {permission_type}: {e}")
             return self._error(str(e), "CHECK_PERMISSION_ERROR")
 
+    @macos_only
     def request_permission(self, permission_type: str) -> str:
         """请求权限"""
-        if not is_macos():
-            return self._error("Not macOS", "PLATFORM_ERROR")
-
         try:
             if permission_type not in self.PERMISSION_TYPES:
                 return self._error(f"Unknown permission type: {permission_type}", "UNKNOWN_PERMISSION")
@@ -83,20 +103,11 @@ class PermissionsApi(BaseApi):
             log(f"Failed to request permission {permission_type}: {e}")
             return self._error(str(e), "REQUEST_PERMISSION_ERROR")
 
+    @macos_only
     def open_system_settings(self, permission_type: str) -> str:
         """打开系统设置中对应的权限页面"""
-        if not is_macos():
-            return self._error("Not macOS", "PLATFORM_ERROR")
-
         try:
-            url_map = {
-                "accessibility": "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility",
-                "screen_recording": "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture",
-                "input_monitoring": "x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent",
-                "automation": "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation",
-            }
-
-            url = url_map.get(permission_type)
+            url = self._SETTINGS_URLS.get(permission_type)
             if not url:
                 return self._error(f"Unknown permission type: {permission_type}", "UNKNOWN_PERMISSION")
 
@@ -109,6 +120,14 @@ class PermissionsApi(BaseApi):
     def get_permission_info(self) -> str:
         """获取权限相关的本地化文本"""
         try:
+            # 动态构造权限信息
+            permissions_info = {}
+            for perm_type in self.PERMISSION_TYPES:
+                permissions_info[perm_type] = {
+                    "title": t(f"settings.permissions.{perm_type}.title"),
+                    "desc": t(f"settings.permissions.{perm_type}.desc"),
+                }
+
             info = {
                 "intro": t("settings.permissions.intro"),
                 "add_hint": t("settings.permissions.add_hint"),
@@ -122,24 +141,7 @@ class PermissionsApi(BaseApi):
                     "unknown": t("settings.permissions.status.unknown"),
                     "checking": t("settings.permissions.status.checking"),
                 },
-                "permissions": {
-                    "accessibility": {
-                        "title": t("settings.permissions.accessibility.title"),
-                        "desc": t("settings.permissions.accessibility.desc"),
-                    },
-                    "screen_recording": {
-                        "title": t("settings.permissions.screen_recording.title"),
-                        "desc": t("settings.permissions.screen_recording.desc"),
-                    },
-                    "input_monitoring": {
-                        "title": t("settings.permissions.input_monitoring.title"),
-                        "desc": t("settings.permissions.input_monitoring.desc"),
-                    },
-                    "automation": {
-                        "title": t("settings.permissions.automation.title"),
-                        "desc": t("settings.permissions.automation.desc"),
-                    },
-                }
+                "permissions": permissions_info
             }
             return self._success(info)
         except Exception as e:
@@ -149,26 +151,20 @@ class PermissionsApi(BaseApi):
     # ==================== 内部方法 ====================
     def _check_permission_internal(self, permission_type: str) -> Optional[bool]:
         """内部权限检查方法"""
-        if permission_type == "accessibility":
-            return self._check_accessibility()
-        elif permission_type == "screen_recording":
-            return self._check_screen_recording()
-        elif permission_type == "input_monitoring":
-            return self._check_input_monitoring()
-        elif permission_type == "automation":
-            return self._check_automation()
+        method_name = self._CHECK_METHODS.get(permission_type)
+        if method_name:
+            method = getattr(self, method_name, None)
+            if method:
+                return method()
         return None
 
     def _request_permission_internal(self, permission_type: str) -> bool:
         """内部权限请求方法"""
-        if permission_type == "accessibility":
-            return self._request_accessibility()
-        elif permission_type == "screen_recording":
-            return self._request_screen_recording()
-        elif permission_type == "input_monitoring":
-            return self._request_input_monitoring()
-        elif permission_type == "automation":
-            return self._request_automation()
+        method_name = self._REQUEST_METHODS.get(permission_type)
+        if method_name:
+            method = getattr(self, method_name, None)
+            if method:
+                return method()
         return False
 
     def _format_status(self, status: Optional[bool]) -> tuple:

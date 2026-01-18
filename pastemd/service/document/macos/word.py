@@ -27,11 +27,11 @@ class WordPlacer(BaseDocumentPlacer):
             # 使用固定路径写入临时文件（覆盖之前的）
             with open(self._fixed_temp_path, 'wb') as f:
                 f.write(docx_bytes)
-            
+
             # 默认移动光标到末尾
             move_cursor_to_end = config.get("move_cursor_to_end", True)
             success = self._applescript_insert(self._fixed_temp_path, move_cursor_to_end)
-            
+
             if success:
                 return PlacementResult(success=True, method="applescript")
             else:

@@ -37,6 +37,18 @@ class WebViewLauncher:
             self._manager = WebViewManager(self._container)
         return self._manager
 
+    def _refresh_tray_menu(self) -> None:
+        """刷新托盘菜单"""
+        try:
+            tray_icon = getattr(app_state, "icon", None)
+            if tray_icon:
+                tray_menu = self._container.tray_menu_manager.build_menu()
+                tray_icon.menu = tray_menu
+                if hasattr(tray_icon, "update_menu"):
+                    tray_icon.update_menu()
+        except Exception as e:
+            log(f"Failed to refresh tray menu: {e}")
+
     def _start_quit_event_listener(self) -> None:
         """
         P1-15: 启动 quit_event 监听器
@@ -50,11 +62,8 @@ class WebViewLauncher:
                 quit_event.wait()
                 log("Quit event received, stopping webview...")
                 try:
-                    # 停止权限轮询（如果存在）
                     if self._manager:
                         self._manager.destroy()
-                    # 停止 webview 主循环
-                    webview.destroy_all_windows()
                 except Exception as e:
                     log(f"Error during quit cleanup: {e}")
 
@@ -99,8 +108,6 @@ class WebViewLauncher:
             if is_macos():
                 try:
                     from ...utils.macos.ipc import start_server
-
-                    tray_menu_manager = self._container.tray_menu_manager
 
                     def handle_command(cmd: str) -> None:
                         if cmd == "open_settings":
@@ -168,13 +175,7 @@ class WebViewLauncher:
             try:
                 from ...i18n import set_language
                 set_language(app_state.config.get("language", "en-US"))
-
-                tray_icon = getattr(app_state, "icon", None)
-                if tray_icon:
-                    tray_menu = self._container.tray_menu_manager.build_menu()
-                    tray_icon.menu = tray_menu
-                    if hasattr(tray_icon, "update_menu"):
-                        tray_icon.update_menu()
+                self._refresh_tray_menu()
             except Exception as e:
                 log(f"Failed to refresh tray after settings save: {e}")
 
@@ -197,12 +198,7 @@ class WebViewLauncher:
                 restart_callback = self._container.tray_menu_manager.restart_hotkey_callback
                 if restart_callback:
                     restart_callback()
-
-                # 刷新托盘菜单
-                tray_icon = getattr(app_state, "icon", None)
-                if tray_icon:
-                    tray_menu = self._container.tray_menu_manager.build_menu()
-                    tray_icon.menu = tray_menu
+                self._refresh_tray_menu()
             except Exception as e:
                 log(f"Failed to restart hotkey: {e}")
 

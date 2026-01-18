@@ -233,6 +233,11 @@ def t(key: str, **kwargs) -> str:
     return text
 
 
+def get_all_translations() -> Dict[str, str]:
+    """获取当前语言的完整翻译字典"""
+    return _load_translations(_current_language)
+
+
 def get_no_app_action_map() -> Dict[str, str]:
     """获取动作值到显示文本的映射（用于 UI）"""
     from ..core.types import NoAppAction

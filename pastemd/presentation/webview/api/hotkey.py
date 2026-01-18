@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import threading
 from typing import Optional, Set, TYPE_CHECKING
 
 from .base import BaseApi
@@ -204,12 +203,3 @@ class HotkeyApi(BaseApi):
         except Exception as e:
             log(f"Failed to save hotkey: {e}")
             return self._error(str(e), "SAVE_HOTKEY_ERROR")
-
-    def get_platform(self) -> str:
-        """获取当前平台"""
-        try:
-            platform = "macos" if is_macos() else "windows" if is_windows() else "linux"
-            return self._success({"platform": platform})
-        except Exception as e:
-            log(f"Failed to get platform: {e}")
-            return self._error(str(e), "GET_PLATFORM_ERROR")
