@@ -53,14 +53,17 @@ class WebViewLauncher:
         """
         P1-15: 启动 quit_event 监听器
 
-        在后台线程中监听 quit_event，当触发时停止 webview 主循环。
+        这是统一的退出处理点：
+        - 监听 quit_event 信号
+        - 收到信号后销毁 WebView，使 webview.start() 返回
+        - 由 _on_quit（托盘退出）触发 quit_event
         """
         def _listen():
             quit_event = app_state.quit_event
             if quit_event:
                 # 等待退出事件
                 quit_event.wait()
-                log("Quit event received, stopping webview...")
+                log("Quit event received, destroying webview (primary cleanup point)...")
                 try:
                     if self._manager:
                         self._manager.destroy()

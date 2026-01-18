@@ -194,6 +194,9 @@ def main() -> None:
             app_state.instance_checker.release_lock()
         log("Application shutting down")
 
+        # 强制退出进程，确保所有残留线程被清理
+        # os._exit(0)
+
 
 if __name__ == "__main__":
     main()

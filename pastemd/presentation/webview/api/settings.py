@@ -6,78 +6,17 @@ import copy
 import json
 import os
 import webview
-from enum import Enum, auto
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 from .base import BaseApi
+from .field_types import FieldType, SETTINGS_FIELD_MAP
 from ....core.state import app_state
 from ....config.defaults import DEFAULT_CONFIG
-from ....i18n import t, iter_languages, get_language_label, get_no_app_action_map, set_language, get_all_translations
+from ....i18n import t, iter_languages, get_no_app_action_map, set_language, get_all_translations
 from ....utils.logging import log
-from ....utils.system_detect import is_windows, is_macos
 
 if TYPE_CHECKING:
     from ....app.wiring import Container
-
-
-class FieldType(Enum):
-    """设置字段类型"""
-    STRING = auto()
-    BOOL = auto()
-    NULLABLE_STRING = auto()
-    STRING_LIST = auto()
-    NESTED = auto()
-
-
-class Platform(Enum):
-    """平台限制"""
-    ALL = auto()      # 全平台
-    WINDOWS = auto()  # 仅 Windows
-    MACOS = auto()    # 仅 macOS
-
-
-# 设置字段映射表: key -> (FieldType, Platform)
-# Platform.ALL 表示全平台可用，Platform.WINDOWS/MACOS 表示平台限制
-SETTINGS_FIELD_MAP = {
-    # 字符串型 - 全平台
-    "language": (FieldType.STRING, Platform.ALL),
-    "save_dir": (FieldType.STRING, Platform.ALL),
-    "pandoc_path": (FieldType.STRING, Platform.ALL),
-    "no_app_action": (FieldType.STRING, Platform.ALL),
-
-    # 布尔型 - 全平台
-    "keep_file": (FieldType.BOOL, Platform.ALL),
-    "notify": (FieldType.BOOL, Platform.ALL),
-    "startup_notify": (FieldType.BOOL, Platform.ALL),
-    "md_disable_first_para_indent": (FieldType.BOOL, Platform.ALL),
-    "html_disable_first_para_indent": (FieldType.BOOL, Platform.ALL),
-    "Keep_original_formula": (FieldType.BOOL, Platform.ALL),
-    "enable_latex_replacements": (FieldType.BOOL, Platform.ALL),
-    "fix_single_dollar_block": (FieldType.BOOL, Platform.ALL),
-    "enable_excel": (FieldType.BOOL, Platform.ALL),
-    "excel_keep_format": (FieldType.BOOL, Platform.ALL),
-
-    # 布尔型 - Windows 专属（UI 仅在 Windows 显示，macOS 待实现）
-    "move_cursor_to_end": (FieldType.BOOL, Platform.WINDOWS),
-
-    # 可空字符串 - 全平台
-    "reference_docx": (FieldType.NULLABLE_STRING, Platform.ALL),
-
-    # 列表型 - 全平台
-    "pandoc_filters": (FieldType.STRING_LIST, Platform.ALL),
-    "pandoc_request_headers": (FieldType.STRING_LIST, Platform.ALL),
-}
-
-
-def _is_field_available(platform: Platform) -> bool:
-    """检查字段是否在当前平台可用"""
-    if platform == Platform.ALL:
-        return True
-    if platform == Platform.WINDOWS:
-        return is_windows()
-    if platform == Platform.MACOS:
-        return is_macos()
-    return False
 
 
 class SettingsApi(BaseApi):
@@ -151,18 +90,12 @@ class SettingsApi(BaseApi):
 
     # ==================== 配置保存 ====================
     def _apply_field(self, config: dict, new_settings: dict, key: str) -> None:
-        """应用单个字段到配置（带平台过滤）"""
+        """应用单个字段到配置"""
         if key not in new_settings:
             return
 
-        field_info = SETTINGS_FIELD_MAP.get(key)
-        if not field_info:
-            return
-
-        field_type, platform = field_info
-
-        # 平台过滤：仅在当前平台可用时才应用
-        if not _is_field_available(platform):
+        field_type = SETTINGS_FIELD_MAP.get(key)
+        if not field_type:
             return
 
         value = new_settings[key]
@@ -179,7 +112,7 @@ class SettingsApi(BaseApi):
             config[key] = value
 
     def _apply_all_fields(self, config: dict, new_settings: dict) -> None:
-        """应用所有映射字段到配置（自动过滤平台不可用字段）"""
+        """应用所有映射字段到配置"""
         for key in SETTINGS_FIELD_MAP:
             self._apply_field(config, new_settings, key)
 

@@ -217,9 +217,15 @@ class AppState:
                 pass
 
         # 清理 WebView 管理器
+        # 注意：destroy() 由 quit_event 监听器统一调用
+        # 这里只负责清理引用，不再主动调用 destroy()
         if self.webview_manager:
             try:
-                self.webview_manager.destroy()
+                # 检查是否已经被销毁（通过 _is_quitting 标志）
+                if not getattr(self.webview_manager, '_is_quitting', False):
+                    # 如果还没被销毁，说明是异常退出路径，作为兜底执行销毁
+                    log("WebView manager not destroyed by quit_event listener, destroying as fallback")
+                    self.webview_manager.destroy()
                 log("WebView manager cleaned up")
             except Exception as e:
                 log(f"Error cleaning up WebView manager: {e}")

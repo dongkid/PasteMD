@@ -66,6 +66,7 @@ class WebViewManager:
         self._container = container
         self._settings_window: Optional[webview.Window] = None
         self._is_settings_visible = False
+        self._is_quitting = False  # 退出标志：用于区分正常关闭和程序退出
         self._on_settings_save_callback: Optional[Callable] = None
         self._on_settings_close_callback: Optional[Callable] = None
 
@@ -186,6 +187,10 @@ class WebViewManager:
 
     def _on_window_closing(self) -> bool:
         """窗口关闭事件处理"""
+        # 如果正在退出，允许窗口销毁
+        if self._is_quitting:
+            return True
+
         self._is_settings_visible = False
 
         # macOS: 隐藏 Dock 图标
@@ -274,10 +279,23 @@ class WebViewManager:
         return self._hotkey_api
 
     def destroy(self) -> None:
-        """销毁所有窗口"""
+        """
+        销毁所有窗口
+
+        此方法应该只由 quit_event 监听器调用（统一退出点）。
+        cleanup() 中的调用作为兜底，会检查 _is_quitting 标志避免重复执行。
+        """
+        # 安全检查：防止意外的重复调用
+        if self._is_quitting:
+            return
+
+        self._is_quitting = True
+        log("WebViewManager: destroying windows")
+
         try:
             if self._settings_window:
                 self._settings_window.destroy()
                 self._settings_window = None
+                log("WebViewManager: settings window destroyed")
         except Exception as e:
             log(f"Failed to destroy settings window: {e}")

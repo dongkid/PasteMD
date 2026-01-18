@@ -453,23 +453,22 @@ class TrayMenuManager:
             )
     
     def _on_quit(self, icon, item):
-        """退出应用程序"""
+        """退出应用程序
+
+        退出流程统一由 quit_event 驱动：
+        1. 此处只负责停止托盘并发出退出信号
+        2. quit_event 监听器（launcher.py）负责销毁 WebView
+        3. cleanup()（state.py）负责最终的资源清理
+        """
         icon.stop()
 
-        # 设置退出事件
+        # 设置退出事件（统一的退出信号）
         if app_state.quit_event is None:
             import threading
             app_state.quit_event = threading.Event()
 
         app_state.quit_event.set()
-
-        # 销毁 webview 窗口
-        try:
-            manager = app_state.webview_manager
-            if manager:
-                manager.destroy()
-        except Exception as e:
-            log(f"Failed to destroy webview: {e}")
+        log("Quit event set, waiting for quit_event listener to handle cleanup")
     
     def _save_config(self):
         """保存配置"""
