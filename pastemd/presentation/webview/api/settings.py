@@ -88,6 +88,19 @@ class SettingsApi(BaseApi):
             log(f"Failed to get no_app_actions: {e}")
             return self._error(str(e), "GET_ACTIONS_ERROR")
 
+    def get_theme_options(self) -> str:
+        """获取主题选项列表"""
+        try:
+            options = [
+                {"value": "auto", "label": t("settings.general.theme_auto")},
+                {"value": "light", "label": t("settings.general.theme_light")},
+                {"value": "dark", "label": t("settings.general.theme_dark")},
+            ]
+            return self._success(options)
+        except Exception as e:
+            log(f"Failed to get theme_options: {e}")
+            return self._error(str(e), "GET_THEME_OPTIONS_ERROR")
+
     # ==================== 配置保存 ====================
     def _apply_field(self, config: dict, new_settings: dict, key: str) -> None:
         """应用单个字段到配置"""

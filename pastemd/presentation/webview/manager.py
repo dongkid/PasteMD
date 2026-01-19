@@ -9,6 +9,7 @@ from typing import Optional, Callable, TYPE_CHECKING
 import webview
 
 from ...config.paths import resource_path
+from ...config.loader import ConfigLoader
 from ...utils.logging import log
 from ...utils.system_detect import is_windows, is_macos
 from ...core.state import app_state
@@ -49,6 +50,44 @@ def get_settings_html_path() -> str:
         return html_path
 
     raise FileNotFoundError(f"Settings HTML not found at: {html_path}")
+
+
+def _is_system_dark_mode() -> bool:
+    """检测系统是否为深色模式"""
+    if is_windows():
+        try:
+            import winreg
+            key = winreg.OpenKey(
+                winreg.HKEY_CURRENT_USER,
+                r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"
+            )
+            value, _ = winreg.QueryValueEx(key, "AppsUseLightTheme")
+            winreg.CloseKey(key)
+            return value == 0
+        except Exception:
+            return True  # 默认深色
+    elif is_macos():
+        try:
+            import subprocess
+            result = subprocess.run(
+                ["defaults", "read", "-g", "AppleInterfaceStyle"],
+                capture_output=True,
+                text=True
+            )
+            return "Dark" in result.stdout
+        except Exception:
+            return True  # 默认深色
+    return True
+
+
+def _get_background_color_for_theme(theme: str) -> str:
+    """根据主题配置获取背景色"""
+    if theme == "light":
+        return "#ffffff"
+    elif theme == "dark":
+        return "#1e1e1e"
+    else:  # auto
+        return "#1e1e1e" if _is_system_dark_mode() else "#ffffff"
 
 
 class WebViewManager:
@@ -110,6 +149,10 @@ class WebViewManager:
             self._permissions_api
         )
 
+        # 获取当前主题配置并决定背景色
+        theme = app_state.config.get("theme", "auto")
+        background_color = _get_background_color_for_theme(theme)
+
         # 窗口配置
         window_config = {
             "title": "PasteMD Settings",
@@ -119,7 +162,7 @@ class WebViewManager:
             "min_size": (500, 400),
             "js_api": combined_api,
             "hidden": True,  # 初始隐藏
-            "background_color": "#1e1e1e",
+            "background_color": background_color,
         }
 
         # 根据平台确定 HTML 路径

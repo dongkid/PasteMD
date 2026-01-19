@@ -8,6 +8,7 @@ from typing import Optional, Callable, TYPE_CHECKING
 import webview
 
 from .manager import WebViewManager
+from ...config.paths import get_app_icon_path
 from ...utils.logging import log
 from ...utils.system_detect import is_macos
 from ...core.state import app_state
@@ -149,7 +150,6 @@ class WebViewLauncher:
     def start(
         self,
         on_started: Optional[Callable] = None,
-        debug: bool = True  # 默认开启调试模式以便排查问题
     ) -> None:
         """
         启动 webview 应用
@@ -158,13 +158,15 @@ class WebViewLauncher:
 
         Args:
             on_started: webview 初始化完成后调用的回调函数
-            debug: 是否启用调试模式 (默认 True，开启开发者控制台)
         """
         if self._started:
             log("WebView already started")
             return
 
         self._started = True
+
+        # 从配置读取 debug 模式
+        debug = app_state.config.get("debug_mode", False)
 
         # 创建窗口管理器
         self._manager = self.get_manager()
@@ -222,10 +224,15 @@ class WebViewLauncher:
         # 启动 webview 主循环
         # func 参数会在 webview 初始化完成后在后台线程中执行
         log("Starting webview main loop...")
+
+        # 获取应用图标路径
+        icon_path = get_app_icon_path()
+
         webview.start(
             func=lambda: self._post_start_init(on_started),
             debug=debug,
             gui=None,  # 自动检测
+            icon=icon_path,
         )
 
         log("WebView main loop ended")

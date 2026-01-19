@@ -9,6 +9,7 @@ const state = {
     originalSettings: {},
     languages: [],
     noAppActions: [],
+    themeOptions: [],
     platform: { is_windows: false, is_macos: false },
     filters: [],
     isDirty: false,
@@ -41,6 +42,15 @@ async function initApp() {
 
         // 加载动作列表
         await loadNoAppActions();
+
+        // 加载主题选项
+        await loadThemeOptions();
+
+        // 应用初始主题
+        applyTheme(state.settings.theme || 'auto');
+
+        // 设置系统主题变化监听
+        setupSystemThemeListener();
 
         // 初始化热键录制器
         await window.hotkeyRecorder.init();
@@ -142,6 +152,74 @@ async function loadNoAppActions() {
 }
 
 /**
+ * 加载主题选项列表
+ */
+async function loadThemeOptions() {
+    try {
+        state.themeOptions = await window.api.getThemeOptions();
+
+        const select = document.getElementById('theme');
+        if (select) {
+            select.innerHTML = '';
+            state.themeOptions.forEach(theme => {
+                const option = document.createElement('option');
+                option.value = theme.value;
+                option.textContent = theme.label;
+                select.appendChild(option);
+            });
+
+            // 设置当前值
+            select.value = state.settings.theme || 'auto';
+
+            // 监听变化
+            select.addEventListener('change', (e) => {
+                applyTheme(e.target.value);
+            });
+        }
+    } catch (e) {
+        console.error('Failed to load theme options:', e);
+    }
+}
+
+/**
+ * 应用主题
+ */
+function applyTheme(theme) {
+    const root = document.documentElement;
+    root.classList.remove('auto-theme', 'light-theme', 'dark-theme');
+
+    if (theme === 'auto') {
+        root.classList.add('auto-theme');
+    } else if (theme === 'light') {
+        root.classList.add('light-theme');
+    } else {
+        root.classList.add('dark-theme');
+    }
+
+    console.log('Theme applied:', theme);
+}
+
+/**
+ * 设置系统主题变化监听
+ */
+function setupSystemThemeListener() {
+    window.matchMedia('(prefers-color-scheme: dark)')
+        .addEventListener('change', (e) => {
+            // 只有在 auto 模式下才响应系统主题变化
+            const currentTheme = state.settings.theme || 'auto';
+            if (currentTheme === 'auto') {
+                // CSS 媒体查询会自动处理，这里可以做额外的处理（如果需要）
+                console.log('System theme changed, dark mode:', e.matches);
+            }
+        });
+}
+
+// 暴露给 Python 调用
+window.onThemeChanged = function(theme) {
+    applyTheme(theme);
+};
+
+/**
  * 填充表单
  */
 function populateForm() {
@@ -165,6 +243,7 @@ function populateForm() {
     // 高级设置
     setCheckbox('enable-excel', s.enable_excel);
     setCheckbox('excel-keep-format', s.excel_keep_format);
+    setCheckbox('debug-mode', s.debug_mode);
 
     // 实验性功能
     setCheckbox('keep-formula', s.Keep_original_formula);
@@ -189,6 +268,7 @@ function collectFormData() {
     const settings = {
         // 常规设置
         language: getSelectValue('language'),
+        theme: getSelectValue('theme'),
         save_dir: getInputValue('save-dir'),
         keep_file: getCheckbox('keep-file'),
         notify: getCheckbox('notify'),
@@ -207,6 +287,7 @@ function collectFormData() {
         // 高级设置
         enable_excel: getCheckbox('enable-excel'),
         excel_keep_format: getCheckbox('excel-keep-format'),
+        debug_mode: getCheckbox('debug-mode'),
 
         // 实验性功能
         Keep_original_formula: getCheckbox('keep-formula'),

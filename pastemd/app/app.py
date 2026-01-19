@@ -30,6 +30,7 @@ from ..core.state import app_state
 from ..core.singleton import check_single_instance
 from ..config.loader import ConfigLoader
 from ..utils.logging import log
+from ..utils.logging import set_console_logging
 from ..utils.version_checker import VersionChecker
 from ..service.notification.manager import NotificationManager
 from ..i18n import FALLBACK_LANGUAGE, detect_system_language, set_language, t
@@ -43,6 +44,9 @@ def initialize_application() -> Container:
     config = config_loader.load()
     app_state.config = config
     app_state.hotkey_str = config.get("hotkey", "<ctrl>+<shift>+b")
+
+    # 初始化控制台日志（根据 debug_mode 配置）
+    set_console_logging(config.get("debug_mode", False))
 
     language_value = config.get("language")
     if not language_value:

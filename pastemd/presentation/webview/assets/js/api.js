@@ -153,6 +153,10 @@ class ApiWrapper {
         return await this._call('get_no_app_actions');
     }
 
+    async getThemeOptions() {
+        return await this._call('get_theme_options');
+    }
+
     async browseDirectory(initialDir = '') {
         return await this._call('browse_directory', initialDir);
     }

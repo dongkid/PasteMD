@@ -83,6 +83,13 @@
                         <!-- 动态填充 -->
                     </select>
                 </div>
+
+                <div class="section">
+                    <div class="section-title" data-i18n="settings.general.theme">主题</div>
+                    <select id="theme">
+                        <!-- 动态填充 -->
+                    </select>
+                </div>
             </section>
 
             <!-- 转换设置 -->
@@ -162,6 +169,16 @@
                         <input type="checkbox" id="excel-keep-format" checked>
                         <label for="excel-keep-format" data-i18n="settings.advanced.excel_format">保留 Excel 格式</label>
                     </div>
+                </div>
+
+                <!-- 开发者选项 -->
+                <div class="section">
+                    <div class="section-title" data-i18n="settings.advanced.debug_options">开发者选项</div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="debug-mode">
+                        <label for="debug-mode" data-i18n="settings.advanced.debug_mode">启用调试模式</label>
+                    </div>
+                    <div class="note" data-i18n="settings.advanced.debug_mode_note">启用后将开启开发者工具和控制台日志（需重启生效）</div>
                 </div>
             </section>
 

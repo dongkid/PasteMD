@@ -75,4 +75,6 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     ],
     "pandoc_filters": [],
+    "debug_mode": False,  # 调试模式
+    "theme": "auto",  # 主题模式: auto | light | dark
 }

@@ -32,6 +32,7 @@ SETTINGS_FIELD_MAP: dict[str, FieldType] = {
     "enable_excel": FieldType.BOOL,
     "excel_keep_format": FieldType.BOOL,
     "move_cursor_to_end": FieldType.BOOL,
+    "debug_mode": FieldType.BOOL,
 
     # 可空字符串
     "reference_docx": FieldType.NULLABLE_STRING,
@@ -39,4 +40,7 @@ SETTINGS_FIELD_MAP: dict[str, FieldType] = {
     # 列表型
     "pandoc_filters": FieldType.STRING_LIST,
     "pandoc_request_headers": FieldType.STRING_LIST,
+
+    # 主题
+    "theme": FieldType.STRING,
 }
