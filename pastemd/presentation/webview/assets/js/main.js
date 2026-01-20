@@ -28,6 +28,11 @@ async function initApp() {
         state.platform = await window.api.getPlatform();
         applyPlatformClasses();
 
+        // 初始化平台视觉效果（Mica/Vibrancy）
+        if (window.platformEffects) {
+            window.platformEffects.init(state.platform);
+        }
+
         // 加载翻译
         await window.i18n.load();
 
@@ -194,6 +199,11 @@ function applyTheme(theme) {
         root.classList.add('light-theme');
     } else {
         root.classList.add('dark-theme');
+    }
+
+    // 通知平台效果管理器主题变化
+    if (window.platformEffects) {
+        window.platformEffects.onThemeChange(theme);
     }
 
     console.log('Theme applied:', theme);

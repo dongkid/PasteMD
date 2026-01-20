@@ -1,0 +1,234 @@
+/**
+ * PasteMD Settings - Platform-Specific Styles
+ *
+ * 此文件包含 Windows 11 Mica 和 macOS Vibrancy 效果的专用样式
+ */
+
+/* ==================== 透明效果基础设置 ==================== */
+
+/* Mica/Vibrancy 启用时的透明背景 */
+:root.mica-enabled body,
+body.vibrancy-enabled {
+    background-color: transparent !important;
+}
+
+:root.mica-enabled .app,
+body.vibrancy-enabled .app {
+    background: transparent;
+}
+
+/* ==================== 透明效果层级应用 ==================== */
+
+/* 选项卡区域 - 半透明层 */
+:root.mica-enabled .tabs,
+body.vibrancy-enabled .tabs {
+    background: var(--bg-secondary);
+    backdrop-filter: saturate(120%) blur(2px);
+    -webkit-backdrop-filter: saturate(120%) blur(2px);
+}
+
+/* 内容区域背景 */
+:root.mica-enabled .tab-content,
+body.vibrancy-enabled .tab-content {
+    background: transparent;
+}
+
+/* Section 卡片 */
+:root.mica-enabled .section,
+body.vibrancy-enabled .section {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+}
+
+/* 底部操作栏 */
+:root.mica-enabled .actions,
+body.vibrancy-enabled .actions {
+    background: var(--bg-secondary);
+    backdrop-filter: saturate(120%) blur(2px);
+    -webkit-backdrop-filter: saturate(120%) blur(2px);
+}
+
+/* 模态框 */
+:root.mica-enabled .modal,
+body.vibrancy-enabled .modal {
+    background: var(--bg-tertiary);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+}
+
+:root.mica-enabled .modal-overlay,
+body.vibrancy-enabled .modal-overlay {
+    background: rgba(0, 0, 0, 0.4);
+}
+
+/* ==================== Windows 11 特定样式 ==================== */
+
+/* Windows 11 风格的选项卡 */
+body.platform-windows .tabs {
+    padding: 6px 12px;
+    gap: 4px;
+}
+
+body.platform-windows .tab {
+    padding: 7px 14px;
+    font-size: 13px;
+    font-weight: 400;
+    transition: all 0.12s ease;
+}
+
+body.platform-windows .tab:hover {
+    background: var(--bg-hover);
+}
+
+body.platform-windows .tab.active {
+    background: var(--accent);
+    color: var(--text-on-accent);
+    font-weight: 500;
+}
+
+/* Windows 11 风格的按钮 */
+body.platform-windows .btn {
+    font-weight: 500;
+    transition: all 0.1s ease;
+}
+
+body.platform-windows .btn-primary {
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
+}
+
+body.platform-windows .btn-primary:hover {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+body.platform-windows .btn-secondary {
+    border: 1px solid var(--border);
+}
+
+/* Windows 11 风格的输入框 */
+body.platform-windows input[type="text"]:focus,
+body.platform-windows select:focus,
+body.platform-windows textarea:focus {
+    box-shadow: 0 0 0 1px var(--accent);
+}
+
+/* Windows 11 风格的 Section */
+body.platform-windows .section {
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Windows 11 风格的模态框 */
+body.platform-windows .modal {
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.28);
+    border: 1px solid var(--border);
+}
+
+/* ==================== macOS 特定样式 ==================== */
+
+/* macOS 风格的选项卡 */
+body.platform-macos .tabs {
+    padding: 10px 16px;
+    gap: 2px;
+    border-bottom: none;
+}
+
+body.platform-macos .tab {
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: all 0.15s ease;
+}
+
+body.platform-macos .tab:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+body.platform-macos .tab.active {
+    background: var(--accent);
+    color: #fff;
+}
+
+/* macOS 风格的按钮 */
+body.platform-macos .btn {
+    font-weight: 500;
+    transition: all 0.15s ease;
+}
+
+body.platform-macos .btn-primary {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+body.platform-macos .btn-primary:hover {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    transform: translateY(-0.5px);
+}
+
+body.platform-macos .btn-secondary {
+    background: var(--bg-tertiary);
+}
+
+/* macOS 风格的输入框 */
+body.platform-macos input[type="text"],
+body.platform-macos select,
+body.platform-macos textarea {
+    background: var(--bg-tertiary);
+}
+
+body.platform-macos input[type="text"]:focus,
+body.platform-macos select:focus,
+body.platform-macos textarea:focus {
+    background: var(--bg-primary);
+    box-shadow: 0 0 0 3px rgba(var(--accent-rgb, 79, 195, 247), 0.25);
+}
+
+/* macOS 风格的 Section */
+body.platform-macos .section {
+    border: none;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+/* macOS 风格的模态框 */
+body.platform-macos .modal {
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+    border: none;
+}
+
+/* ==================== 降级处理 ==================== */
+
+/* 不支持 backdrop-filter 时的回退样式 */
+@supports not (backdrop-filter: blur(1px)) {
+    :root.mica-enabled body,
+    body.vibrancy-enabled {
+        background-color: var(--bg-primary) !important;
+    }
+
+    :root.mica-enabled .app,
+    body.vibrancy-enabled .app {
+        background: var(--bg-primary);
+    }
+
+    :root.mica-enabled .tabs,
+    body.vibrancy-enabled .tabs,
+    :root.mica-enabled .actions,
+    body.vibrancy-enabled .actions {
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
+}
+
+/* ==================== 动画优化 ==================== */
+
+/* 减少动画时禁用 backdrop-filter（性能优化） */
+@media (prefers-reduced-motion: reduce) {
+    :root.mica-enabled .tabs,
+    :root.mica-enabled .actions,
+    :root.mica-enabled .modal,
+    body.vibrancy-enabled .tabs,
+    body.vibrancy-enabled .actions,
+    body.vibrancy-enabled .modal {
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
+}

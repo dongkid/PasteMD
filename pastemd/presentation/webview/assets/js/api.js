@@ -189,6 +189,24 @@ class ApiWrapper {
         return await this._call('minimize_window');
     }
 
+    // ==================== Platform Effects API ====================
+
+    /**
+     * 更新 Windows 11 Mica 效果的主题模式
+     * @param {string} theme - 主题模式 ('dark' 或 'light')
+     */
+    async updateMicaTheme(theme) {
+        return await this._call('update_mica_theme', theme);
+    }
+
+    /**
+     * 获取平台特性支持情况
+     * @returns {Promise<{mica_supported: boolean, vibrancy_supported: boolean, transparent_supported: boolean}>}
+     */
+    async getPlatformCapabilities() {
+        return await this._call('get_platform_capabilities');
+    }
+
     // ==================== Hotkey API ====================
 
     async getCurrentHotkey() {

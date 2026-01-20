@@ -14,6 +14,23 @@ from ...utils.logging import log
 from ...utils.system_detect import is_windows, is_macos
 from ...core.state import app_state
 
+# Windows Mica 效果支持
+if is_windows():
+    try:
+        from ...utils.win32.mica import (
+            apply_mica_effect,
+            is_mica_supported,
+            update_mica_dark_mode,
+            find_window_by_title,
+        )
+        MICA_AVAILABLE = True
+    except ImportError:
+        apply_mica_effect = is_mica_supported = update_mica_dark_mode = find_window_by_title = None
+        MICA_AVAILABLE = False
+else:
+    MICA_AVAILABLE = False
+    apply_mica_effect = is_mica_supported = update_mica_dark_mode = find_window_by_title = None
+
 if is_macos():
     try:
         from ...utils.macos.dock import begin_ui_session, end_ui_session, activate_app
@@ -153,6 +170,9 @@ class WebViewManager:
         theme = app_state.config.get("theme", "auto")
         background_color = _get_background_color_for_theme(theme)
 
+        # 检查是否可以使用 Mica 效果
+        use_mica = is_windows() and MICA_AVAILABLE and is_mica_supported and is_mica_supported()
+
         # 窗口配置
         window_config = {
             "title": "PasteMD Settings",
@@ -165,6 +185,24 @@ class WebViewManager:
             "background_color": background_color,
         }
 
+        # Windows 11: 启用透明以支持 Mica
+        if use_mica:
+            window_config["transparent"] = True
+            # 注意：pywebview 不支持 8 位十六进制色，透明由 transparent=True 处理
+            # 移除 background_color 让 CSS 控制背景
+            del window_config["background_color"]
+            log("Mica effect will be applied after window creation")
+
+        # macOS: 启用 vibrancy
+        if is_macos():
+            window_config["transparent"] = True
+            window_config["vibrancy"] = True
+            window_config["text_select"] = True
+            # 透明窗口需要移除 background_color
+            if "background_color" in window_config:
+                del window_config["background_color"]
+            log("macOS vibrancy enabled")
+
         # 根据平台确定 HTML 路径
         try:
             html_path = get_settings_html_path()
@@ -173,10 +211,6 @@ class WebViewManager:
             log(f"Warning: {e}")
             # 使用内嵌的基础 HTML 作为后备
             window_config["html"] = self._get_fallback_html()
-
-        # macOS 特定配置
-        if is_macos():
-            window_config["text_select"] = True
 
         # 创建窗口
         window = webview.create_window(**window_config)
@@ -189,6 +223,10 @@ class WebViewManager:
 
         # 绑定关闭事件
         window.events.closing += self._on_window_closing
+
+        # Windows 11: 绑定加载事件以应用 Mica 效果
+        if use_mica:
+            window.events.loaded += self._on_window_loaded_mica
 
         return window
 
@@ -227,6 +265,63 @@ class WebViewManager:
         </body>
         </html>
         """
+
+    def _on_window_loaded_mica(self) -> None:
+        """Windows 窗口加载后应用 Mica 效果"""
+        if not self._settings_window:
+            return
+
+        try:
+            # 获取窗口句柄
+            hwnd = find_window_by_title(self._settings_window.title) if find_window_by_title else None
+
+            if hwnd and apply_mica_effect:
+                # 确定当前主题
+                theme = app_state.config.get("theme", "auto")
+                is_dark = theme == "dark" or (theme == "auto" and _is_system_dark_mode())
+
+                # 应用 Mica 效果
+                if apply_mica_effect(hwnd, dark_mode=is_dark, use_alt=True):
+                    # 通知前端启用 Mica 样式
+                    def notify_mica():
+                        try:
+                            self._settings_window.evaluate_js(
+                                "document.documentElement.classList.add('mica-enabled')"
+                            )
+                            log("Frontend notified: mica-enabled class added")
+                        except Exception as e:
+                            log(f"Failed to notify frontend about Mica: {e}")
+
+                    app_state.queue_ui_task(notify_mica)
+                    log(f"Mica effect applied successfully, dark_mode={is_dark}")
+                else:
+                    log("Failed to apply Mica effect")
+            else:
+                log(f"Could not apply Mica: hwnd={hwnd}, apply_mica_effect={apply_mica_effect}")
+
+        except Exception as e:
+            log(f"Error in _on_window_loaded_mica: {e}")
+
+    def update_mica_theme(self, is_dark: bool) -> bool:
+        """更新 Mica 效果的深色/浅色模式
+
+        Args:
+            is_dark: 是否使用深色模式
+
+        Returns:
+            是否成功更新
+        """
+        if not self._settings_window or not MICA_AVAILABLE:
+            return False
+
+        try:
+            hwnd = find_window_by_title(self._settings_window.title) if find_window_by_title else None
+            if hwnd and update_mica_dark_mode:
+                return update_mica_dark_mode(hwnd, is_dark)
+        except Exception as e:
+            log(f"Failed to update Mica theme: {e}")
+
+        return False
 
     def _on_window_closing(self) -> bool:
         """窗口关闭事件处理"""

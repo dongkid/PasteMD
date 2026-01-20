@@ -98,6 +98,14 @@ body.platform-windows .checkbox-item.windows-only {
     flex-direction: column;
     height: 100vh;
     overflow: hidden;
+    background: var(--bg-primary);
+    transition: background-color 0.2s ease;
+}
+
+/* Mica/Vibrancy 透明背景支持 */
+:root.mica-enabled .app,
+body.vibrancy-enabled .app {
+    background: transparent;
 }
 
 /* 加载状态 */

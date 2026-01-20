@@ -558,3 +558,135 @@ select:focus {
 .path-row .btn-group {
     margin-top: var(--spacing-sm);
 }
+
+/* ==================== 现代化增强样式 ==================== */
+
+/* 更平滑的全局过渡 */
+.tab,
+.btn,
+.section,
+input,
+select,
+textarea {
+    transition: all 0.15s ease;
+}
+
+/* 选项卡激活时的微动画 */
+.tab.active {
+    transform: scale(1);
+}
+
+.tab:active {
+    transform: scale(0.98);
+}
+
+/* 按钮点击反馈 */
+.btn:active:not(:disabled) {
+    transform: scale(0.97);
+}
+
+/* 输入框聚焦时的光晕效果 */
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+/* 复选框现代化样式 */
+.checkbox-item input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg-primary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    position: relative;
+}
+
+.checkbox-item input[type="checkbox"]:hover {
+    border-color: var(--accent);
+}
+
+.checkbox-item input[type="checkbox"]:checked {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+.checkbox-item input[type="checkbox"]:checked::after {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 2px;
+    width: 4px;
+    height: 8px;
+    border: solid var(--text-on-accent);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.checkbox-item input[type="checkbox"]:focus {
+    box-shadow: 0 0 0 2px rgba(79, 195, 247, 0.25);
+}
+
+/* Section 标题更现代的样式 */
+.section-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: var(--spacing-md);
+    opacity: 0.8;
+}
+
+/* 列表项悬停效果增强 */
+.list-item {
+    transition: all 0.1s ease;
+}
+
+.list-item:hover {
+    background: var(--bg-hover);
+    padding-left: calc(var(--spacing-md) + 2px);
+}
+
+/* Toast 通知增强 */
+.toast {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+/* 热键输入框增强 */
+.hotkey-display,
+.hotkey-input {
+    font-family: var(--font-mono);
+    letter-spacing: 0.5px;
+}
+
+/* 权限项卡片效果 */
+.permission-item {
+    transition: all 0.15s ease;
+}
+
+.permission-item:hover {
+    background: var(--bg-hover);
+}
+
+/* 状态指示点动画 */
+.status-dot {
+    transition: all 0.2s ease;
+}
+
+.status-dot.granted {
+    box-shadow: 0 0 6px var(--success);
+}
+
+.status-dot.missing {
+    box-shadow: 0 0 6px var(--error);
+}
+

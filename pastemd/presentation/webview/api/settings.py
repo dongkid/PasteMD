@@ -326,3 +326,64 @@ class SettingsApi(BaseApi):
         except Exception as e:
             log(f"Failed to minimize window: {e}")
             return self._error(str(e), "MINIMIZE_ERROR")
+
+    # ==================== 平台效果 ====================
+    def update_mica_theme(self, theme: str) -> str:
+        """更新 Windows 11 Mica 效果的主题模式
+
+        Args:
+            theme: 主题模式 ('dark' 或 'light')
+
+        Returns:
+            JSON 响应
+        """
+        try:
+            from ....utils.system_detect import is_windows
+
+            if not is_windows():
+                return self._success(message="Not Windows")
+
+            # 获取 WebView 管理器并更新 Mica
+            webview_manager = app_state.webview_manager
+            if webview_manager and hasattr(webview_manager, 'update_mica_theme'):
+                is_dark = theme == 'dark'
+                success = webview_manager.update_mica_theme(is_dark)
+                if success:
+                    return self._success(message=f"Mica theme updated to {theme}")
+                else:
+                    return self._success(message="Mica update failed or not supported")
+
+            return self._success(message="WebView manager not available")
+        except Exception as e:
+            log(f"Failed to update Mica theme: {e}")
+            return self._error(str(e), "MICA_UPDATE_ERROR")
+
+    def get_platform_capabilities(self) -> str:
+        """获取平台特性支持情况
+
+        Returns:
+            JSON 响应，包含平台支持的特性
+        """
+        try:
+            from ....utils.system_detect import is_windows, is_macos
+
+            capabilities = {
+                "mica_supported": False,
+                "vibrancy_supported": False,
+                "transparent_supported": True,
+            }
+
+            if is_windows():
+                try:
+                    from ....utils.win32.mica import is_mica_supported
+                    capabilities["mica_supported"] = is_mica_supported()
+                except ImportError:
+                    pass
+
+            elif is_macos():
+                capabilities["vibrancy_supported"] = True
+
+            return self._success(capabilities)
+        except Exception as e:
+            log(f"Failed to get platform capabilities: {e}")
+            return self._error(str(e), "CAPABILITIES_ERROR")

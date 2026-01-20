@@ -164,3 +164,85 @@
 :root.dark-theme {
     /* 保持默认深色变量 */
 }
+
+/* ==================== 平台特定变量 ==================== */
+
+/* Windows 11 专用字体和圆角 */
+body.platform-windows {
+    --font-family: "Segoe UI Variable", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 10px;
+}
+
+/* macOS 专用字体和圆角 */
+body.platform-macos {
+    --font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", sans-serif;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+}
+
+/* ==================== Windows 11 Mica 效果 ==================== */
+
+/* Mica 深色模式（默认） */
+:root.mica-enabled {
+    --bg-primary: transparent;
+    --bg-secondary: rgba(255, 255, 255, 0.04);
+    --bg-tertiary: rgba(255, 255, 255, 0.07);
+    --bg-hover: rgba(255, 255, 255, 0.10);
+    --border: rgba(255, 255, 255, 0.08);
+    --border-light: rgba(255, 255, 255, 0.12);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.15);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.2);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+/* Mica 浅色模式 */
+:root.mica-enabled.light-theme {
+    --bg-secondary: rgba(255, 255, 255, 0.6);
+    --bg-tertiary: rgba(255, 255, 255, 0.75);
+    --bg-hover: rgba(255, 255, 255, 0.85);
+    --border: rgba(0, 0, 0, 0.06);
+    --border-light: rgba(0, 0, 0, 0.08);
+}
+
+/* Mica Auto 模式 - 跟随系统浅色 */
+@media (prefers-color-scheme: light) {
+    :root.mica-enabled.auto-theme {
+        --bg-secondary: rgba(255, 255, 255, 0.6);
+        --bg-tertiary: rgba(255, 255, 255, 0.75);
+        --bg-hover: rgba(255, 255, 255, 0.85);
+        --border: rgba(0, 0, 0, 0.06);
+        --border-light: rgba(0, 0, 0, 0.08);
+    }
+}
+
+/* ==================== macOS Vibrancy 效果 ==================== */
+
+/* Vibrancy 深色模式（默认） */
+body.platform-macos.vibrancy-enabled {
+    --bg-primary: transparent;
+    --bg-secondary: rgba(255, 255, 255, 0.08);
+    --bg-tertiary: rgba(255, 255, 255, 0.12);
+    --bg-hover: rgba(255, 255, 255, 0.15);
+    --border: rgba(255, 255, 255, 0.1);
+}
+
+/* Vibrancy 浅色模式 */
+body.platform-macos.vibrancy-enabled.light-theme {
+    --bg-secondary: rgba(0, 0, 0, 0.04);
+    --bg-tertiary: rgba(0, 0, 0, 0.06);
+    --bg-hover: rgba(0, 0, 0, 0.08);
+    --border: rgba(0, 0, 0, 0.1);
+}
+
+/* Vibrancy Auto 模式 - 跟随系统浅色 */
+@media (prefers-color-scheme: light) {
+    body.platform-macos.vibrancy-enabled.auto-theme {
+        --bg-secondary: rgba(0, 0, 0, 0.04);
+        --bg-tertiary: rgba(0, 0, 0, 0.06);
+        --bg-hover: rgba(0, 0, 0, 0.08);
+        --border: rgba(0, 0, 0, 0.1);
+    }
+}
