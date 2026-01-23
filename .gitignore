@@ -266,3 +266,4 @@ CLAUDE.md
 docs/node_modules/
 docs/.vitepress/
 *.bak
+dev_doc/

@@ -128,6 +128,7 @@ async function loadLanguages() {
         }
     } catch (e) {
         console.error('Failed to load languages:', e);
+        showToast(t('settings.error.load_languages_failed') || 'Failed to load languages', 'error');
     }
 }
 
@@ -153,6 +154,7 @@ async function loadNoAppActions() {
         }
     } catch (e) {
         console.error('Failed to load no-app actions:', e);
+        showToast(t('settings.error.load_actions_failed') || 'Failed to load action options', 'error');
     }
 }
 
@@ -183,6 +185,7 @@ async function loadThemeOptions() {
         }
     } catch (e) {
         console.error('Failed to load theme options:', e);
+        showToast(t('settings.error.load_themes_failed') || 'Failed to load theme options', 'error');
     }
 }
 
@@ -218,8 +221,13 @@ function setupSystemThemeListener() {
             // 只有在 auto 模式下才响应系统主题变化
             const currentTheme = state.settings.theme || 'auto';
             if (currentTheme === 'auto') {
-                // CSS 媒体查询会自动处理，这里可以做额外的处理（如果需要）
+                // CSS 媒体查询会自动处理
                 console.log('System theme changed, dark mode:', e.matches);
+
+                // 通知 Python 端更新 Mica 效果
+                if (window.platformEffects && window.platformEffects.onThemeChange) {
+                    window.platformEffects.onThemeChange('auto');
+                }
             }
         });
 }
@@ -269,7 +277,51 @@ function populateForm() {
 
     // Filters 列表
     refreshFiltersList();
+
+    // 设置脏检查追踪
+    setupDirtyTracking();
 }
+
+/**
+ * 设置脏检查追踪
+ * 为所有表单元素绑定 change 事件，追踪是否有未保存的修改
+ */
+function setupDirtyTracking() {
+    // 重置脏状态
+    state.isDirty = false;
+
+    // 为所有表单元素绑定 change 事件
+    const formElements = document.querySelectorAll('input, select, textarea');
+    formElements.forEach(el => {
+        // 移除之前可能存在的监听器（避免重复绑定）
+        el.removeEventListener('change', markAsDirty);
+        el.removeEventListener('input', markAsDirty);
+
+        // 绑定新的监听器
+        el.addEventListener('change', markAsDirty);
+        // 对于 text input 和 textarea，也监听 input 事件以实时追踪
+        if (el.type === 'text' || el.tagName.toLowerCase() === 'textarea') {
+            el.addEventListener('input', markAsDirty);
+        }
+    });
+}
+
+/**
+ * 标记为脏状态
+ */
+function markAsDirty() {
+    state.isDirty = true;
+}
+
+// 窗口关闭前检查未保存的更改
+window.addEventListener('beforeunload', (e) => {
+    if (state.isDirty) {
+        // 标准的 beforeunload 处理
+        e.preventDefault();
+        // Chrome 需要设置 returnValue
+        e.returnValue = '';
+    }
+});
 
 /**
  * 收集表单数据
@@ -439,6 +491,7 @@ async function saveHotkey() {
         // 检查冲突
         const conflict = await window.api.checkHotkeyConflict(pendingHotkey);
         if (!conflict.is_available) {
+            // TODO: 考虑替换为自定义 Modal 对话框以保持 UI 一致性
             if (!confirm(t('hotkey.dialog.conflict_confirm'))) {
                 return;
             }
@@ -483,6 +536,7 @@ window.onLanguageChanged = async function() {
         await window.i18n.load();
         await loadLanguages();
         await loadNoAppActions();
+        await loadThemeOptions();  // 刷新主题选项翻译
         window.i18n.updateAllElements();
     } catch (e) {
         console.error('Failed to handle language change:', e);
@@ -548,6 +602,7 @@ async function addFilter() {
             state.filters.push(path);
             state.selectedFilterIndex = state.filters.length - 1;
             refreshFiltersList();
+            markAsDirty();
         }
     } catch (e) {
         console.error('Failed to add filter:', e);
@@ -559,6 +614,7 @@ function removeFilter() {
         state.filters.splice(state.selectedFilterIndex, 1);
         state.selectedFilterIndex = Math.min(state.selectedFilterIndex, state.filters.length - 1);
         refreshFiltersList();
+        markAsDirty();
     }
 }
 
@@ -569,6 +625,7 @@ function moveFilterUp() {
         state.filters[state.selectedFilterIndex - 1] = temp;
         state.selectedFilterIndex--;
         refreshFiltersList();
+        markAsDirty();
     }
 }
 
@@ -579,11 +636,12 @@ function moveFilterDown() {
         state.filters[state.selectedFilterIndex + 1] = temp;
         state.selectedFilterIndex++;
         refreshFiltersList();
+        markAsDirty();
     }
 }
 
 /**
- * P1-13: 编辑选中的 Filter
+ * 编辑选中的 Filter
  */
 async function editFilter(index) {
     if (index < 0 || index >= state.filters.length) return;
@@ -599,6 +657,7 @@ async function editFilter(index) {
         if (path) {
             state.filters[index] = path;
             refreshFiltersList();
+            markAsDirty();
         }
     } catch (e) {
         console.error('Failed to edit filter:', e);

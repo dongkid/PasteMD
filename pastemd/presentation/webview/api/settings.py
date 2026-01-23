@@ -138,24 +138,28 @@ class SettingsApi(BaseApi):
             config = copy.deepcopy(app_state.config)
 
             # 检测语言是否改变（在更新config之前）
+            # 注意：不使用默认值，这样初次设置语言时也能触发刷新
             language_changed = False
             if "language" in new_settings:
-                old_language = config.get("language", "en-US")
+                old_language = config.get("language")  # None if not set
                 new_language = new_settings["language"]
+                # 如果 old_language 为 None 或与新语言不同，都需要刷新
                 if old_language != new_language:
                     language_changed = True
 
             # 应用映射表中的字段（自动处理平台过滤）
             self._apply_all_fields(config, new_settings)
 
-            # HTML 格式化 (嵌套结构，需单独处理)
+            # HTML 格式化 (嵌套结构，自动映射所有字段)
             if "html_formatting" in new_settings:
                 if "html_formatting" not in config:
                     config["html_formatting"] = {}
-                if "strikethrough_to_del" in new_settings["html_formatting"]:
-                    config["html_formatting"]["strikethrough_to_del"] = bool(
-                        new_settings["html_formatting"]["strikethrough_to_del"]
-                    )
+                for key, value in new_settings["html_formatting"].items():
+                    # 布尔字段统一转换
+                    if isinstance(value, bool) or key in ("strikethrough_to_del",):
+                        config["html_formatting"][key] = bool(value)
+                    else:
+                        config["html_formatting"][key] = value
 
             # 保存到文件
             self.config_loader.save(config)
@@ -175,11 +179,19 @@ class SettingsApi(BaseApi):
                     log(f"Save callback error: {e}")
 
             # 如果语言改变，通知前端刷新翻译
+            # 注意：js_api 回调不在 GUI 线程，需要通过 UI 队列调用 evaluate_js
             if language_changed and self._window:
-                try:
-                    self._window.evaluate_js("window.onLanguageChanged && window.onLanguageChanged()")
-                except Exception as e:
-                    log(f"Failed to notify frontend of language change: {e}")
+                # 捕获当前 window 引用，避免闭包中引用被清理
+                window = self._window
+
+                def notify_language_changed():
+                    try:
+                        # 再次确认窗口实例仍然存在
+                        if window:
+                            window.evaluate_js("window.onLanguageChanged && window.onLanguageChanged()")
+                    except Exception as e:
+                        log(f"Failed to notify frontend of language change: {e}")
+                app_state.queue_ui_task(notify_language_changed)
 
             log("Settings saved successfully")
             return self._success(message=t("settings.success.saved"))
@@ -197,8 +209,15 @@ class SettingsApi(BaseApi):
             if not self._window:
                 return self._error("Window not available", "WINDOW_NOT_READY")
 
+            # 处理初始目录，验证路径是否存在
+            start_dir = ""
             if initial_dir:
                 initial_dir = os.path.expandvars(initial_dir)
+                if os.path.isdir(initial_dir):
+                    start_dir = initial_dir
+                else:
+                    # 路径不存在，降级到用户目录
+                    start_dir = os.path.expanduser("~")
 
             # 使用新的 FileDialog API（兼容旧版本）
             dialog_type = getattr(webview, 'FOLDER_DIALOG', None)
@@ -207,7 +226,7 @@ class SettingsApi(BaseApi):
 
             result = self._window.create_file_dialog(
                 dialog_type,
-                directory=initial_dir if initial_dir and os.path.isdir(initial_dir) else ""
+                directory=start_dir
             )
 
             if result and len(result) > 0:
@@ -223,7 +242,7 @@ class SettingsApi(BaseApi):
             if not self._window:
                 return self._error("Window not available", "WINDOW_NOT_READY")
 
-            # 处理初始目录
+            # 处理初始目录，验证路径是否存在
             start_dir = ""
             if initial_dir:
                 initial_dir = os.path.expandvars(initial_dir)
@@ -237,6 +256,9 @@ class SettingsApi(BaseApi):
                     parent = os.path.dirname(initial_dir)
                     if parent and os.path.isdir(parent):
                         start_dir = parent
+                    else:
+                        # 最后降级到用户目录
+                        start_dir = os.path.expanduser("~")
 
             # 解析文件类型 - pywebview 期望格式: ('Description (*.ext)', 'Description2 (*.ext2)')
             file_types_tuple = ()

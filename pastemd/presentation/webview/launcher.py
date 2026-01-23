@@ -52,12 +52,14 @@ class WebViewLauncher:
 
     def _start_quit_event_listener(self) -> None:
         """
-        P1-15: 启动 quit_event 监听器
+        启动 quit_event 监听器
 
         这是统一的退出处理点：
         - 监听 quit_event 信号
         - 收到信号后销毁 WebView，使 webview.start() 返回
         - 由 _on_quit（托盘退出）触发 quit_event
+
+        注意：destroy() 必须通过 UI 队列执行，确保在正确的线程销毁窗口
         """
         def _listen():
             quit_event = app_state.quit_event
@@ -67,7 +69,13 @@ class WebViewLauncher:
                 log("Quit event received, destroying webview (primary cleanup point)...")
                 try:
                     if self._manager:
-                        self._manager.destroy()
+                        # 通过 UI 队列在正确的线程执行销毁操作
+                        def _trigger_destroy():
+                            try:
+                                self._manager.destroy()
+                            except Exception as e:
+                                log(f"Error in destroy: {e}")
+                        app_state.queue_ui_task(_trigger_destroy)
                 except Exception as e:
                     log(f"Error during quit cleanup: {e}")
 
@@ -134,7 +142,7 @@ class WebViewLauncher:
                 except Exception as e:
                     log(f"Failed to install reopen handler: {e}")
 
-            # P1-15: 启动 quit_event 监听器
+            # 启动 quit_event 监听器
             self._start_quit_event_listener()
 
             # 调用用户回调

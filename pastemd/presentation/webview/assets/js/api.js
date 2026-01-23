@@ -122,7 +122,30 @@ class ApiWrapper {
             }
 
             const result = await fn.apply(null, args);
-            const parsed = JSON.parse(result);
+
+            // 容错处理：检查返回值类型
+            if (result === undefined || result === null) {
+                console.warn(`API ${method} returned empty response`);
+                throw new Error('API returned empty response');
+            }
+
+            // 如果已经是对象，直接返回
+            if (typeof result === 'object') {
+                if (result.success) {
+                    return result.data;
+                } else {
+                    throw new Error(result.error?.message || 'Unknown error');
+                }
+            }
+
+            // 尝试解析 JSON
+            let parsed;
+            try {
+                parsed = JSON.parse(result);
+            } catch (parseError) {
+                console.error(`API ${method} response is not valid JSON:`, result);
+                throw new Error('Invalid API response format');
+            }
 
             if (parsed.success) {
                 return parsed.data;

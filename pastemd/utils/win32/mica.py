@@ -7,30 +7,27 @@ to application windows using DWM (Desktop Window Manager) APIs.
 from __future__ import annotations
 
 import ctypes
-from ctypes import wintypes
 from typing import Optional
 
 from ..logging import log
-
-
-# DWM 窗口属性常量
-DWMWA_USE_IMMERSIVE_DARK_MODE = 20
-DWMWA_SYSTEMBACKDROP_TYPE = 38
-DWMWA_MICA_EFFECT = 1029  # Undocumented, for Windows 11 21H2
-DWMWA_WINDOW_CORNER_PREFERENCE = 33
-
-# 系统背景类型
-DWMSBT_AUTO = 0
-DWMSBT_NONE = 1
-DWMSBT_MAINWINDOW = 2  # Mica
-DWMSBT_TRANSIENTWINDOW = 3  # Acrylic
-DWMSBT_TABBEDWINDOW = 4  # Tabbed Mica (Mica Alt)
-
-# 窗口圆角类型
-DWMWCP_DEFAULT = 0
-DWMWCP_DONOTROUND = 1
-DWMWCP_ROUND = 2
-DWMWCP_ROUNDSMALL = 3
+from .win32_types import (
+    # DWM 窗口属性常量
+    DWMWA_USE_IMMERSIVE_DARK_MODE,
+    DWMWA_SYSTEMBACKDROP_TYPE,
+    DWMWA_MICA_EFFECT,
+    DWMWA_WINDOW_CORNER_PREFERENCE,
+    # 系统背景类型
+    DWMSBT_AUTO,
+    DWMSBT_NONE,
+    DWMSBT_MAINWINDOW,
+    DWMSBT_TRANSIENTWINDOW,
+    DWMSBT_TABBEDWINDOW,
+    # 窗口圆角类型
+    DWMWCP_DEFAULT,
+    DWMWCP_DONOTROUND,
+    DWMWCP_ROUND,
+    DWMWCP_ROUNDSMALL,
+)
 
 
 def get_windows_build() -> int:

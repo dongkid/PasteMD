@@ -14,6 +14,10 @@ from ...utils.logging import log
 from ...utils.system_detect import is_windows, is_macos
 from ...core.state import app_state
 
+# 设置窗口尺寸常量
+SETTINGS_WINDOW_WIDTH = 650
+SETTINGS_WINDOW_HEIGHT = 550
+
 # Windows Mica 效果支持
 if is_windows():
     try:
@@ -125,6 +129,7 @@ class WebViewManager:
         self._is_quitting = False  # 退出标志：用于区分正常关闭和程序退出
         self._on_settings_save_callback: Optional[Callable] = None
         self._on_settings_close_callback: Optional[Callable] = None
+        self._needs_center_on_show = False  # 标记是否需要首次显示时居中（透明窗口屏幕外初始化）
 
         # API 实例
         self._settings_api = None
@@ -176,8 +181,8 @@ class WebViewManager:
         # 窗口配置
         window_config = {
             "title": "PasteMD Settings",
-            "width": 650,
-            "height": 550,
+            "width": SETTINGS_WINDOW_WIDTH,
+            "height": SETTINGS_WINDOW_HEIGHT,
             "resizable": True,
             "min_size": (500, 400),
             "js_api": combined_api,
@@ -190,8 +195,13 @@ class WebViewManager:
             window_config["transparent"] = True
             # 注意：pywebview 不支持 8 位十六进制色，透明由 transparent=True 处理
             # 移除 background_color 让 CSS 控制背景
-            del window_config["background_color"]
-            log("Mica effect will be applied after window creation")
+            window_config.pop("background_color", None)
+            # 屏幕外初始化：避免透明窗口 hidden=True 失效
+            # 参考 dev_doc/pywebview-transparent-window-gotchas.md
+            window_config["x"] = -9999
+            window_config["y"] = -9999
+            self._needs_center_on_show = True
+            log("Mica: window will be created off-screen")
 
         # macOS: 启用 vibrancy
         if is_macos():
@@ -199,8 +209,7 @@ class WebViewManager:
             window_config["vibrancy"] = True
             window_config["text_select"] = True
             # 透明窗口需要移除 background_color
-            if "background_color" in window_config:
-                del window_config["background_color"]
+            window_config.pop("background_color", None)
             log("macOS vibrancy enabled")
 
         # 根据平台确定 HTML 路径
@@ -272,6 +281,10 @@ class WebViewManager:
             return
 
         try:
+            # 首先隐藏窗口，防止任务栏出现图标
+            self._settings_window.hide()
+            log("Mica: window hidden after load")
+
             # 获取窗口句柄
             hwnd = find_window_by_title(self._settings_window.title) if find_window_by_title else None
 
@@ -301,6 +314,64 @@ class WebViewManager:
 
         except Exception as e:
             log(f"Error in _on_window_loaded_mica: {e}")
+
+    def _center_window_on_screen(self) -> None:
+        """使用 Win32 API 将窗口居中到主显示器工作区
+
+        透明窗口使用屏幕外初始化策略，首次显示时需要手动居中。
+        使用 SetWindowPos 而非 pywebview.move() 以获得更可靠的结果。
+        """
+        if not self._settings_window or not is_windows():
+            return
+
+        try:
+            import ctypes
+            from ...utils.win32.win32_types import (
+                POINT, MONITORINFO, MONITOR_DEFAULTTOPRIMARY,
+                SWP_NOSIZE, SWP_NOZORDER, SWP_NOACTIVATE
+            )
+
+            user32 = ctypes.windll.user32
+            hwnd = find_window_by_title(self._settings_window.title) if find_window_by_title else None
+            if not hwnd:
+                log("Center: could not find window handle")
+                return
+
+            # 获取 DPI 缩放
+            dpi = user32.GetDpiForWindow(hwnd)
+            dpi_scale = dpi / 96.0 if dpi else 1.0
+
+            # 获取主显示器（窗口在屏幕外时不能用 MonitorFromWindow）
+            point = POINT(0, 0)
+            monitor = user32.MonitorFromPoint(point, MONITOR_DEFAULTTOPRIMARY)
+
+            # 获取工作区尺寸
+            mi = MONITORINFO()
+            mi.cbSize = ctypes.sizeof(MONITORINFO)
+            user32.GetMonitorInfoW(monitor, ctypes.byref(mi))
+
+            work_left = mi.rcWork.left
+            work_top = mi.rcWork.top
+            work_width = mi.rcWork.right - mi.rcWork.left
+            work_height = mi.rcWork.bottom - mi.rcWork.top
+
+            # 窗口尺寸转换为物理像素
+            physical_width = int(SETTINGS_WINDOW_WIDTH * dpi_scale)
+            physical_height = int(SETTINGS_WINDOW_HEIGHT * dpi_scale)
+
+            # 计算居中位置
+            x = work_left + (work_width - physical_width) // 2
+            y = work_top + (work_height - physical_height) // 2
+
+            # 使用 SetWindowPos 移动窗口
+            user32.SetWindowPos(
+                hwnd, 0, x, y, 0, 0,
+                SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE
+            )
+            log(f"Center: moved to ({x}, {y}), DPI scale={dpi_scale}")
+
+        except Exception as e:
+            log(f"Center: failed - {e}")
 
     def update_mica_theme(self, is_dark: bool) -> bool:
         """更新 Mica 效果的深色/浅色模式
@@ -355,6 +426,11 @@ class WebViewManager:
             return
 
         try:
+            # 首次显示时居中（针对透明窗口的屏幕外初始化）
+            if self._needs_center_on_show:
+                self._needs_center_on_show = False
+                self._center_window_on_screen()
+
             # macOS: 显示 Dock 图标
             if is_macos():
                 begin_ui_session()
