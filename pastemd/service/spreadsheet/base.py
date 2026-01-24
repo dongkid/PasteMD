@@ -35,11 +35,12 @@ class BaseSpreadsheetPlacer(ABC):
 
 class ClipboardHTMLSpreadsheetPlacer(BaseSpreadsheetPlacer):
     """基于剪贴板 HTML/TSV 粘贴的表格内容落地器通用实现
-    
+
     适用于 Excel、WPS 等支持 HTML 剪贴板格式的表格应用。
-    子类只需指定平台检查和国际化 key。
+    子类需指定 app_name 和 i18n_prefix。
     """
-    app_name: str = None  # 如 "macOS Excel"
+    app_name: str = None      # 如 "macOS Excel"
+    i18n_prefix: str = None   # 如 "placer.macos_excel"
     
     def place(self, table_data: List[List[str]], config: dict) -> PlacementResult:
         try:

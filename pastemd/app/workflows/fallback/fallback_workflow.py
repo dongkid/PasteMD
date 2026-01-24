@@ -124,6 +124,7 @@ class FallbackWorkflow(BaseWorkflow):
     def _handle_document(self, action: str, content_type: str):
         """处理文档内容（HTML 或 Markdown）"""
         # 1. 读取内容
+        html = ""  # 初始化避免 else 分支中变量未定义
         if content_type == "html":
             html = get_clipboard_html(self.config)
             html = self.html_preprocessor.process(html, self.config)

@@ -5,7 +5,19 @@ from typing import Protocol, Any, Dict, Callable, Literal, Optional
 from abc import abstractmethod
 
 
-PlacementMethod = Literal["com", "applescript", "clipboard_bridge"]
+PlacementMethod = Literal[
+    # 原生 API 方式
+    "com",                   # Windows COM 接口
+    "applescript",           # macOS AppleScript
+    "clipboard_bridge",      # 剪贴板桥接（保留兼容）
+    # 剪贴板方式
+    "clipboard_rtf_html",    # RTF/HTML 富文本（macOS WPS）
+    "clipboard_file",        # 文件粘贴
+    "clipboard_rich_text",   # 富文本粘贴
+    "clipboard_plain_text",  # 纯文本粘贴
+    "clipboard_html_table",  # HTML 表格粘贴
+    "clipboard_tsv",         # TSV 粘贴
+]
 
 
 class PlacementResult:

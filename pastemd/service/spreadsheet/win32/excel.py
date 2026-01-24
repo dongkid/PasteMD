@@ -7,3 +7,4 @@ class ExcelPlacer(ClipboardHTMLSpreadsheetPlacer):
     """Windows Excel 内容落地器（HTML 剪贴板粘贴方式）"""
 
     app_name = "Windows Excel"
+    i18n_prefix = "placer.win32_excel"
