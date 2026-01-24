@@ -15,11 +15,15 @@ if sys.platform == "darwin":
     from .macos.detector import (
         detect_active_app as _detect_active_app,
         detect_wps_type as _detect_wps_type,
+        get_frontmost_window_title as _get_frontmost_window_title,
     )
 elif sys.platform == "win32":
     from .win32.detector import (
         detect_active_app as _detect_active_app,
         detect_wps_type as _detect_wps_type,
+    )
+    from .win32.window import (
+        get_foreground_window_title as _get_frontmost_window_title,
     )
 else:
     # 不支持的平台，提供空实现
@@ -27,6 +31,9 @@ else:
         return ""
     
     def _detect_wps_type() -> str:
+        return ""
+    
+    def _get_frontmost_window_title() -> str:
         return ""
 
 
@@ -130,6 +137,18 @@ def get_app_display_name(app_type: str) -> str:
     return display_names.get(app_type, app_type)
 
 
+def get_frontmost_window_title() -> str:
+    """
+    获取当前前台窗口的标题
+    
+    跨平台统一接口，自动调用对应平台的实现
+    
+    Returns:
+        窗口标题字符串，失败时返回空字符串
+    """
+    return _get_frontmost_window_title()
+
+
 __all__ = [
     "AppType",
     "detect_active_app",
@@ -138,4 +157,5 @@ __all__ = [
     "is_word_like",
     "is_excel_like",
     "get_app_display_name",
+    "get_frontmost_window_title",
 ]

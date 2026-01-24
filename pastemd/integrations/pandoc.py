@@ -5,7 +5,7 @@ import re
 import subprocess
 from typing import Optional, List
 
-from ..utils.html_formatter import protect_task_list_brackets
+from ..utils.html_formatter import protect_brackets
 
 from ..config.paths import resource_path
 
@@ -13,11 +13,7 @@ from ..core.errors import PandocError
 from ..utils.logging import log
 
 LUA_KEEP_ORIGINAL_FORMULA = resource_path("lua/keep-latex-math.lua")
-if not os.path.isfile(LUA_KEEP_ORIGINAL_FORMULA):
-    LUA_KEEP_ORIGINAL_FORMULA = resource_path("pastemd/lua/keep-latex-math.lua")
 LUA_LATEX_REPLACEMENTS = resource_path("lua/latex-replacements.lua")
-if not os.path.isfile(LUA_LATEX_REPLACEMENTS):
-    LUA_LATEX_REPLACEMENTS = resource_path("pastemd/lua/latex-replacements.lua")
 
 
 def _log_pandoc_stderr_as_warning(stderr: Optional[bytes], *, context: str) -> None:
@@ -116,11 +112,15 @@ class PandocIntegration:
         
         return filter_args
 
-    def _convert_html_to_md(self, html_text: str) -> str:
+    def _convert_html_to_md(
+        self,
+        html_text: str,
+        custom_filters: Optional[List[str]] = None,
+    ) -> str:
         """
         使用 Pandoc 将 HTML 转换为 Markdown。
         """
-        html_text = protect_task_list_brackets(html_text)
+        html_text = protect_brackets(html_text)
         cmd = [
             self.pandoc_path,
             "-f", "html+tex_math_dollars+raw_tex+tex_math_double_backslash+tex_math_single_backslash",
@@ -128,6 +128,7 @@ class PandocIntegration:
             "-o", "-",          # 输出到 stdout
             "--wrap", "none",   # 不自动换行，方便你后处理
         ]
+        cmd += self._build_filter_args(custom_filters)
 
         startupinfo = None
         creationflags = 0
@@ -162,11 +163,16 @@ class PandocIntegration:
         md = md.replace("{{TASK_CHECKED}}", "[x]").replace("{{TASK_UNCHECKED}}", "[ ]")
         return md
 
-    def convert_html_to_markdown_text(self, html_text: str) -> str:
+    def convert_html_to_markdown_text(
+        self,
+        html_text: str,
+        *,
+        custom_filters: Optional[List[str]] = None,
+    ) -> str:
         """
         将 HTML 转换为 Markdown 文本（保留 $...$ 数学语法）。
         """
-        return self._convert_html_to_md(html_text)
+        return self._convert_html_to_md(html_text, custom_filters)
 
     def convert_markdown_to_html_text(
         self,
@@ -347,7 +353,18 @@ class PandocIntegration:
         _log_pandoc_stderr_as_warning(result.stderr, context="Pandoc warning (MD->DOCX)")
         return result.stdout
 
-    def convert_html_to_docx_bytes(self, html_text: str, reference_docx: Optional[str] = None, Keep_original_formula: bool = False, enable_latex_replacements: bool = True, custom_filters: Optional[List[str]] = None, request_headers: Optional[List[str]] = None, cwd: Optional[str] = None) -> bytes:
+    def convert_html_to_docx_bytes(
+        self,
+        html_text: str,
+        reference_docx: Optional[str] = None,
+        Keep_original_formula: bool = False,
+        enable_latex_replacements: bool = True,
+        custom_filters: Optional[List[str]] = None,
+        request_headers: Optional[List[str]] = None,
+        cwd: Optional[str] = None,
+        custom_filters_html_to_md: Optional[List[str]] = None,
+        custom_filters_md_to_docx: Optional[List[str]] = None,
+    ) -> bytes:
         """
         用 stdin 喂入 HTML，直接把 DOCX 从 stdout 读到内存（无任何输入文件写盘）
         
@@ -366,13 +383,13 @@ class PandocIntegration:
             PandocError: 转换失败时
         """
         if Keep_original_formula:
-            md = self._convert_html_to_md(html_text)
+            md = self._convert_html_to_md(html_text, custom_filters_html_to_md)
             return self.convert_to_docx_bytes(
                     md_text=md,
                     reference_docx=reference_docx,
                     Keep_original_formula=Keep_original_formula,
                     enable_latex_replacements=enable_latex_replacements,
-                    custom_filters=custom_filters,
+                    custom_filters=custom_filters_md_to_docx or custom_filters,
                     request_headers=request_headers,
                     cwd=cwd,
                 )
@@ -424,3 +441,138 @@ class PandocIntegration:
         _log_pandoc_stderr_as_warning(result.stderr, context="Pandoc warning (HTML->DOCX)")
         return result.stdout
 
+    def _strip_latex_preamble(self, latex: str) -> str:
+        """
+        Remove LaTeX document structure, keeping only body content.
+        
+        Strips:
+        - \\documentclass, \\usepackage, \\begin{document}, \\end{document}
+        - \\maketitle, \\tightlist, other preamble commands
+        - Empty lines at start/end
+        """
+        lines = latex.split('\n')
+        result_lines = []
+        in_document = False
+        skip_patterns = [
+            r'^\s*\\documentclass',
+            r'^\s*\\usepackage',
+            r'^\s*\\begin\{document\}',
+            r'^\s*\\end\{document\}',
+            r'^\s*\\maketitle',
+            r'^\s*\\date\{',
+            r'^\s*\\author\{',
+            r'^\s*\\providecommand',
+            r'^\s*\\setlength',
+            r'^\s*\\def\\tightlist',
+            r'^\s*\\tightlist',
+            r'^\s*\\newcommand',
+        ]
+        
+        for line in lines:
+            # Skip preamble lines
+            should_skip = False
+            for pattern in skip_patterns:
+                if re.match(pattern, line):
+                    should_skip = True
+                    break
+            
+            if should_skip:
+                if '\\begin{document}' in line:
+                    in_document = True
+                continue
+            
+            # Only include content after \begin{document} or if no document structure
+            if in_document or not any(re.match(r'^\s*\\documentclass', l) for l in lines[:20]):
+                result_lines.append(line)
+        
+        # Clean up result
+        result = '\n'.join(result_lines)
+        # Remove leading/trailing empty lines
+        result = result.strip()
+        return result
+
+    def convert_html_to_latex_text(
+        self,
+        html_text: str,
+        *,
+        strip_preamble: bool = True,
+        custom_filters_html_to_md: Optional[List[str]] = None,
+        custom_filters_md_to_latex: Optional[List[str]] = None,
+    ) -> str:
+        """
+        Convert HTML to LaTeX text.
+        
+        Args:
+            html_text: HTML content
+            strip_preamble: If True, remove document preamble for Overleaf paste
+            
+        Returns:
+            LaTeX content (body only if strip_preamble=True)
+        """
+        # First convert HTML to Markdown
+        md_text = self._convert_html_to_md(html_text, custom_filters_html_to_md)
+        # Then convert Markdown to LaTeX
+        return self.convert_markdown_to_latex_text(
+            md_text,
+            strip_preamble=strip_preamble,
+            custom_filters=custom_filters_md_to_latex,
+        )
+
+    def convert_markdown_to_latex_text(
+        self,
+        md_text: str,
+        *,
+        strip_preamble: bool = True,
+        enable_latex_replacements: bool = True,
+        custom_filters: Optional[List[str]] = None,
+    ) -> str:
+        """
+        Convert Markdown to LaTeX text.
+        
+        Args:
+            md_text: Markdown content
+            strip_preamble: If True, remove document preamble for Overleaf paste
+            enable_latex_replacements: Enable LaTeX syntax fixes
+            custom_filters: Optional list of custom Pandoc filters
+            
+        Returns:
+            LaTeX content (body only if strip_preamble=True)
+        """
+        cmd = [
+            self.pandoc_path,
+            "-f", "markdown+tex_math_dollars+raw_tex+tex_math_double_backslash+tex_math_single_backslash",
+            "-t", "latex",
+            "-o", "-",
+            "--wrap", "none",
+        ]
+        if enable_latex_replacements:
+            cmd += ["--lua-filter", LUA_LATEX_REPLACEMENTS]
+        cmd += self._build_filter_args(custom_filters)
+
+        startupinfo = None
+        creationflags = 0
+        if os.name == "nt":
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            creationflags = subprocess.CREATE_NO_WINDOW
+
+        result = subprocess.run(
+            cmd,
+            input=md_text.encode("utf-8"),
+            capture_output=True,
+            text=False,
+            shell=False,
+            startupinfo=startupinfo,
+            creationflags=creationflags,
+        )
+        if result.returncode != 0:
+            err = (result.stderr or b"").decode("utf-8", "ignore")
+            log(f"Pandoc Markdown to LaTeX error: {err}")
+            raise PandocError(err or "Pandoc Markdown to LaTeX conversion failed")
+
+        latex = result.stdout.decode("utf-8", "ignore")
+        
+        if strip_preamble:
+            latex = self._strip_latex_preamble(latex)
+        
+        return latex

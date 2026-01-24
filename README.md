@@ -25,6 +25,10 @@
   <a href="docs/md/README.ja.md">日本語</a>
 </p>
 
+<p align="center">
+<a href="https://hellogithub.com/repository/RICHQAQ/PasteMD" target="_blank"><img src="https://abroad.hellogithub.com/v1/widgets/recommend.svg?rid=7dfb1883330d441f9264d8e8945c75e2&claim_uid=RvDOqI1Satiwzh4&theme=neutral" alt="Featured｜HelloGitHub" style="width: 250px; height: 54px;" width="250" height="54" /></a>
+</p>
+
 > 在写论文或报告时，从 ChatGPT / DeepSeek 等 AI 网站中复制出来的公式在 Word 里总是乱码？Markdown 表格复制到 Excel 总是不行？**PasteMD 就是为了解决这个问题而生的，嘿嘿**
 > 
 > <img src="docs/gif/atri/igood.gif"
@@ -34,9 +38,13 @@
 一个常驻托盘的小工具：
 从 **剪贴板读取 Markdown**，调用 **Pandoc** 转换为 DOCX，并自动插入到 **Word/WPS** 光标位置。
 
-**✨ 新功能**：智能识别 Markdown 表格，一键粘贴到 **Excel**！
+**✨ 功能**：智能识别 Markdown 表格，一键粘贴到 **Excel**！
 
-**✨ 新功能**：智能识别 HTML富文本，方便直接复制网页上的ai回复，一键粘贴到 **Word/WPS**！
+**✨ 功能**：智能识别 HTML富文本，方便直接复制网页上的ai回复，一键粘贴到 **Word/WPS**！
+
+**✨ 新功能**：应用扩展（HTML+Markdown/HTML/Markdown/LaTeX/文件粘贴），可按应用/窗口标题匹配（如语雀/QQ等）。
+
+**✨ 新功能**：转换增强：支持按转换类型配置 Pandoc Filters；自动修复部分 LaTeX 语法与单 `$...$` 公式块。
 
 ---
 
@@ -68,6 +76,8 @@
 
 * 全局热键（默认 `Ctrl+Shift+B`）一键粘贴 Markdown → DOCX。
 * **✨ 智能识别 Markdown 表格**，自动粘贴到 Excel。
+* **✨ 应用扩展**：为不同应用配置 HTML+Markdown/HTML/Markdown/LaTeX/文件 粘贴模式，支持按窗口标题匹配。
+* **✨ 转换增强**：按转换类型添加 Pandoc Filters，自动修复部分 LaTeX 语法与单 `$...$` 公式块。
 * 自动识别当前前台应用：Word 或 WPS。
 * 智能打开所需应用为Word/Excel。
 * 托盘菜单，可保留文件、查看日志/配置等。
@@ -136,8 +146,10 @@
   "save_dir": "%USERPROFILE%\\Documents\\pastemd",
   "keep_file": false,
   "notify": true,
+  "startup_notify": true,
   "enable_excel": true,
   "excel_keep_format": true,
+  "paste_delay_s": 0.3,
   "no_app_action": "open",
   "md_disable_first_para_indent": true,
   "html_disable_first_para_indent": true,
@@ -146,11 +158,44 @@
   },
   "move_cursor_to_end": true,
   "Keep_original_formula": false,
+  "enable_latex_replacements": true,
+  "fix_single_dollar_block": true,
   "language": "zh-CN",
   "pandoc_request_headers": [
     "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
   ],
-  "pandoc_filters": []
+  "pandoc_filters": [],
+  "pandoc_filters_by_conversion": {
+    "md_to_docx": [],
+    "html_to_docx": [],
+    "html_to_md": [],
+    "md_to_html": [],
+    "md_to_rtf": [],
+    "md_to_latex": []
+  },
+  "extensible_workflows": {
+    "html": {
+      "enabled": true,
+      "apps": [],
+      "keep_formula_latex": true
+    },
+    "md": {
+      "enabled": true,
+      "apps": [],
+      "html_formatting": {
+        "css_font_to_semantic": true,
+        "bold_first_row_to_header": true
+      }
+    },
+    "latex": {
+      "enabled": true,
+      "apps": []
+    },
+    "file": {
+      "enabled": true,
+      "apps": []
+    }
+  }
 }
 ```
 
@@ -162,17 +207,24 @@
 * `save_dir`：保留文件时的保存目录。
 * `keep_file`：是否保留生成的 DOCX 文件。
 * `notify`：是否显示系统通知。
-* **`enable_excel`**：**✨ 新功能** - 是否启用智能识别 Markdown 表格并粘贴到 Excel（默认 true）。
-* **`excel_keep_format`**：**✨ 新功能** - Excel 粘贴时是否保留 Markdown 格式（粗体、斜体、代码等），默认 true。
-* **`no_app_action`**：**✨ 新功能** 当未检测到目标应用（如 Word/Excel）时的默认动作（默认 `"open"`）。可选值：`open`=自动打开、`save`=仅保存、`clipboard`=复制文件到剪贴板、`none`=无操作。
+* `startup_notify`：启动时是否显示提示通知。
+* **`enable_excel`**： - 是否启用智能识别 Markdown 表格并粘贴到 Excel（默认 true）。
+* **`excel_keep_format`**： - Excel 粘贴时是否保留 Markdown 格式（粗体、斜体、代码等），默认 true。
+* `paste_delay_s`：粘贴前的延迟秒数（win有的时候写入剪切板需要一点点时间）。
+* **`no_app_action`**： 当未检测到目标应用（如 Word/Excel）时的默认动作（默认 `"open"`）。可选值：`open`=自动打开、`save`=仅保存、`clipboard`=复制文件到剪贴板、`none`=无操作。
 * **`md_disable_first_para_indent`**： - Markdown 转换时是否禁用第一段的特殊格式，统一为正文样式（默认 true）。
 * **`html_formatting`**： - HTML 富文本转换时的格式化选项。
   * **`strikethrough_to_del`**： - 是否将删除线 ~~ 转换为 `<del>` 标签，使得转换正确（默认 true）。
 * **`html_disable_first_para_indent`**： - HTML 富文本转换时是否禁用第一段的特殊格式，统一为正文样式（默认 true）。
-* **`move_cursor_to_end`**：**✨ 新功能** - 插入内容后是否将光标移动到插入内容的末尾（默认 true）。
-* **`Keep_original_formula`**：**✨ 新功能** - 是否保留原始数学公式（LaTeX 代码形式）。
+* **`move_cursor_to_end`**： - 插入内容后是否将光标移动到插入内容的末尾（默认 true）。
+* **`Keep_original_formula`**： - 是否保留原始数学公式（LaTeX 代码形式）。
+* `enable_latex_replacements`：自动修复部分不兼容的 LaTeX 语法（例如将 `{\\kern 10pt}` 替换为 `\\qquad`）。
+* `fix_single_dollar_block`：自动识别并修复单独一行的 `$ ... $` 公式块（转换为 `$$ ... $$`）。
 * `language`：界面语言，`zh-CN` 简体中文，`en-US` 英文，`ja-JP` 日语。
-* **`pandoc_filters`**：**✨ 新功能** - 自定义 Pandoc Filter 列表。可添加 `.lua` 脚本或可执行文件路径，Filter 将按照列表顺序依次执行。用于扩展 Pandoc 转换功能，如自定义格式处理、特殊语法转换等。默认为空列表。示例：`["%APPDATA%\\npm\\mermaid-filter.cmd"]` 可实现 Mermaid 图表支持。
+* `pandoc_request_headers`：Pandoc 下载远程资源时附加的请求头（每行一个 `Header: Value`）。
+* **`pandoc_filters`**： - 自定义 Pandoc Filter 列表。可添加 `.lua` 脚本或可执行文件路径，Filter 将按照列表顺序依次执行。用于扩展 Pandoc 转换功能，如自定义格式处理、特殊语法转换等。默认为空列表。示例：`["%APPDATA%\\npm\\mermaid-filter.cmd"]` 可实现 Mermaid 图表支持。
+* `pandoc_filters_by_conversion`：按转换类型配置 Filters（如 `md_to_docx`、`html_to_md` 等）。
+* `extensible_workflows`：应用扩展配置（按应用/窗口标题匹配不同粘贴模式），详情见下文。
 
 修改后可在托盘菜单选择 **“重载配置/热键”** 立即生效。
 
@@ -281,6 +333,63 @@ Mermaid 图表将被渲染为图片并插入到 Word 文档中。
 
 ---
 
+## 🧩 应用扩展（自定义粘贴工作流）
+
+设置 → **应用扩展** 中可以为不同应用配置粘贴模式，支持按窗口标题正则匹配：
+
+* **HTML** / **Markdown** / **LaTeX** / **文件**：按目标应用选择最合适的粘贴方式
+  - HTML、Markdown 适合语雀等富文本笔记软件
+  - LaTeX 适合overleaf等学术网站
+  - 文件 适合QQ、微信等作为附件粘贴的应用
+
+> 提示：同一个应用只建议配置一种工作流（避免冲突）；需要区分窗口标题时可使用“窗口名称匹配”。
+
+示例配置（节选）：
+
+> Windows 下 `id` 通常为应用的 exe 路径；macOS 为应用的 bundle id（建议通过设置界面添加，自动填充）。
+
+```json
+{
+  "extensible_workflows": {
+    "html": {
+      "enabled": true,
+      "apps": [
+        {
+          "name": "语雀",
+          "id": "/path/语雀.exe",
+          "window_patterns": []
+        }
+      ],
+      "keep_formula_latex": true
+    },
+    "latex": {
+      "enabled": true,
+      "apps": [
+        {
+          "name": "chrome",
+          "id": "/path/chrome.exe",
+          "window_patterns": [
+            ".*overleaf.*"
+          ]
+        }
+      ]
+    },
+    "file": {
+      "enabled": true,
+      "apps": [
+        {
+          "name": "QQ",
+          "id": "/path/qq.exe",
+          "window_patterns": []
+        }
+      ]
+    }
+  }
+}
+```
+
+---
+
 ## 托盘菜单
 
 * 快捷显示：当前全局热键（只读）。
@@ -289,7 +398,6 @@ Mermaid 图表将被渲染为图片并插入到 Word 文档中。
 * 无应用时动作：当未检测到 Word/WPS/Excel 时的默认动作（自动打开/仅保存/复制到剪贴板/无操作）。
 * 插入后移动光标到末尾：插入内容后是否将光标移动到插入内容的末尾。
 * HTML 格式化：切换 **删除线 ~~ 转换为 `<del>`** 等 HTML 自动整理，使得可以正确转换（防止部分网页没有解析这些格式，导致从网页复制粘贴无法显示这些格式）。
-* 实验性功能：启用/禁用 **保留原始数学公式** 等实验性功能。
 * 设置热键：通过图形界面录制并保存新的全局热键（即时生效）。
 * 保留生成文件：勾选后生成的 DOCX 会保存在 `save_dir`。
 * 打开保存目录、查看日志、编辑配置、重载配置/热键。
@@ -326,7 +434,7 @@ pyinstaller --clean -F -w -n PasteMD
 
 ## ⭐ Star 
 
-感谢每一位 Star 的帮助，欢迎分享给更多小伙伴~，想要达成1k star🌟，我会努力的喵
+感谢每一位 Star 的帮助，欢迎分享给更多小伙伴~，想要达成4096 star🌟，我会努力的喵
 
 <img src="docs/gif/atri/likeyou.gif"
      alt="喜欢你"
@@ -362,3 +470,4 @@ pyinstaller --clean -F -w -n PasteMD
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
+Third-party licenses are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

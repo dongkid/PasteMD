@@ -7,6 +7,8 @@ from typing import Dict, Optional
 
 from bs4 import BeautifulSoup, NavigableString, Tag
 
+_CSS_CLASS_RE = re.compile(r"\.(?P<class>[A-Za-z0-9_-]+)\s*\{(?P<body>[^}]*)\}", re.DOTALL)
+
 
 def clean_html_content(soup: BeautifulSoup, options: Optional[Dict[str, object]] = None) -> None:
     """
@@ -33,6 +35,162 @@ def clean_html_content(soup: BeautifulSoup, options: Optional[Dict[str, object]]
     
     # 清理 LaTeX 公式块中的 <br> 标签
     _clean_latex_br_tags(soup)
+
+
+def convert_css_font_to_semantic(soup: BeautifulSoup) -> None:
+    """
+    将 CSS 中的粗体/斜体类映射为 <strong>/<em>，以便 Pandoc 保留样式。
+
+    主要用于 Excel/WPS 复制的 HTML：样式往往只写在 <style> 的 class 中，
+    直接转 Markdown 会丢失加粗/斜体信息。
+    """
+    css_text_parts = []
+    for style in soup.find_all("style"):
+        css_text_parts.append(style.get_text() or "")
+    css_text = "\n".join(css_text_parts)
+    if not css_text.strip():
+        return
+
+    class_styles: dict[str, tuple[bool, bool]] = {}
+    for match in _CSS_CLASS_RE.finditer(css_text):
+        class_name = match.group("class")
+        body = match.group("body").lower()
+
+        bold = False
+        italic = False
+        weight_match = re.search(r"font-weight\s*:\s*([^;]+)", body)
+        if weight_match:
+            value = weight_match.group(1).strip()
+            if value in ("bold", "bolder"):
+                bold = True
+            elif value.isdigit() and int(value) >= 600:
+                bold = True
+
+        style_match = re.search(r"font-style\s*:\s*([^;]+)", body)
+        if style_match:
+            value = style_match.group(1).strip()
+            if "italic" in value or "oblique" in value:
+                italic = True
+
+        if bold or italic:
+            class_styles[class_name] = (bold, italic)
+
+    if not class_styles:
+        return
+
+    def _build_wrapper(current_bold: bool, current_italic: bool) -> tuple[Tag, Tag]:
+        if current_bold and current_italic:
+            strong = soup.new_tag("strong")
+            em = soup.new_tag("em")
+            strong.append(em)
+            return strong, em
+        if current_bold:
+            strong = soup.new_tag("strong")
+            return strong, strong
+        em = soup.new_tag("em")
+        return em, em
+
+    for tag in soup.find_all(class_=True):
+        classes = tag.get("class") or []
+        bold = False
+        italic = False
+        for class_name in classes:
+            if class_name in class_styles:
+                class_bold, class_italic = class_styles[class_name]
+                bold = bold or class_bold
+                italic = italic or class_italic
+
+        if not (bold or italic):
+            continue
+
+        if tag.name in ("table", "tbody", "thead", "tfoot", "tr"):
+            continue
+
+        if tag.name in ("td", "th"):
+            if not tag.contents:
+                continue
+            wrapper, inner = _build_wrapper(bold, italic)
+            for child in list(tag.contents):
+                inner.append(child.extract())
+            tag.append(wrapper)
+            continue
+
+        if tag.name in ("strong", "em"):
+            if tag.name == "strong" and bold and not italic:
+                continue
+            if tag.name == "em" and italic and not bold:
+                continue
+            # 需要补充另一种样式，直接包裹内容
+            if tag.name == "strong" and italic:
+                wrapper = soup.new_tag("em")
+                for child in list(tag.contents):
+                    wrapper.append(child.extract())
+                tag.append(wrapper)
+            elif tag.name == "em" and bold:
+                wrapper = soup.new_tag("strong")
+                for child in list(tag.contents):
+                    wrapper.append(child.extract())
+                tag.append(wrapper)
+            continue
+
+        wrapper, inner = _build_wrapper(bold, italic)
+        for child in list(tag.contents):
+            inner.append(child.extract())
+        tag.replace_with(wrapper)
+
+
+def promote_bold_first_row_to_header(soup: BeautifulSoup) -> None:
+    """
+    将表格首行的粗体单元格提升为表头 (<th>)。
+
+    主要用于 Excel/WPS 复制的 HTML：表头通常是加粗文本但仍是 <td>，
+    Pandoc 无法识别为表头，导致 Markdown 不生成表头分隔线。
+    """
+
+    def _meaningful_children(tag: Tag) -> list:
+        return [
+            child
+            for child in tag.contents
+            if not (isinstance(child, NavigableString) and not str(child).strip())
+        ]
+
+    def _cell_is_bold(cell: Tag) -> bool:
+        children = _meaningful_children(cell)
+        if len(children) != 1:
+            return False
+        child = children[0]
+        return isinstance(child, Tag) and child.name in ("strong", "b")
+
+    for table in soup.find_all("table"):
+        if table.find("th"):
+            continue
+
+        rows = table.find_all("tr")
+        if len(rows) < 2:
+            continue
+
+        header_row = rows[0]
+        header_cells = header_row.find_all(["td", "th"], recursive=False)
+        if not header_cells:
+            continue
+
+        if not all(_cell_is_bold(cell) for cell in header_cells):
+            continue
+
+        has_non_bold_cell = False
+        for row in rows[1:]:
+            for cell in row.find_all(["td", "th"], recursive=False):
+                if not _cell_is_bold(cell):
+                    has_non_bold_cell = True
+                    break
+            if has_non_bold_cell:
+                break
+
+        if not has_non_bold_cell:
+            continue
+
+        for cell in header_cells:
+            cell.name = "th"
 
 
 def convert_strikethrough_to_del(soup) -> None:
@@ -97,6 +255,30 @@ def _clean_latex_br_tags(soup) -> None:
         for br in br_tags:
             # 删除 <br> 标签
             br.replace_with('')
+
+    # 处理 $$ ... $$ 包裹的内容
+    # 遍历可能的容器元素
+    for tag in soup.find_all(['p', 'div', 'span', 'li', 'td', 'th']):
+        # 快速检查：容器内必须有 br 且文本包含 $$
+        if not tag.find('br', recursive=False) or '$$' not in tag.get_text():
+            continue
+
+        in_latex = False
+        # 使用 list 复制 children，因为我们会修改 DOM (删除 br)
+        for child in list(tag.children):
+            if isinstance(child, NavigableString):
+                # 统计文本中 $$ 的数量，如果是奇数个，说明状态切换
+                if str(child).count('$$') % 2 == 1:
+                    in_latex = not in_latex
+            elif child.name == 'br':
+                # 如果在公式内，移除 br
+                if in_latex:
+                    child.decompose()
+            elif hasattr(child, 'get_text'):
+                # 对于其他标签，检查其文本内容是否包含 $$ 导致状态切换
+                # 假设 $$ 成对出现，若子元素包含奇数个 $$，则改变当前上下文状态
+                if child.get_text().count('$$') % 2 == 1:
+                    in_latex = not in_latex
 
 
 def unwrap_all_p_div_inside_li(soup, unwrap_tags=("p", "div")) -> None:
@@ -432,9 +614,19 @@ def clean_html_for_wps(html: str) -> str:
     return str(soup)
 
 
-def protect_task_list_brackets(html: str) -> str:
+def _remove_col_tags(soup) -> None:
     """
-    保护 HTML 中的任务列表标记，避免被 Pandoc 转义和误识别。
+    移除 HTML 中的 <col> 标签。
+    Pandoc 处理带有 span 属性的 <col> 标签时可能会导致表格转换错误。
+    """
+    for col in soup.find_all("col"):
+        col.decompose()
+
+
+def protect_brackets(html: str) -> str:
+    """
+    保护 HTML 转 md中的任务列表，$$等数学公式，避免被 Pandoc 转义和误识别。
+    同时移除 <col> 标签以修复 Excel 表格转换问题。
     
     将 [x] 和 [ ] 替换为特殊标记：
     - [x] -> {{TASK_CHECKED}}
@@ -449,6 +641,7 @@ def protect_task_list_brackets(html: str) -> str:
         处理后的 HTML 字符串
     """
     soup = BeautifulSoup(html, "html.parser")
+    _remove_col_tags(soup)
     _protect_task_list_brackets(soup)
     return str(soup)
 
@@ -507,6 +700,3 @@ def _fix_task_list_math_issue(soup) -> None:
     """
     # 恢复任务列表标记
     _restore_task_list_brackets(soup)
-
-
-

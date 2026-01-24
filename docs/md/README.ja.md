@@ -25,17 +25,26 @@
   <a href="README.ja.md">日本語</a>
 </p>
 
+<p align="center">
+<a href="https://hellogithub.com/repository/RICHQAQ/PasteMD" target="_blank"><img src="https://abroad.hellogithub.com/v1/widgets/recommend.svg?rid=7dfb1883330d441f9264d8e8945c75e2&claim_uid=RvDOqI1Satiwzh4&theme=neutral" alt="Featured｜HelloGitHub" style="width: 250px; height: 54px;" width="250" height="54" /></a>
+</p>
+
 > 論文やレポートを書いていると、ChatGPT / DeepSeek などの AI サイトからコピーした数式が Word で文字化けしませんか？Markdown の表を Excel に貼り付けると崩れませんか？**PasteMD はその問題を解決するためのツールです。**
 > 
 > <img src="../../docs/gif/atri/igood.gif"
      alt="I am good"
      width="100">
 
-PasteMD は常駐トレイアプリです。**クリップボードの Markdown/HTML を読み取り**、**Pandoc** で DOCX に変換し、**Word/WPS** のカーソル位置に自動で挿入します。
+常駐トレイの小さなツール：
+**クリップボードの Markdown** を読み取り、**Pandoc** で DOCX に変換し、**Word/WPS** のカーソル位置に自動挿入します。
 
-**✨ 新機能**：Markdown 表を賢く認識し、**Excel** にワンクリックで貼り付け！
+**✨ 機能**：Markdown 表をスマートに認識し、**Excel** にワンクリック貼り付け！
 
-**✨ 新機能**：Web の HTML リッチテキストを賢く認識し、AI の返信を **Word/WPS** にワンクリック貼り付け！
+**✨ 機能**：HTML リッチテキストをスマートに認識し、Web 上の AI 返信を **Word/WPS** にワンクリック貼り付け！
+
+**✨ 新機能**：アプリ拡張（HTML+Markdown/HTML/Markdown/LaTeX/ファイル貼り付け）。アプリ/ウィンドウタイトルでマッチ可能（例：語雀/QQ）。
+
+**✨ 新機能**：変換強化：変換タイプごとの Pandoc Filters 設定、LaTeX 構文と単独の `$...$` 数式ブロックの自動修正。
 
 ---
 
@@ -67,6 +76,8 @@ PasteMD は常駐トレイアプリです。**クリップボードの Markdown/
 
 * グローバルホットキー（既定 `Ctrl+Shift+B`）で Markdown → DOCX を一発変換。
 * **✨ Markdown 表を自動認識**し、Excel に貼り付け。
+* **✨ アプリ拡張**：アプリごとに HTML+Markdown/HTML/Markdown/LaTeX/ファイル貼り付けを設定し、ウィンドウタイトルでマッチ可能。
+* **✨ 変換強化**：変換タイプ別に Pandoc Filters を追加し、一部 LaTeX 構文と単独 `$...$` 数式ブロックを自動修正。
 * 前面アプリが Word/WPS かを自動判定。
 * 必要に応じて Word/Excel を自動起動。
 * トレイメニューから、ファイル保持やログ/設定の閲覧が可能。
@@ -103,13 +114,13 @@ PasteMD は常駐トレイアプリです。**クリップボードの Markdown/
 
 ---
 
-## 🚀使い方
+## 🚀 使い方
 
 1. 実行ファイルをダウンロード（[Releases ページ](https://github.com/RICHQAQ/PasteMD/releases/)）：
 
-   * ~~**PasteMD\_vx.x.x.exe**：**ポータブル版**。事前に **Pandoc** をインストールし、コマンドラインで実行できる必要があります。  
+   * ~~**PasteMD_vx.x.x.exe**：**ポータブル版**。事前に **Pandoc** をインストールし、コマンドラインで実行できる必要があります。  
    未インストールの場合は [Pandoc 公式サイト](https://pandoc.org/installing.html) から導入してください。~~（提供終了。必要なら自前でビルド）
-   * **PasteMD\_pandoc-Setup.exe**：**統合インストーラ**。Pandoc 同梱で追加設定不要。
+   * **PasteMD_pandoc-Setup.exe**：**統合インストーラ**。Pandoc 同梱で追加設定不要。
 
 2. Word/WPS/Excel を開き、挿入したい位置にカーソルを置く。
 
@@ -123,7 +134,7 @@ PasteMD は常駐トレイアプリです。**クリップボードの Markdown/
 
 ---
 
-## ⚙️設定
+## ⚙️ 設定
 
 初回実行時にユーザーデータディレクトリへ `config.json` が生成されます（Windows：`%APPDATA%\\PasteMD\\config.json`、MacOS：`~/Library/Application Support/PasteMD/config.json`）。手動で編集可能です：
 
@@ -135,8 +146,10 @@ PasteMD は常駐トレイアプリです。**クリップボードの Markdown/
   "save_dir": "%USERPROFILE%\\Documents\\pastemd",
   "keep_file": false,
   "notify": true,
+  "startup_notify": true,
   "enable_excel": true,
   "excel_keep_format": true,
+  "paste_delay_s": 0.3,
   "no_app_action": "open",
   "md_disable_first_para_indent": true,
   "html_disable_first_para_indent": true,
@@ -145,11 +158,44 @@ PasteMD は常駐トレイアプリです。**クリップボードの Markdown/
   },
   "move_cursor_to_end": true,
   "Keep_original_formula": false,
+  "enable_latex_replacements": true,
+  "fix_single_dollar_block": true,
   "language": "zh-CN",
   "pandoc_request_headers": [
     "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
   ],
-  "pandoc_filters": []
+  "pandoc_filters": [],
+  "pandoc_filters_by_conversion": {
+    "md_to_docx": [],
+    "html_to_docx": [],
+    "html_to_md": [],
+    "md_to_html": [],
+    "md_to_rtf": [],
+    "md_to_latex": []
+  },
+  "extensible_workflows": {
+    "html": {
+      "enabled": true,
+      "apps": [],
+      "keep_formula_latex": true
+    },
+    "md": {
+      "enabled": true,
+      "apps": [],
+      "html_formatting": {
+        "css_font_to_semantic": true,
+        "bold_first_row_to_header": true
+      }
+    },
+    "latex": {
+      "enabled": true,
+      "apps": []
+    },
+    "file": {
+      "enabled": true,
+      "apps": []
+    }
+  }
 }
 ```
 
@@ -161,17 +207,24 @@ PasteMD は常駐トレイアプリです。**クリップボードの Markdown/
 * `save_dir`：生成ファイルを保持する場合の保存先。
 * `keep_file`：生成した DOCX を保持するか。
 * `notify`：システム通知を表示するか。
-* **`enable_excel`**：**✨ 新機能** - Markdown 表の自動認識と Excel 貼り付けを有効化（既定 true）。
-* **`excel_keep_format`**：**✨ 新機能** - Excel 貼り付け時に Markdown 書式（太字/斜体/コードなど）を保持（既定 true）。
-* **`no_app_action`**：**✨ 新機能** 対象アプリ（Word/Excel など）が検出されない場合の既定動作（既定 `"open"`）。選択肢：`open`=自動で開く、`save`=保存のみ、`clipboard`=クリップボードへコピー、`none`=何もしない。
-* **`md_disable_first_para_indent`**： - Markdown 変換時、先頭段落の特殊書式を無効化（既定 true）。
-* **`html_formatting`**： - HTML リッチテキスト変換時の整形オプション。
-  * **`strikethrough_to_del`**： - 取り消し線 ~~ を `<del>` に変換して正しく表示（既定 true）。
-* **`html_disable_first_para_indent`**： - HTML 変換時、先頭段落の特殊書式を無効化（既定 true）。
-* **`move_cursor_to_end`**：**✨ 新機能** - 挿入後にカーソルを末尾へ移動（既定 true）。
-* **`Keep_original_formula`**：**✨ 新機能** - 元の数式（LaTeX コード）を保持。
+* `startup_notify`：起動時に通知を表示するか。
+* **`enable_excel`**：Markdown 表の自動認識と Excel 貼り付けを有効化（既定 true）。
+* **`excel_keep_format`**：Excel 貼り付け時に Markdown 書式（太字/斜体/コードなど）を保持（既定 true）。
+* `paste_delay_s`：貼り付け前の遅延秒数（Windows ではクリップボード更新に時間がかかる場合があります）。
+* **`no_app_action`**：対象アプリ（Word/Excel など）が検出されない場合の既定動作（既定 `"open"`）。選択肢：`open`=自動で開く、`save`=保存のみ、`clipboard`=クリップボードへコピー、`none`=何もしない。
+* **`md_disable_first_para_indent`**：Markdown 変換時、先頭段落の特殊書式を無効化し正文スタイルに統一（既定 true）。
+* **`html_formatting`**：HTML リッチテキスト変換時の整形オプション。
+  * **`strikethrough_to_del`**：取り消し線 ~~ を `<del>` に変換して正しく表示（既定 true）。
+* **`html_disable_first_para_indent`**：HTML 変換時、先頭段落の特殊書式を無効化（既定 true）。
+* **`move_cursor_to_end`**：挿入後にカーソルを末尾へ移動（既定 true）。
+* **`Keep_original_formula`**：元の数式（LaTeX コード）を保持。
+* `enable_latex_replacements`：互換性のない LaTeX 構文を自動修正（例：`{\\kern 10pt}` を `\\qquad` へ置換）。
+* `fix_single_dollar_block`：単独行の `$ ... $` 数式ブロックを自動認識し `$$ ... $$` に修正。
 * `language`：表示言語。`zh-CN` は簡体字中国語、`en-US` は英語、`ja-JP` は日本語。
-* **`pandoc_filters`**：**✨ 新機能** - カスタム Pandoc Filter のリスト。`.lua` スクリプトや実行ファイルを指定し、順番に実行されます。高度な変換に使用。既定は空。例：`["%APPDATA%\\npm\\mermaid-filter.cmd"]` で Mermaid 図をサポート。
+* `pandoc_request_headers`：Pandoc がリモート資源をダウンロードする際のリクエストヘッダー（1 行 1 ヘッダー）。
+* **`pandoc_filters`**：カスタム Pandoc Filter のリスト。`.lua` スクリプトや実行ファイルを指定し、順番に実行されます。高度な変換に使用。既定は空。例：`["%APPDATA%\\npm\\mermaid-filter.cmd"]` で Mermaid 図をサポート。
+* `pandoc_filters_by_conversion`：変換タイプ別の Filters 設定（例：`md_to_docx`、`html_to_md` など）。
+* `extensible_workflows`：アプリ拡張設定（アプリ/ウィンドウタイトルでマッチして貼り付け方式を切替）。詳細は下記。
 
 変更後はトレイメニューの **「設定/ホットキーを再読み込み」** で即反映されます。
 
@@ -280,15 +333,71 @@ Mermaid 図が画像として Word に挿入されます。
 
 ---
 
+## 🧩 アプリ拡張（カスタム貼り付けワークフロー）
+
+設定 → **アプリ拡張** でアプリごとの貼り付け方式を設定し、ウィンドウタイトル（正規表現）でマッチ可能です：
+
+* **HTML** / **Markdown** / **LaTeX** / **ファイル**：対象アプリに最適な貼り付け方式を選択
+  - HTML/Markdown は語雀などのリッチテキストノートに適合
+  - LaTeX は Overleaf などの学術サイトに適合
+  - ファイルは QQ/WeChat など添付として貼り付けるアプリに適合
+
+> ヒント：同一アプリには 1 つのワークフローのみ推奨（競合回避）。ウィンドウ名を分けたい場合は「ウィンドウ名マッチ」を使ってください。
+
+設定例（抜粋）：
+
+> Windows では `id` は通常 exe パス、macOS では bundle id（設定画面で追加すると自動入力されるので推奨）。
+
+```json
+{
+  "extensible_workflows": {
+    "html": {
+      "enabled": true,
+      "apps": [
+        {
+          "name": "语雀",
+          "id": "/path/语雀.exe",
+          "window_patterns": []
+        }
+      ],
+      "keep_formula_latex": true
+    },
+    "latex": {
+      "enabled": true,
+      "apps": [
+        {
+          "name": "chrome",
+          "id": "/path/chrome.exe",
+          "window_patterns": [
+            ".*overleaf.*"
+          ]
+        }
+      ]
+    },
+    "file": {
+      "enabled": true,
+      "apps": [
+        {
+          "name": "QQ",
+          "id": "/path/qq.exe",
+          "window_patterns": []
+        }
+      ]
+    }
+  }
+}
+```
+
+---
+
 ## トレイメニュー
 
-* 迅速表示：現在のグローバルホットキー（読み取り専用）。
+* 快捷表示：現在のグローバルホットキー（読み取り専用）。
 * ホットキーを有効化：グローバルホットキーのオン/オフ。
 * ポップアップ通知：システム通知のオン/オフ。
-* アプリがない場合の動作：Word/WPS/Excel が検出されない場合の既定動作（自動で開く/保存のみ/クリップボードへコピー/なし）。
+* 無アプリ時の動作：Word/WPS/Excel が検出されない場合の既定動作（自動で開く/保存のみ/クリップボードへコピー/なし）。
 * 挿入後にカーソルを末尾へ移動：挿入後のカーソル移動のオン/オフ。
-* HTML 整形：**取り消し線 ~~ を `<del>` に変換** など、HTML 自動整形（未対応ページの表示崩れ対策）。
-* 実験的機能：**元の数式を保持** などの実験機能を切り替え。
+* HTML 整形：**取り消し線 ~~ を `<del>` に変換** など、HTML 自動整形。
 * ホットキー設定：UI で新しいホットキーを録音して保存（即時反映）。
 * 生成ファイルを保持：オンにすると `save_dir` へ DOCX を保存。
 * 保存先フォルダを開く、ログを見る、設定を編集、設定/ホットキーを再読み込み。
@@ -324,7 +433,7 @@ pyinstaller --clean -F -w -n PasteMD
 
 ## ⭐ Star
 
-Star してくれたみなさん、いつもありがとうございます！もっと多くの方に届くように頑張ります。
+Star してくれたみなさん、いつもありがとうございます！もっと多くの方に届くように頑張ります。4096 stars 目標です。
 
 <img src="../../docs/gif/atri/likeyou.gif"
      alt="likeyou"
@@ -332,7 +441,7 @@ Star してくれたみなさん、いつもありがとうございます！も
 
 [![Star History Chart](https://api.star-history.com/svg?repos=RICHQAQ/PasteMD&type=date&legend=top-left)](https://www.star-history.com/#RICHQAQ/PasteMD&type=date&legend=top-left)
 
-## 🍵サポート/投げ銭
+## 🍵 サポート/投げ銭
 
 ご意見やアイデアがあれば issue でぜひ教えてください！🤯🤯🤯
 
@@ -359,3 +468,4 @@ Star してくれたみなさん、いつもありがとうございます！も
 ## License
 
 This project is licensed under the [MIT License](../../LICENSE).
+Third-party licenses are listed in [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md).

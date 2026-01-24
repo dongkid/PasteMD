@@ -4,6 +4,7 @@ import os
 import re
 import sys
 import time
+import contextlib
 import pyperclip
 import ctypes
 from ctypes import wintypes
@@ -13,6 +14,110 @@ from ...core.state import app_state
 from ..clipboard_file_utils import read_file_with_encoding, filter_markdown_files, read_markdown_files
 from ...utils.logging import log
 from ...core.constants import CLIPBOARD_HTML_WAIT_MS, CLIPBOARD_POLL_INTERVAL_MS
+
+
+def _snapshot_clipboard() -> dict[int, bytes]:
+    """
+    Best-effort snapshot of all clipboard formats.
+    
+    Returns a dict of {format_id: data_bytes}.
+    """
+    snapshot: dict[int, bytes] = {}
+    try:
+        wc.OpenClipboard(None)
+        try:
+            # 枚举所有可用的格式
+            fmt = 0
+            while True:
+                fmt = wc.EnumClipboardFormats(fmt)
+                if fmt == 0:
+                    break
+                try:
+                    data = wc.GetClipboardData(fmt)
+                    if data is not None:
+                        # 转换为 bytes
+                        if isinstance(data, bytes):
+                            snapshot[fmt] = data
+                        elif isinstance(data, str):
+                            snapshot[fmt] = data.encode('utf-16le')
+                        elif isinstance(data, (list, tuple)):
+                            # CF_HDROP 文件列表
+                            snapshot[fmt] = "\0".join(data).encode('utf-16le') + b'\0\0'
+                        else:
+                            # 尝试转换其他类型
+                            try:
+                                snapshot[fmt] = bytes(data)
+                            except Exception:
+                                pass
+                except Exception as e:
+                    log(f"Failed to snapshot clipboard format {fmt}: {e}")
+                    continue
+        finally:
+            wc.CloseClipboard()
+    except Exception as e:
+        log(f"Failed to snapshot clipboard: {e}")
+    
+    return snapshot
+
+
+def _restore_clipboard(snapshot: dict[int, bytes]) -> None:
+    """
+    Restore clipboard from snapshot.
+    """
+    try:
+        wc.OpenClipboard(None)
+        try:
+            wc.EmptyClipboard()
+            
+            for fmt, data in snapshot.items():
+                try:
+                    # 特殊处理某些格式
+                    if fmt == wc.CF_UNICODETEXT:
+                        # Unicode 文本需要解码后设置
+                        text = data.decode('utf-16le', errors='ignore').rstrip('\0')
+                        wc.SetClipboardData(fmt, text)
+                    elif fmt == wc.CF_TEXT:
+                        # ANSI 文本
+                        text = data.decode('cp1252', errors='ignore').rstrip('\0')
+                        wc.SetClipboardData(fmt, text)
+                    elif fmt == wc.CF_HDROP:
+                        # 文件列表，需要重建 DROPFILES 结构
+                        files_str = data.decode('utf-16le', errors='ignore').rstrip('\0')
+                        files = [f for f in files_str.split('\0') if f]
+                        if files:
+                            hdrop_data = _build_hdrop_data(files)
+                            wc.SetClipboardData(fmt, hdrop_data)
+                    else:
+                        # 其他格式直接设置原始字节
+                        wc.SetClipboardData(fmt, data)
+                except Exception as e:
+                    log(f"Failed to restore clipboard format {fmt}: {e}")
+                    continue
+        finally:
+            wc.CloseClipboard()
+    except Exception as e:
+        log(f"Failed to restore clipboard: {e}")
+
+
+@contextlib.contextmanager
+def preserve_clipboard(*, restore_delay_s: float = 0.25):
+    """
+    Preserve the user's clipboard across a temporary clipboard write.
+    
+    Useful for apps that require clipboard-based rich-text paste.
+    """
+    snapshot: dict[int, bytes] | None = None
+    try:
+        snapshot = _snapshot_clipboard()
+        yield
+    finally:
+        if restore_delay_s > 0:
+            time.sleep(restore_delay_s)
+        if snapshot is not None:
+            try:
+                _restore_clipboard(snapshot)
+            except Exception as exc:
+                log(f"Failed to restore clipboard: {exc}")
 
 
 def _build_cf_html(html: str) -> bytes:
@@ -187,6 +292,22 @@ def get_clipboard_text() -> str:
         raise ClipboardError(f"Failed to read clipboard: {e}")
 
 
+def set_clipboard_text(text: str) -> None:
+    """
+    设置剪贴板纯文本内容
+    
+    Args:
+        text: 要设置的文本内容
+        
+    Raises:
+        ClipboardError: 剪贴板操作失败时
+    """
+    try:
+        pyperclip.copy(text)
+    except Exception as e:
+        raise ClipboardError(f"Failed to set clipboard text: {e}")
+
+
 def is_clipboard_empty() -> bool:
     """
     检查剪贴板是否为空
@@ -248,10 +369,11 @@ def get_clipboard_html(config: dict | None = None) -> str:
 
 def _extract_html_fragment_bytes(cf_html_bytes: bytes) -> str:
     """
-    从 CF_HTML bytes 中提取 Fragment（StartFragment/EndFragment 通常为字节偏移）。
+    从 CF_HTML bytes 中提取完整 HTML（优先使用 StartHTML/EndHTML）。
 
-    - 优先按 bytes 偏移截取，避免非 ASCII 导致的 str 偏移错位。
-    - 失败时回退到 <!--StartFragment--> 锚点提取。
+    - 优先使用 StartHTML/EndHTML 返回完整的 HTML 文档
+    - 失败时回退到 StartFragment/EndFragment
+    - 最后兜底返回全部内容
     """
     meta: dict[str, str] = {}
     for raw_line in cf_html_bytes.splitlines():
@@ -265,6 +387,19 @@ def _extract_html_fragment_bytes(cf_html_bytes: bytes) -> str:
             if key:
                 meta[key] = val
 
+    # 优先使用 StartHTML/EndHTML 返回完整 HTML
+    start_html = meta.get("StartHTML", "")
+    end_html = meta.get("EndHTML", "")
+    if start_html.isdigit() and end_html.isdigit():
+        try:
+            start = int(start_html)
+            end = int(end_html)
+            if 0 <= start <= end <= len(cf_html_bytes):
+                return cf_html_bytes[start:end].decode("utf-8", errors="ignore")
+        except Exception:
+            pass
+
+    # 回退到 StartFragment/EndFragment
     sf = meta.get("StartFragment", "")
     ef = meta.get("EndFragment", "")
     if sf.isdigit() and ef.isdigit():
@@ -276,6 +411,7 @@ def _extract_html_fragment_bytes(cf_html_bytes: bytes) -> str:
         except Exception:
             pass
 
+    # 尝试通过锚点提取
     m = re.search(
         rb"<!--StartFragment-->(.*)<!--EndFragment-->",
         cf_html_bytes,
@@ -284,28 +420,19 @@ def _extract_html_fragment_bytes(cf_html_bytes: bytes) -> str:
     if m:
         return m.group(1).decode("utf-8", errors="ignore")
 
-    start_html = meta.get("StartHTML", "0")
-    end_html = meta.get("EndHTML", str(len(cf_html_bytes)))
-    try:
-        start = int(start_html) if start_html.isdigit() else 0
-        end = int(end_html) if end_html.isdigit() else len(cf_html_bytes)
-        if 0 <= start <= end <= len(cf_html_bytes):
-            return cf_html_bytes[start:end].decode("utf-8", errors="ignore")
-    except Exception:
-        pass
-
+    # 兜底返回全部内容
     return cf_html_bytes.decode("utf-8", errors="ignore")
 
 
 def _extract_html_fragment(cf_html: str) -> str:
     """
-    从 CF_HTML 格式中提取 Fragment 部分
+    从 CF_HTML 格式中提取完整 HTML（优先使用 StartHTML/EndHTML）
     
     Args:
         cf_html: CF_HTML 格式的完整文本
         
     Returns:
-        Fragment HTML 内容
+        完整 HTML 内容
     """
     # 提取元数据
     meta = {}
@@ -316,7 +443,18 @@ def _extract_html_fragment(cf_html: str) -> str:
             k, v = line.split(":", 1)
             meta[k.strip()] = v.strip()
     
-    # 尝试使用偏移量提取 Fragment
+    # 优先使用 StartHTML/EndHTML 提取完整 HTML
+    start_html = meta.get("StartHTML")
+    end_html = meta.get("EndHTML")
+    if start_html and end_html and start_html.isdigit() and end_html.isdigit():
+        try:
+            start = int(start_html)
+            end = int(end_html)
+            return cf_html[start:end]
+        except Exception:
+            pass
+    
+    # 回退到使用偏移量提取 Fragment
     sf = meta.get("StartFragment")
     ef = meta.get("EndFragment")
     if sf and ef and sf.isdigit() and ef.isdigit():
@@ -332,13 +470,8 @@ def _extract_html_fragment(cf_html: str) -> str:
     if m:
         return m.group(1)
     
-    # 再兜底：提取完整 HTML
-    start_html = int(meta.get("StartHTML", "0"))
-    end_html = int(meta.get("EndHTML", str(len(cf_html))))
-    try:
-        return cf_html[start_html:end_html]
-    except Exception:
-        return cf_html
+    # 最后兜底：返回全部内容
+    return cf_html
 
 
 def copy_files_to_clipboard(file_paths: list) -> None:
