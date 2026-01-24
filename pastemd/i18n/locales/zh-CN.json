@@ -95,6 +95,7 @@
     "settings.extensions.app_exists": "应用 {app} 已在列表中。",
     "settings.extensions.app_conflict_error": "应用 {app} 已在「{workflow}」中配置，是否仍要继续添加以匹配不同窗口名称？",
     "settings.extensions.config_conflict_warning": "检测到配置中存在跨工作流应用冲突：\n\n{conflicts}\n\n请修正配置，一个应用只能配置为一种粘贴模式。\n当前冲突的应用可能导致粘贴行为不可预期。",
+    "settings.extensions.no_apps": "无应用",
     "settings.title.warning": "警告",
     "settings.extensions.no_running_apps": "没有检测到正在运行的应用。",
     "settings.extensions.unsupported_platform": "当前平台不支持此功能。",

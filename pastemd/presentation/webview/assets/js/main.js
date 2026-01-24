@@ -65,6 +65,11 @@ async function initApp() {
             await window.permissionsManager.init();
         }
 
+        // 初始化扩展管理器
+        if (window.extensionsManager) {
+            await window.extensionsManager.init();
+        }
+
         // 移除加载状态
         document.body.classList.remove('loading');
         document.body.classList.add('loaded');
@@ -379,6 +384,16 @@ function collectFormData() {
 async function saveSettings() {
     try {
         const settings = collectFormData();
+
+        // 保存扩展工作流配置
+        if (window.extensionsManager) {
+            const extSaveSuccess = await window.extensionsManager.save();
+            if (!extSaveSuccess) {
+                // 扩展配置保存失败（如有冲突），停止保存主设置
+                return;
+            }
+        }
+
         await window.api.saveSettings(settings);
         showToast(t('settings.success.saved'));
 

@@ -6,6 +6,7 @@ if TYPE_CHECKING:
     from .settings import SettingsApi
     from .hotkey import HotkeyApi
     from .permissions import PermissionsApi
+    from .extensions import ExtensionsApi
 
 
 class CombinedApi:
@@ -18,6 +19,7 @@ class CombinedApi:
     - pywebview.api.settings.xxx()  - 通过子 API 调用
     - pywebview.api.hotkey.xxx()    - 通过子 API 调用
     - pywebview.api.permissions.xxx() - 通过子 API 调用
+    - pywebview.api.extensions.xxx() - 通过子 API 调用
     - pywebview.api.xxx()           - 直接调用 (兼容性，仅 settings 方法)
     """
 
@@ -25,11 +27,13 @@ class CombinedApi:
         self,
         settings_api: "SettingsApi",
         hotkey_api: "HotkeyApi",
-        permissions_api: "PermissionsApi"
+        permissions_api: "PermissionsApi",
+        extensions_api: "ExtensionsApi"
     ):
         self.settings = settings_api
         self.hotkey = hotkey_api
         self.permissions = permissions_api
+        self.extensions = extensions_api
 
         # 直接暴露 settings 的方法到顶层 (兼容性)
         # 这样前端既可以用 pywebview.api.settings.get_config()

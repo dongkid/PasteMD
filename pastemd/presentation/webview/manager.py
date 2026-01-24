@@ -150,12 +150,13 @@ class WebViewManager:
 
     def create_settings_window(self) -> webview.Window:
         """创建设置窗口"""
-        from .api import SettingsApi, HotkeyApi, PermissionsApi, CombinedApi
+        from .api import SettingsApi, HotkeyApi, PermissionsApi, ExtensionsApi, CombinedApi
 
         # 创建 API 实例
         self._settings_api = SettingsApi(self._container)
         self._hotkey_api = HotkeyApi(self._container)
         self._permissions_api = PermissionsApi(self._container)
+        self._extensions_api = ExtensionsApi(self._container)
 
         # 设置回调
         if self._on_settings_save_callback or self._on_settings_close_callback:
@@ -168,7 +169,8 @@ class WebViewManager:
         combined_api = CombinedApi(
             self._settings_api,
             self._hotkey_api,
-            self._permissions_api
+            self._permissions_api,
+            self._extensions_api
         )
 
         # 获取当前主题配置并决定背景色

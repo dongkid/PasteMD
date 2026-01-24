@@ -690,3 +690,57 @@ textarea:focus {
     box-shadow: 0 0 6px var(--error);
 }
 
+/* ==================== 应用选择列表 ==================== */
+.app-select-list {
+    max-height: 300px;
+    overflow-y: auto;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+}
+
+.app-select-item {
+    display: flex;
+    flex-direction: column;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.app-select-item:last-child {
+    border-bottom: none;
+}
+
+.app-select-item:hover {
+    background: var(--bg-hover);
+}
+
+.app-select-item.selected {
+    background: var(--accent);
+    color: var(--text-on-accent);
+}
+
+.app-select-item.selected .app-id {
+    color: var(--text-on-accent);
+    opacity: 0.8;
+}
+
+.app-select-item .app-name {
+    font-weight: 500;
+    margin-bottom: 2px;
+}
+
+.app-select-item .app-id {
+    font-size: 11px;
+    color: var(--text-muted);
+    word-break: break-all;
+}
+
+/* ==================== Extensions 选项卡增强 ==================== */
+.extension-section .checkbox-item input[type="checkbox"]:checked {
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(79, 195, 247, 0.3);
+}
+

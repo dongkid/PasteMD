@@ -17,6 +17,7 @@
             <button class="tab" data-tab="conversion" data-i18n="settings.tab.conversion">转换</button>
             <button class="tab" data-tab="advanced" data-i18n="settings.tab.advanced">高级</button>
             <button class="tab" data-tab="experimental" data-i18n="settings.tab.experimental">实验性</button>
+            <button class="tab" data-tab="extensions" data-i18n="settings.tab.extensions">应用扩展</button>
             <button class="tab macos-only" data-tab="permissions" data-i18n="settings.tab.permissions">权限</button>
         </nav>
 
@@ -215,6 +216,103 @@
                 </div>
             </section>
 
+            <!-- 应用扩展 -->
+            <section id="panel-extensions" class="panel">
+                <div class="section">
+                    <p class="text-secondary mb-md" data-i18n="settings.extensions.description">
+                        注：可在此配置扩展不同需求的粘贴。双击应用可编辑窗口名称匹配规则，为空则匹配所有窗口。
+                    </p>
+                </div>
+
+                <!-- HTML 粘贴工作流 -->
+                <div class="section extension-section" data-workflow="html">
+                    <div class="section-title" data-i18n="settings.extensions.html_title">HTML 粘贴</div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="ext-html-enabled">
+                        <label for="ext-html-enabled" data-i18n="settings.extensions.html_enable">启用 HTML 格式粘贴</label>
+                    </div>
+                    <div class="checkbox-item ml-md">
+                        <input type="checkbox" id="ext-html-keep-latex">
+                        <label for="ext-html-keep-latex" data-i18n="settings.extensions.keep_latex">保持 $...$ 公式格式（不转换为 MathML）</label>
+                    </div>
+                    <div class="extension-apps mt-sm">
+                        <div class="section-subtitle" data-i18n="settings.extensions.app_list">目标应用</div>
+                        <div class="d-flex gap-md">
+                            <div id="ext-html-apps" class="list flex-1 min-h-80">
+                                <div class="list-empty" data-i18n="settings.extensions.no_apps">无应用</div>
+                            </div>
+                            <div class="btn-group flex-column">
+                                <button class="btn btn-secondary btn-sm" onclick="extensionsManager.addApp('html')" data-i18n="settings.extensions.select_app">选择应用</button>
+                                <button class="btn btn-secondary btn-sm" id="ext-html-remove-btn" disabled onclick="extensionsManager.removeApp('html')" data-i18n="settings.conversion.remove_filter">移除</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Markdown 粘贴工作流 -->
+                <div class="section extension-section" data-workflow="md">
+                    <div class="section-title" data-i18n="settings.extensions.md_title">Markdown 粘贴</div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="ext-md-enabled">
+                        <label for="ext-md-enabled" data-i18n="settings.extensions.md_enable">启用 Markdown 纯文本粘贴</label>
+                    </div>
+                    <div class="extension-apps mt-sm">
+                        <div class="section-subtitle" data-i18n="settings.extensions.app_list">目标应用</div>
+                        <div class="d-flex gap-md">
+                            <div id="ext-md-apps" class="list flex-1 min-h-80">
+                                <div class="list-empty" data-i18n="settings.extensions.no_apps">无应用</div>
+                            </div>
+                            <div class="btn-group flex-column">
+                                <button class="btn btn-secondary btn-sm" onclick="extensionsManager.addApp('md')" data-i18n="settings.extensions.select_app">选择应用</button>
+                                <button class="btn btn-secondary btn-sm" id="ext-md-remove-btn" disabled onclick="extensionsManager.removeApp('md')" data-i18n="settings.conversion.remove_filter">移除</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LaTeX 粘贴工作流 -->
+                <div class="section extension-section" data-workflow="latex">
+                    <div class="section-title" data-i18n="settings.extensions.latex_title">LaTeX 粘贴</div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="ext-latex-enabled">
+                        <label for="ext-latex-enabled" data-i18n="settings.extensions.latex_enable">启用 LaTeX 粘贴</label>
+                    </div>
+                    <div class="extension-apps mt-sm">
+                        <div class="section-subtitle" data-i18n="settings.extensions.app_list">目标应用</div>
+                        <div class="d-flex gap-md">
+                            <div id="ext-latex-apps" class="list flex-1 min-h-80">
+                                <div class="list-empty" data-i18n="settings.extensions.no_apps">无应用</div>
+                            </div>
+                            <div class="btn-group flex-column">
+                                <button class="btn btn-secondary btn-sm" onclick="extensionsManager.addApp('latex')" data-i18n="settings.extensions.select_app">选择应用</button>
+                                <button class="btn btn-secondary btn-sm" id="ext-latex-remove-btn" disabled onclick="extensionsManager.removeApp('latex')" data-i18n="settings.conversion.remove_filter">移除</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 文件粘贴工作流 -->
+                <div class="section extension-section" data-workflow="file">
+                    <div class="section-title" data-i18n="settings.extensions.file_title">文件粘贴</div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="ext-file-enabled">
+                        <label for="ext-file-enabled" data-i18n="settings.extensions.file_enable">启用文件粘贴</label>
+                    </div>
+                    <div class="extension-apps mt-sm">
+                        <div class="section-subtitle" data-i18n="settings.extensions.app_list">目标应用</div>
+                        <div class="d-flex gap-md">
+                            <div id="ext-file-apps" class="list flex-1 min-h-80">
+                                <div class="list-empty" data-i18n="settings.extensions.no_apps">无应用</div>
+                            </div>
+                            <div class="btn-group flex-column">
+                                <button class="btn btn-secondary btn-sm" onclick="extensionsManager.addApp('file')" data-i18n="settings.extensions.select_app">选择应用</button>
+                                <button class="btn btn-secondary btn-sm" id="ext-file-remove-btn" disabled onclick="extensionsManager.removeApp('file')" data-i18n="settings.conversion.remove_filter">移除</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- macOS 权限 -->
             <section id="panel-permissions" class="panel macos-only">
                 <div class="section">
@@ -337,6 +435,55 @@
         </div>
     </div>
 
+    <!-- 应用选择模态框 -->
+    <div id="app-select-modal" class="modal-overlay hidden" onclick="event.target === this && extensionsManager.closeAppSelectModal()">
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <h2 data-i18n="settings.extensions.select_app">选择应用</h2>
+                <button class="modal-close" onclick="extensionsManager.closeAppSelectModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="app-select-loading" class="text-center py-md">
+                    <span data-i18n="settings.permissions.status.checking">加载中...</span>
+                </div>
+                <div id="app-select-list" class="app-select-list hidden">
+                    <!-- 动态填充运行中的应用列表 -->
+                </div>
+                <div id="app-select-empty" class="text-center py-md hidden">
+                    <span class="text-muted" data-i18n="settings.extensions.no_running_apps">没有检测到正在运行的应用。</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="extensionsManager.closeAppSelectModal()" data-i18n="settings.buttons.cancel">取消</button>
+                <button class="btn btn-primary" id="app-select-confirm-btn" disabled onclick="extensionsManager.confirmAppSelection()" data-i18n="settings.buttons.select">选择</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 窗口模式编辑模态框 -->
+    <div id="window-pattern-modal" class="modal-overlay hidden" onclick="event.target === this && extensionsManager.closeWindowPatternModal()">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 data-i18n="settings.extensions.edit_window_pattern">编辑窗口名称匹配</h2>
+                <button class="modal-close" onclick="extensionsManager.closeWindowPatternModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="setting-item mb-md">
+                    <span data-i18n="settings.extensions.app_name">应用名称：</span>
+                    <span id="window-pattern-app-name" class="font-bold">--</span>
+                </div>
+                <div class="setting-item">
+                    <label for="window-pattern-input" data-i18n="settings.extensions.window_pattern">窗口名称</label>
+                    <textarea id="window-pattern-input" rows="4" data-i18n-placeholder="settings.extensions.window_pattern_hint" placeholder="可选正则表达式，用于匹配浏览器窗口标题（每行一个）"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="extensionsManager.closeWindowPatternModal()" data-i18n="settings.buttons.cancel">取消</button>
+                <button class="btn btn-primary" onclick="extensionsManager.saveWindowPattern()" data-i18n="settings.buttons.save">保存</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast 通知 -->
     <div id="toast" class="toast"></div>
 
@@ -347,6 +494,7 @@
     <script src="js/tabs.js"></script>
     <script src="js/hotkey.js"></script>
     <script src="js/permissions.js"></script>
+    <script src="js/extensions.js"></script>
     <script src="js/main.js"></script>
 </body>
 </html>
