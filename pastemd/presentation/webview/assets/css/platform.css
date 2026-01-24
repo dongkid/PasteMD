@@ -60,7 +60,7 @@ body.vibrancy-enabled .modal {
 
 :root.mica-enabled .modal-overlay,
 body.vibrancy-enabled .modal-overlay {
-    background: rgba(0, 0, 0, 0.6);
+    background: var(--overlay-heavy);
 }
 
 /* 模态框浅色主题 */
@@ -92,13 +92,34 @@ body.platform-windows .nav-item {
 }
 
 body.platform-windows .nav-item:hover {
-    background: var(--bg-hover);
+    background: var(--fill-subtle-secondary);
 }
 
 body.platform-windows .nav-item.active {
     background: var(--fill-subtle-tertiary);
     color: var(--text-primary);
     font-weight: 500;
+}
+
+/* Windows 浅色主题下确保焦点状态文字纯黑 */
+:root.light-theme body.platform-windows .nav-item.active {
+    color: #000000;
+}
+
+@media (prefers-color-scheme: light) {
+    :root.auto-theme body.platform-windows .nav-item.active {
+        color: #000000;
+    }
+}
+
+:root.mica-enabled.light-theme body.platform-windows .nav-item.active {
+    color: #000000;
+}
+
+@media (prefers-color-scheme: light) {
+    :root.mica-enabled.auto-theme body.platform-windows .nav-item.active {
+        color: #000000;
+    }
 }
 
 /* Windows 11 风格的按钮 */
@@ -116,7 +137,7 @@ body.platform-windows .btn-primary:hover {
 }
 
 body.platform-windows .btn-secondary {
-    border: 1px solid var(--border);
+    border: 1px solid var(--stroke-control-default);
 }
 
 /* Windows 11 风格的输入框 */
@@ -128,14 +149,14 @@ body.platform-windows textarea:focus {
 
 /* Windows 11 风格的 Card */
 body.platform-windows .card {
-    border: 1px solid var(--border);
-    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--stroke-card-default);
+    box-shadow: var(--shadow-card);
 }
 
 /* Windows 11 风格的模态框 */
 body.platform-windows .modal {
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.28);
-    border: 1px solid var(--border);
+    box-shadow: var(--shadow-dialog);
+    border: 1px solid var(--stroke-card-default);
 }
 
 /* ==================== macOS 特定样式 ==================== */
@@ -154,7 +175,7 @@ body.platform-macos .nav-item {
 }
 
 body.platform-macos .nav-item:hover {
-    background: var(--bg-hover);
+    background: var(--fill-subtle-secondary);
     color: var(--text-primary);
 }
 
@@ -179,32 +200,32 @@ body.platform-macos .btn-primary:hover {
 }
 
 body.platform-macos .btn-secondary {
-    background: var(--bg-tertiary);
+    background: var(--fill-control-default);
 }
 
 /* macOS 风格的输入框 */
 body.platform-macos input[type="text"],
 body.platform-macos select,
 body.platform-macos textarea {
-    background: var(--bg-tertiary);
+    background: var(--fill-control-default);
 }
 
 body.platform-macos input[type="text"]:focus,
 body.platform-macos select:focus,
 body.platform-macos textarea:focus {
-    background: var(--bg-primary);
+    background: var(--fill-control-tertiary);
     box-shadow: 0 0 0 3px rgba(var(--accent-rgb, 79, 195, 247), 0.25);
 }
 
 /* macOS 风格的 Card */
 body.platform-macos .card {
     border: none;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--shadow-card);
 }
 
 /* macOS 风格的模态框 */
 body.platform-macos .modal {
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+    box-shadow: var(--shadow-dialog);
     border: none;
 }
 
@@ -214,12 +235,12 @@ body.platform-macos .modal {
 @supports not (backdrop-filter: blur(1px)) {
     :root.mica-enabled body,
     body.vibrancy-enabled {
-        background-color: var(--bg-primary) !important;
+        background-color: var(--fill-solid-base) !important;
     }
 
     :root.mica-enabled .app,
     body.vibrancy-enabled .app {
-        background: var(--bg-primary);
+        background: var(--fill-solid-base);
     }
 
     :root.mica-enabled .sidebar,

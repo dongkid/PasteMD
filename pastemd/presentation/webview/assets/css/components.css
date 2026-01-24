@@ -49,7 +49,7 @@
 }
 
 .sidebar {
-    width: 220px;
+    width: 260px;
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
@@ -67,8 +67,10 @@
 }
 
 .app-logo {
-    font-size: 24px;
-    line-height: 1;
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    flex-shrink: 0;
 }
 
 .app-title {
@@ -263,7 +265,7 @@
 }
 
 .setting-row-column:hover {
-    background: transparent;
+    background: inherit;
 }
 
 /* 按钮行（不需要悬停效果） */
@@ -274,7 +276,7 @@
 }
 
 .setting-row-buttons:hover {
-    background: transparent;
+    background: inherit;
 }
 
 .setting-info {
@@ -569,7 +571,7 @@ select:focus {
 .modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.4);
+    background: var(--overlay-default);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -657,7 +659,7 @@ select:focus {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: transparent;
+    background: none;
     border: none;
     border-radius: var(--radius-control);
     color: var(--text-secondary);

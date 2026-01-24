@@ -15,8 +15,8 @@ from ...utils.system_detect import is_windows, is_macos
 from ...core.state import app_state
 
 # 设置窗口尺寸常量
-SETTINGS_WINDOW_WIDTH = 650
-SETTINGS_WINDOW_HEIGHT = 550
+SETTINGS_WINDOW_WIDTH = 850
+SETTINGS_WINDOW_HEIGHT = 650
 
 # Windows Mica 效果支持
 if is_windows():
@@ -186,7 +186,7 @@ class WebViewManager:
             "width": SETTINGS_WINDOW_WIDTH,
             "height": SETTINGS_WINDOW_HEIGHT,
             "resizable": True,
-            "min_size": (500, 400),
+            "min_size": (600, 500),
             "js_api": combined_api,
             "hidden": True,  # 初始隐藏
             "background_color": background_color,

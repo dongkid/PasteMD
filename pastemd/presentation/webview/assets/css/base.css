@@ -14,7 +14,7 @@ html, body {
 body {
     font-family: var(--font-family);
     font-size: 14px;
-    background-color: var(--bg-primary);
+    background-color: var(--fill-solid-base);
     color: var(--text-primary);
     line-height: 1.5;
 }
@@ -26,22 +26,22 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-    background: var(--bg-secondary);
+    background: var(--fill-mica-layer);
 }
 
 ::-webkit-scrollbar-thumb {
-    background: var(--border);
+    background: var(--stroke-divider);
     border-radius: var(--radius-sm);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: var(--border-light);
+    background: var(--stroke-control-default);
 }
 
 /* 选中文本 */
 ::selection {
     background: var(--accent);
-    color: var(--bg-primary);
+    color: var(--text-on-accent);
 }
 
 /* 链接 */

@@ -64,6 +64,10 @@
     --shadow-flyout: 0 8px 16px rgba(0, 0, 0, 0.14);
     --shadow-dialog: 0 32px 64px rgba(0, 0, 0, 0.24);
 
+    /* 遮罩层 */
+    --overlay-default: rgba(0, 0, 0, 0.4);
+    --overlay-heavy: rgba(0, 0, 0, 0.6);
+
     /* 文字禁用状态 */
     --text-disabled: rgba(255, 255, 255, 0.3628);
 
@@ -171,6 +175,10 @@
     --shadow-flyout: 0 8px 16px rgba(0, 0, 0, 0.08);
     --shadow-dialog: 0 32px 64px rgba(0, 0, 0, 0.14);
 
+    /* 遮罩层 */
+    --overlay-default: rgba(0, 0, 0, 0.3);
+    --overlay-heavy: rgba(0, 0, 0, 0.5);
+
     /* 文字禁用状态 */
     --text-disabled: rgba(0, 0, 0, 0.3614);
 
@@ -191,7 +199,7 @@
     --bg-hover: #e0e0e0;
 
     /* 文字颜色 */
-    --text-primary: #212121;
+    --text-primary: #000000;
     --text-secondary: #757575;
     --text-muted: #9e9e9e;
 
@@ -283,7 +291,7 @@
         --bg-hover: #e0e0e0;
 
         /* 文字颜色 */
-        --text-primary: #212121;
+        --text-primary: #000000;
         --text-secondary: #757575;
         --text-muted: #9e9e9e;
 
@@ -363,6 +371,22 @@ body.platform-macos {
     --text-primary: #ffffff;
     --text-secondary: rgba(255, 255, 255, 0.78);
     --text-muted: rgba(255, 255, 255, 0.55);
+
+    /* Fluent Design 控件填充 - Mica 深色模式 */
+    --fill-control-default: rgba(255, 255, 255, 0.0605);
+    --fill-control-secondary: rgba(255, 255, 255, 0.0837);
+    --fill-control-tertiary: rgba(255, 255, 255, 0.0326);
+    --fill-control-disabled: rgba(255, 255, 255, 0.0419);
+
+    /* Fluent Design 悬停/按下 - Mica 深色模式 */
+    --fill-subtle-secondary: rgba(255, 255, 255, 0.0605);
+    --fill-subtle-tertiary: rgba(255, 255, 255, 0.0419);
+
+    /* Fluent Design 边框 - Mica 深色模式 */
+    --stroke-card-default: rgba(255, 255, 255, 0.0837);
+    --stroke-control-default: rgba(255, 255, 255, 0.0698);
+    --stroke-control-elevation: rgba(255, 255, 255, 0.093);
+    --stroke-divider: rgba(255, 255, 255, 0.0837);
 }
 
 /* Mica 浅色模式 */
@@ -378,9 +402,25 @@ body.platform-macos {
     --border-light: rgba(0, 0, 0, 0.08);
 
     /* 浅色主题文字颜色 */
-    --text-primary: #212121;
+    --text-primary: #000000;
     --text-secondary: #757575;
     --text-muted: #9e9e9e;
+
+    /* Fluent Design 控件填充 - Mica 浅色模式 */
+    --fill-control-default: rgba(255, 255, 255, 0.70);
+    --fill-control-secondary: rgba(249, 249, 249, 0.50);
+    --fill-control-tertiary: rgba(249, 249, 249, 0.30);
+    --fill-control-disabled: rgba(249, 249, 249, 0.30);
+
+    /* Fluent Design 悬停/按下 - Mica 浅色模式 */
+    --fill-subtle-secondary: rgba(0, 0, 0, 0.0373);
+    --fill-subtle-tertiary: rgba(0, 0, 0, 0.0241);
+
+    /* Fluent Design 边框 - Mica 浅色模式 */
+    --stroke-card-default: rgba(0, 0, 0, 0.0578);
+    --stroke-control-default: rgba(0, 0, 0, 0.0578);
+    --stroke-control-elevation: rgba(255, 255, 255, 0.08);
+    --stroke-divider: rgba(0, 0, 0, 0.0803);
 }
 
 /* Mica Auto 模式 - 跟随系统浅色 */
@@ -397,9 +437,25 @@ body.platform-macos {
         --border-light: rgba(0, 0, 0, 0.08);
 
         /* 浅色主题文字颜色 */
-        --text-primary: #212121;
+        --text-primary: #000000;
         --text-secondary: #757575;
         --text-muted: #9e9e9e;
+
+        /* Fluent Design 控件填充 - Mica Auto 浅色模式 */
+        --fill-control-default: rgba(255, 255, 255, 0.70);
+        --fill-control-secondary: rgba(249, 249, 249, 0.50);
+        --fill-control-tertiary: rgba(249, 249, 249, 0.30);
+        --fill-control-disabled: rgba(249, 249, 249, 0.30);
+
+        /* Fluent Design 悬停/按下 - Mica Auto 浅色模式 */
+        --fill-subtle-secondary: rgba(0, 0, 0, 0.0373);
+        --fill-subtle-tertiary: rgba(0, 0, 0, 0.0241);
+
+        /* Fluent Design 边框 - Mica Auto 浅色模式 */
+        --stroke-card-default: rgba(0, 0, 0, 0.0578);
+        --stroke-control-default: rgba(0, 0, 0, 0.0578);
+        --stroke-control-elevation: rgba(255, 255, 255, 0.08);
+        --stroke-divider: rgba(0, 0, 0, 0.0803);
     }
 
     /* Mica 深色主题（系统浅色模式时）- 使用不透明深色背景 */
@@ -460,6 +516,22 @@ body.platform-macos.vibrancy-enabled {
     --text-primary: #ffffff;
     --text-secondary: rgba(255, 255, 255, 0.78);
     --text-muted: rgba(255, 255, 255, 0.55);
+
+    /* Fluent Design 控件填充 - Vibrancy 深色模式 */
+    --fill-control-default: rgba(255, 255, 255, 0.0605);
+    --fill-control-secondary: rgba(255, 255, 255, 0.0837);
+    --fill-control-tertiary: rgba(255, 255, 255, 0.0326);
+    --fill-control-disabled: rgba(255, 255, 255, 0.0419);
+
+    /* Fluent Design 悬停/按下 - Vibrancy 深色模式 */
+    --fill-subtle-secondary: rgba(255, 255, 255, 0.0605);
+    --fill-subtle-tertiary: rgba(255, 255, 255, 0.0419);
+
+    /* Fluent Design 边框 - Vibrancy 深色模式 */
+    --stroke-card-default: rgba(255, 255, 255, 0.0837);
+    --stroke-control-default: rgba(255, 255, 255, 0.0698);
+    --stroke-control-elevation: rgba(255, 255, 255, 0.093);
+    --stroke-divider: rgba(255, 255, 255, 0.0837);
 }
 
 /* Vibrancy 浅色模式 */
@@ -470,9 +542,25 @@ body.platform-macos.vibrancy-enabled.light-theme {
     --border: rgba(0, 0, 0, 0.1);
 
     /* 浅色主题文字颜色 */
-    --text-primary: #212121;
+    --text-primary: #000000;
     --text-secondary: #757575;
     --text-muted: #9e9e9e;
+
+    /* Fluent Design 控件填充 - Vibrancy 浅色模式 */
+    --fill-control-default: rgba(255, 255, 255, 0.70);
+    --fill-control-secondary: rgba(249, 249, 249, 0.50);
+    --fill-control-tertiary: rgba(249, 249, 249, 0.30);
+    --fill-control-disabled: rgba(249, 249, 249, 0.30);
+
+    /* Fluent Design 悬停/按下 - Vibrancy 浅色模式 */
+    --fill-subtle-secondary: rgba(0, 0, 0, 0.0373);
+    --fill-subtle-tertiary: rgba(0, 0, 0, 0.0241);
+
+    /* Fluent Design 边框 - Vibrancy 浅色模式 */
+    --stroke-card-default: rgba(0, 0, 0, 0.0578);
+    --stroke-control-default: rgba(0, 0, 0, 0.0578);
+    --stroke-control-elevation: rgba(255, 255, 255, 0.08);
+    --stroke-divider: rgba(0, 0, 0, 0.0803);
 }
 
 /* Vibrancy Auto 模式 - 跟随系统浅色 */
@@ -484,9 +572,25 @@ body.platform-macos.vibrancy-enabled.light-theme {
         --border: rgba(0, 0, 0, 0.1);
 
         /* 浅色主题文字颜色 */
-        --text-primary: #212121;
+        --text-primary: #000000;
         --text-secondary: #757575;
         --text-muted: #9e9e9e;
+
+        /* Fluent Design 控件填充 - Vibrancy Auto 浅色模式 */
+        --fill-control-default: rgba(255, 255, 255, 0.70);
+        --fill-control-secondary: rgba(249, 249, 249, 0.50);
+        --fill-control-tertiary: rgba(249, 249, 249, 0.30);
+        --fill-control-disabled: rgba(249, 249, 249, 0.30);
+
+        /* Fluent Design 悬停/按下 - Vibrancy Auto 浅色模式 */
+        --fill-subtle-secondary: rgba(0, 0, 0, 0.0373);
+        --fill-subtle-tertiary: rgba(0, 0, 0, 0.0241);
+
+        /* Fluent Design 边框 - Vibrancy Auto 浅色模式 */
+        --stroke-card-default: rgba(0, 0, 0, 0.0578);
+        --stroke-control-default: rgba(0, 0, 0, 0.0578);
+        --stroke-control-elevation: rgba(255, 255, 255, 0.08);
+        --stroke-divider: rgba(0, 0, 0, 0.0803);
     }
 
     /* Vibrancy 深色主题（系统浅色模式时）- 使用不透明深色背景 */
