@@ -8,420 +8,663 @@
     <link rel="stylesheet" href="css/base.css">
     <link rel="stylesheet" href="css/components.css">
     <link rel="stylesheet" href="css/platform.css">
+    <style>
+        /* Segoe Fluent Icons 字体引用 */
+        @font-face {
+            font-family: "Segoe Fluent Icons";
+            src: local("Segoe Fluent Icons"), local("Segoe MDL2 Assets");
+        }
+    </style>
 </head>
 <body class="loading">
     <div class="app">
-        <!-- 选项卡导航 -->
-        <nav class="tabs">
-            <button class="tab active" data-tab="general" data-i18n="settings.tab.general">常规</button>
-            <button class="tab" data-tab="conversion" data-i18n="settings.tab.conversion">转换</button>
-            <button class="tab" data-tab="advanced" data-i18n="settings.tab.advanced">高级</button>
-            <button class="tab" data-tab="experimental" data-i18n="settings.tab.experimental">实验性</button>
-            <button class="tab" data-tab="extensions" data-i18n="settings.tab.extensions">应用扩展</button>
-            <button class="tab macos-only" data-tab="permissions" data-i18n="settings.tab.permissions">权限</button>
+        <!-- 侧边栏导航 -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <span class="app-logo">📋</span>
+                <span class="app-title">PasteMD</span>
+            </div>
+            <ul class="nav-list">
+                <li class="nav-item active" data-tab="general">
+                    <span class="nav-icon">&#xE713;</span>
+                    <span class="nav-label" data-i18n="settings.tab.general">常规</span>
+                </li>
+                <li class="nav-item" data-tab="conversion">
+                    <span class="nav-icon">&#xE8E5;</span>
+                    <span class="nav-label" data-i18n="settings.tab.conversion">转换</span>
+                </li>
+                <li class="nav-item" data-tab="advanced">
+                    <span class="nav-icon">&#xE90F;</span>
+                    <span class="nav-label" data-i18n="settings.tab.advanced">高级</span>
+                </li>
+                <li class="nav-item" data-tab="experimental">
+                    <span class="nav-icon">&#xE7C1;</span>
+                    <span class="nav-label" data-i18n="settings.tab.experimental">实验性</span>
+                </li>
+                <li class="nav-item" data-tab="extensions">
+                    <span class="nav-icon">&#xE74C;</span>
+                    <span class="nav-label" data-i18n="settings.tab.extensions">应用扩展</span>
+                </li>
+                <li class="nav-item macos-only" data-tab="permissions">
+                    <span class="nav-icon">&#xE8D7;</span>
+                    <span class="nav-label" data-i18n="settings.tab.permissions">权限</span>
+                </li>
+            </ul>
         </nav>
 
-        <!-- 选项卡内容 -->
-        <main class="tab-content">
-            <!-- 常规设置 -->
-            <section id="panel-general" class="panel active">
-                <div class="section">
-                    <div class="section-title" data-i18n="settings.general.save_dir">保存目录</div>
-                    <div class="path-row">
-                        <input type="text" id="save-dir" placeholder="输入保存目录路径...">
-                        <div class="btn-group">
-                            <button class="btn btn-secondary btn-sm" onclick="browseSaveDir()" data-i18n="settings.general.browse">浏览</button>
-                            <button class="btn btn-secondary btn-sm" onclick="restoreDefaultSaveDir()" data-i18n="settings.general.restore_default">恢复默认</button>
+        <!-- 主内容区 -->
+        <main class="content">
+            <header class="content-header">
+                <h1 class="page-title" data-i18n="settings.tab.general">常规</h1>
+            </header>
+
+            <div class="content-body">
+                <!-- 常规设置 -->
+                <section id="panel-general" class="panel active">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title" data-i18n="settings.general.save_dir">保存目录</h3>
                         </div>
-                    </div>
-                </div>
-
-                <div class="section">
-                    <div class="section-title" data-i18n="settings.general.no_app_action">无应用时动作</div>
-                    <select id="no-app-action">
-                        <!-- 动态填充 -->
-                    </select>
-                </div>
-
-                <div class="section">
-                    <div class="section-title" data-i18n="settings.general.options">选项</div>
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="keep-file">
-                        <label for="keep-file" data-i18n="settings.general.keep_file">保留生成的文件</label>
-                    </div>
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="notify">
-                        <label for="notify" data-i18n="settings.general.notify">显示操作通知</label>
-                    </div>
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="startup-notify">
-                        <label for="startup-notify" data-i18n="settings.general.startup_notify">启动时显示通知</label>
-                    </div>
-                    <div class="checkbox-item windows-only">
-                        <input type="checkbox" id="move-cursor">
-                        <label for="move-cursor" data-i18n="settings.general.move_cursor">插入后移动光标到末尾</label>
-                    </div>
-                </div>
-
-                <div class="section">
-                    <div class="section-title" data-i18n="settings.general.hotkey">热键</div>
-                    <div class="setting-item">
-                        <div class="setting-label">
-                            <span class="title" data-i18n="settings.general.hotkey_title">粘贴热键</span>
-                            <span class="desc" data-i18n="settings.general.hotkey_desc">全局快捷键触发 Markdown 转换粘贴</span>
-                        </div>
-                        <div class="setting-control">
-                            <div class="input-group">
-                                <input type="text" id="hotkey-display" class="hotkey-display" readonly value="Ctrl + Shift + B">
-                                <button class="btn btn-secondary btn-sm" onclick="openHotkeyModal()" data-i18n="settings.general.set_hotkey">设置热键</button>
+                        <div class="card-body">
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <input type="text" id="save-dir" placeholder="输入保存目录路径...">
+                                </div>
+                            </div>
+                            <div class="setting-row setting-row-buttons">
+                                <div class="btn-group">
+                                    <button class="btn btn-secondary btn-sm" onclick="browseSaveDir()" data-i18n="settings.general.browse">浏览</button>
+                                    <button class="btn btn-secondary btn-sm" onclick="restoreDefaultSaveDir()" data-i18n="settings.general.restore_default">恢复默认</button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="section">
-                    <div class="section-title" data-i18n="settings.general.language">语言</div>
-                    <select id="language">
-                        <!-- 动态填充 -->
-                    </select>
-                </div>
-
-                <div class="section">
-                    <div class="section-title" data-i18n="settings.general.theme">主题</div>
-                    <select id="theme">
-                        <!-- 动态填充 -->
-                    </select>
-                </div>
-            </section>
-
-            <!-- 转换设置 -->
-            <section id="panel-conversion" class="panel">
-                <div class="section">
-                    <div class="section-title" data-i18n="settings.conversion.pandoc_path">Pandoc 路径</div>
-                    <div class="path-row">
-                        <input type="text" id="pandoc-path" placeholder="pandoc">
-                        <div class="btn-group">
-                            <button class="btn btn-secondary btn-sm" onclick="browsePandocPath()" data-i18n="settings.general.browse">浏览</button>
-                            <button class="btn btn-secondary btn-sm" onclick="restoreDefaultPandocPath()" data-i18n="settings.general.restore_default">恢复默认</button>
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title" data-i18n="settings.general.no_app_action">无应用时动作</h3>
                         </div>
-                    </div>
-                </div>
-
-                <div class="section">
-                    <div class="section-title" data-i18n="settings.conversion.reference_docx">参考文档</div>
-                    <div class="path-row">
-                        <input type="text" id="reference-docx" data-i18n-placeholder="settings.conversion.reference_docx_placeholder" placeholder="可选：用于设置样式的参考 .docx 文件">
-                        <div class="btn-group">
-                            <button class="btn btn-secondary btn-sm" onclick="browseRefDocx()" data-i18n="settings.general.browse">浏览</button>
-                            <button class="btn btn-secondary btn-sm" onclick="clearRefDocx()" data-i18n="settings.general.clear">清除</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="section">
-                    <div class="section-title" data-i18n="settings.conversion.pandoc_filters">Pandoc Filters</div>
-                    <div class="note">
-                        <a href="https://github.com/jgm/pandoc/wiki/Pandoc-Filters" target="_blank">Pandoc Filters Wiki</a> |
-                        <a href="https://pandoc.org/lua-filters.html" target="_blank">Lua Filters</a>
-                    </div>
-                    <div class="d-flex gap-md mt-sm">
-                        <div id="filters-list" class="list flex-1 min-h-120">
-                            <div class="list-empty" data-i18n="settings.conversion.no_filters">无 Filter</div>
-                        </div>
-                        <div class="btn-group flex-column">
-                            <button class="btn btn-secondary btn-sm" onclick="addFilter()" data-i18n="settings.conversion.add_filter">添加</button>
-                            <button class="btn btn-secondary btn-sm" id="filter-remove-btn" disabled onclick="removeFilter()" data-i18n="settings.conversion.remove_filter">移除</button>
-                            <button class="btn btn-secondary btn-sm" id="filter-up-btn" disabled onclick="moveFilterUp()" data-i18n="settings.conversion.move_up">上移</button>
-                            <button class="btn btn-secondary btn-sm" id="filter-down-btn" disabled onclick="moveFilterDown()" data-i18n="settings.conversion.move_down">下移</button>
-                        </div>
-                    </div>
-                    <div class="note" data-i18n="settings.conversion.pandoc_filters_note">Filters 按顺序执行，支持 Lua 脚本和可执行文件</div>
-                </div>
-
-                <div class="section">
-                    <div class="section-title" data-i18n="settings.conversion.html_formatting">HTML 格式化</div>
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="strikethrough-to-del" checked>
-                        <label for="strikethrough-to-del" data-i18n="settings.conversion.strikethrough">删除线转换为 &lt;del&gt; 标签</label>
-                    </div>
-                </div>
-
-                <div class="section">
-                    <div class="section-title" data-i18n="settings.conversion.first_paragraph_heading">首段缩进</div>
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="md-disable-indent" checked>
-                        <label for="md-disable-indent" data-i18n="settings.conversion.md_indent">Markdown 转换时禁用首段缩进</label>
-                    </div>
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="html-disable-indent" checked>
-                        <label for="html-disable-indent" data-i18n="settings.conversion.html_indent">HTML 转换时禁用首段缩进</label>
-                    </div>
-                </div>
-            </section>
-
-            <!-- 高级设置 -->
-            <section id="panel-advanced" class="panel">
-                <div class="section">
-                    <div class="section-title" data-i18n="settings.advanced.excel_options">Excel 选项</div>
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="enable-excel" checked>
-                        <label for="enable-excel" data-i18n="settings.advanced.excel_enable">启用 Excel 表格插入</label>
-                    </div>
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="excel-keep-format" checked>
-                        <label for="excel-keep-format" data-i18n="settings.advanced.excel_format">保留 Excel 格式</label>
-                    </div>
-                </div>
-
-                <!-- 开发者选项 -->
-                <div class="section">
-                    <div class="section-title" data-i18n="settings.advanced.debug_options">开发者选项</div>
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="debug-mode">
-                        <label for="debug-mode" data-i18n="settings.advanced.debug_mode">启用调试模式</label>
-                    </div>
-                    <div class="note" data-i18n="settings.advanced.debug_mode_note">启用后将开启开发者工具和控制台日志（需重启生效）</div>
-                </div>
-            </section>
-
-            <!-- 实验性功能 -->
-            <section id="panel-experimental" class="panel">
-                <div class="section">
-                    <div class="section-title" data-i18n="settings.experimental.formula_processing">公式处理</div>
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="keep-formula">
-                        <label for="keep-formula" data-i18n="settings.conversion.keep_formula">保留原始公式格式</label>
-                    </div>
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="enable-latex-replacements" checked>
-                        <label for="enable-latex-replacements" data-i18n="settings.conversion.enable_latex_replacements">启用 LaTeX 自动替换</label>
-                    </div>
-                    <div class="note" data-i18n="settings.conversion.latex_replacements_note">自动将常见 LaTeX 命令转换为 Word 兼容格式</div>
-                    <div class="checkbox-item mt-md">
-                        <input type="checkbox" id="fix-single-dollar-block" checked>
-                        <label for="fix-single-dollar-block" data-i18n="settings.conversion.fix_single_dollar_block">修复单行 $ 块级公式</label>
-                    </div>
-                    <div class="note" data-i18n="settings.conversion.fix_single_dollar_block_note">将独立行的 $...$ 公式转换为块级公式</div>
-                </div>
-
-                <div class="section">
-                    <div class="section-title" data-i18n="settings.conversion.pandoc_request_headers">Pandoc 请求头</div>
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="enable-request-headers" onchange="toggleRequestHeadersState()">
-                        <label for="enable-request-headers" data-i18n="settings.conversion.pandoc_request_headers_enable">启用自定义请求头</label>
-                    </div>
-                    <textarea id="request-headers" rows="4" data-i18n-placeholder="settings.conversion.pandoc_request_headers_placeholder" placeholder="每行一个请求头，格式：Header-Name: value" disabled></textarea>
-                    <div class="note" data-i18n="settings.conversion.pandoc_request_headers_note">下载远程图片等资源时附加的 HTTP 请求头</div>
-                    <button class="btn btn-secondary btn-sm mt-sm" onclick="fillRequestHeadersExample()" data-i18n="settings.conversion.pandoc_request_headers_fill_example">填入示例</button>
-                </div>
-            </section>
-
-            <!-- 应用扩展 -->
-            <section id="panel-extensions" class="panel">
-                <div class="section">
-                    <p class="text-secondary mb-md" data-i18n="settings.extensions.description">
-                        注：可在此配置扩展不同需求的粘贴。双击应用可编辑窗口名称匹配规则，为空则匹配所有窗口。
-                    </p>
-                </div>
-
-                <!-- HTML 粘贴工作流 -->
-                <div class="section extension-section" data-workflow="html">
-                    <div class="section-title" data-i18n="settings.extensions.html_title">HTML 粘贴</div>
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="ext-html-enabled">
-                        <label for="ext-html-enabled" data-i18n="settings.extensions.html_enable">启用 HTML 格式粘贴</label>
-                    </div>
-                    <div class="checkbox-item ml-md">
-                        <input type="checkbox" id="ext-html-keep-latex">
-                        <label for="ext-html-keep-latex" data-i18n="settings.extensions.keep_latex">保持 $...$ 公式格式（不转换为 MathML）</label>
-                    </div>
-                    <div class="extension-apps mt-sm">
-                        <div class="section-subtitle" data-i18n="settings.extensions.app_list">目标应用</div>
-                        <div class="d-flex gap-md">
-                            <div id="ext-html-apps" class="list flex-1 min-h-80">
-                                <div class="list-empty" data-i18n="settings.extensions.no_apps">无应用</div>
-                            </div>
-                            <div class="btn-group flex-column">
-                                <button class="btn btn-secondary btn-sm" onclick="extensionsManager.addApp('html')" data-i18n="settings.extensions.select_app">选择应用</button>
-                                <button class="btn btn-secondary btn-sm" id="ext-html-remove-btn" disabled onclick="extensionsManager.removeApp('html')" data-i18n="settings.conversion.remove_filter">移除</button>
+                        <div class="card-body">
+                            <div class="setting-row">
+                                <select id="no-app-action">
+                                    <!-- 动态填充 -->
+                                </select>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Markdown 粘贴工作流 -->
-                <div class="section extension-section" data-workflow="md">
-                    <div class="section-title" data-i18n="settings.extensions.md_title">Markdown 粘贴</div>
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="ext-md-enabled">
-                        <label for="ext-md-enabled" data-i18n="settings.extensions.md_enable">启用 Markdown 纯文本粘贴</label>
-                    </div>
-                    <div class="extension-apps mt-sm">
-                        <div class="section-subtitle" data-i18n="settings.extensions.app_list">目标应用</div>
-                        <div class="d-flex gap-md">
-                            <div id="ext-md-apps" class="list flex-1 min-h-80">
-                                <div class="list-empty" data-i18n="settings.extensions.no_apps">无应用</div>
-                            </div>
-                            <div class="btn-group flex-column">
-                                <button class="btn btn-secondary btn-sm" onclick="extensionsManager.addApp('md')" data-i18n="settings.extensions.select_app">选择应用</button>
-                                <button class="btn btn-secondary btn-sm" id="ext-md-remove-btn" disabled onclick="extensionsManager.removeApp('md')" data-i18n="settings.conversion.remove_filter">移除</button>
-                            </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title" data-i18n="settings.general.options">选项</h3>
                         </div>
-                    </div>
-                </div>
-
-                <!-- LaTeX 粘贴工作流 -->
-                <div class="section extension-section" data-workflow="latex">
-                    <div class="section-title" data-i18n="settings.extensions.latex_title">LaTeX 粘贴</div>
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="ext-latex-enabled">
-                        <label for="ext-latex-enabled" data-i18n="settings.extensions.latex_enable">启用 LaTeX 粘贴</label>
-                    </div>
-                    <div class="extension-apps mt-sm">
-                        <div class="section-subtitle" data-i18n="settings.extensions.app_list">目标应用</div>
-                        <div class="d-flex gap-md">
-                            <div id="ext-latex-apps" class="list flex-1 min-h-80">
-                                <div class="list-empty" data-i18n="settings.extensions.no_apps">无应用</div>
+                        <div class="card-body">
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <span class="setting-label" data-i18n="settings.general.keep_file">保留生成的文件</span>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" class="toggle-input" id="keep-file">
+                                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                                </label>
                             </div>
-                            <div class="btn-group flex-column">
-                                <button class="btn btn-secondary btn-sm" onclick="extensionsManager.addApp('latex')" data-i18n="settings.extensions.select_app">选择应用</button>
-                                <button class="btn btn-secondary btn-sm" id="ext-latex-remove-btn" disabled onclick="extensionsManager.removeApp('latex')" data-i18n="settings.conversion.remove_filter">移除</button>
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <span class="setting-label" data-i18n="settings.general.notify">显示操作通知</span>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" class="toggle-input" id="notify">
+                                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                                </label>
                             </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 文件粘贴工作流 -->
-                <div class="section extension-section" data-workflow="file">
-                    <div class="section-title" data-i18n="settings.extensions.file_title">文件粘贴</div>
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="ext-file-enabled">
-                        <label for="ext-file-enabled" data-i18n="settings.extensions.file_enable">启用文件粘贴</label>
-                    </div>
-                    <div class="extension-apps mt-sm">
-                        <div class="section-subtitle" data-i18n="settings.extensions.app_list">目标应用</div>
-                        <div class="d-flex gap-md">
-                            <div id="ext-file-apps" class="list flex-1 min-h-80">
-                                <div class="list-empty" data-i18n="settings.extensions.no_apps">无应用</div>
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <span class="setting-label" data-i18n="settings.general.startup_notify">启动时显示通知</span>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" class="toggle-input" id="startup-notify">
+                                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                                </label>
                             </div>
-                            <div class="btn-group flex-column">
-                                <button class="btn btn-secondary btn-sm" onclick="extensionsManager.addApp('file')" data-i18n="settings.extensions.select_app">选择应用</button>
-                                <button class="btn btn-secondary btn-sm" id="ext-file-remove-btn" disabled onclick="extensionsManager.removeApp('file')" data-i18n="settings.conversion.remove_filter">移除</button>
+                            <div class="setting-row windows-only">
+                                <div class="setting-info">
+                                    <span class="setting-label" data-i18n="settings.general.move_cursor">插入后移动光标到末尾</span>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" class="toggle-input" id="move-cursor">
+                                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                                </label>
                             </div>
                         </div>
                     </div>
-                </div>
-            </section>
 
-            <!-- macOS 权限 -->
-            <section id="panel-permissions" class="panel macos-only">
-                <div class="section">
-                    <p id="permissions-intro" class="mb-md text-secondary" data-i18n="settings.permissions.intro">
-                        PasteMD 需要以下系统权限才能正常工作。请点击"打开设置"按钮授予相应权限。
-                    </p>
-                    <p id="permissions-hint" class="text-sm text-muted mb-md" data-i18n="settings.permissions.add_hint">
-                        提示：如果看不到 PasteMD，请点击"+"按钮手动添加。
-                    </p>
-                </div>
-
-                <div id="permissions-list">
-                    <!-- 辅助功能 -->
-                    <div class="permission-item" data-permission="accessibility">
-                        <div class="permission-header">
-                            <span class="permission-title" data-i18n="settings.permissions.accessibility.title">
-                                <span class="status-dot unknown"></span>
-                                辅助功能
-                            </span>
-                            <span class="permission-status text-muted" data-i18n="settings.permissions.status.checking">检查中...</span>
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title" data-i18n="settings.general.hotkey">热键</h3>
                         </div>
-                        <div class="permission-desc" data-i18n="settings.permissions.accessibility.desc">用于模拟键盘输入和控制其他应用程序</div>
-                        <div class="permission-actions">
-                            <button class="btn btn-secondary btn-sm btn-request d-none" onclick="permissionsManager.requestPermission('accessibility')" data-i18n="settings.permissions.request_access">请求权限</button>
-                            <button class="btn btn-secondary btn-sm" onclick="permissionsManager.openSettings('accessibility')" data-i18n="settings.permissions.open_settings">打开设置</button>
+                        <div class="card-body">
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <span class="setting-label" data-i18n="settings.general.hotkey_title">粘贴热键</span>
+                                    <span class="setting-description" data-i18n="settings.general.hotkey_desc">全局快捷键触发 Markdown 转换粘贴</span>
+                                </div>
+                                <div class="setting-control">
+                                    <div class="input-group">
+                                        <input type="text" id="hotkey-display" class="hotkey-display" readonly value="Ctrl + Shift + B">
+                                        <button class="btn btn-secondary btn-sm" onclick="openHotkeyModal()" data-i18n="settings.general.set_hotkey">设置热键</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- 屏幕录制 -->
-                    <div class="permission-item" data-permission="screen_recording">
-                        <div class="permission-header">
-                            <span class="permission-title" data-i18n="settings.permissions.screen_recording.title">
-                                <span class="status-dot unknown"></span>
-                                屏幕录制
-                            </span>
-                            <span class="permission-status text-muted" data-i18n="settings.permissions.status.checking">检查中...</span>
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title" data-i18n="settings.general.language">语言</h3>
                         </div>
-                        <div class="permission-desc" data-i18n="settings.permissions.screen_recording.desc">用于检测当前活跃的应用程序窗口</div>
-                        <div class="permission-actions">
-                            <button class="btn btn-secondary btn-sm btn-request d-none" onclick="permissionsManager.requestPermission('screen_recording')" data-i18n="settings.permissions.request_access">请求权限</button>
-                            <button class="btn btn-secondary btn-sm" onclick="permissionsManager.openSettings('screen_recording')" data-i18n="settings.permissions.open_settings">打开设置</button>
+                        <div class="card-body">
+                            <div class="setting-row">
+                                <select id="language">
+                                    <!-- 动态填充 -->
+                                </select>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- 输入监控 -->
-                    <div class="permission-item" data-permission="input_monitoring">
-                        <div class="permission-header">
-                            <span class="permission-title" data-i18n="settings.permissions.input_monitoring.title">
-                                <span class="status-dot unknown"></span>
-                                输入监控
-                            </span>
-                            <span class="permission-status text-muted" data-i18n="settings.permissions.status.checking">检查中...</span>
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title" data-i18n="settings.general.theme">主题</h3>
                         </div>
-                        <div class="permission-desc" data-i18n="settings.permissions.input_monitoring.desc">用于监听全局热键</div>
-                        <div class="permission-actions">
-                            <button class="btn btn-secondary btn-sm btn-request d-none" onclick="permissionsManager.requestPermission('input_monitoring')" data-i18n="settings.permissions.request_access">请求权限</button>
-                            <button class="btn btn-secondary btn-sm" onclick="permissionsManager.openSettings('input_monitoring')" data-i18n="settings.permissions.open_settings">打开设置</button>
+                        <div class="card-body">
+                            <div class="setting-row">
+                                <select id="theme">
+                                    <!-- 动态填充 -->
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 转换设置 -->
+                <section id="panel-conversion" class="panel">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title" data-i18n="settings.conversion.pandoc_path">Pandoc 路径</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <input type="text" id="pandoc-path" placeholder="pandoc">
+                                </div>
+                            </div>
+                            <div class="setting-row setting-row-buttons">
+                                <div class="btn-group">
+                                    <button class="btn btn-secondary btn-sm" onclick="browsePandocPath()" data-i18n="settings.general.browse">浏览</button>
+                                    <button class="btn btn-secondary btn-sm" onclick="restoreDefaultPandocPath()" data-i18n="settings.general.restore_default">恢复默认</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- 自动化 -->
-                    <div class="permission-item" data-permission="automation">
-                        <div class="permission-header">
-                            <span class="permission-title" data-i18n="settings.permissions.automation.title">
-                                <span class="status-dot unknown"></span>
-                                自动化
-                            </span>
-                            <span class="permission-status text-muted" data-i18n="settings.permissions.status.checking">检查中...</span>
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title" data-i18n="settings.conversion.reference_docx">参考文档</h3>
                         </div>
-                        <div class="permission-desc" data-i18n="settings.permissions.automation.desc">用于控制 Microsoft Word 和 Excel</div>
-                        <div class="permission-actions">
-                            <button class="btn btn-secondary btn-sm btn-request d-none" onclick="permissionsManager.requestPermission('automation')" data-i18n="settings.permissions.request_access">请求权限</button>
-                            <button class="btn btn-secondary btn-sm" onclick="permissionsManager.openSettings('automation')" data-i18n="settings.permissions.open_settings">打开设置</button>
+                        <div class="card-body">
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <input type="text" id="reference-docx" data-i18n-placeholder="settings.conversion.reference_docx_placeholder" placeholder="可选：用于设置样式的参考 .docx 文件">
+                                </div>
+                            </div>
+                            <div class="setting-row setting-row-buttons">
+                                <div class="btn-group">
+                                    <button class="btn btn-secondary btn-sm" onclick="browseRefDocx()" data-i18n="settings.general.browse">浏览</button>
+                                    <button class="btn btn-secondary btn-sm" onclick="clearRefDocx()" data-i18n="settings.general.clear">清除</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="section mt-md">
-                    <button class="btn btn-secondary" onclick="permissionsManager.refresh()" data-i18n="settings.permissions.refresh">刷新状态</button>
-                    <span id="last-checked" class="ml-md text-secondary text-sm" data-i18n="settings.permissions.last_checked">最后检查：--:--:--</span>
-                </div>
-            </section>
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title" data-i18n="settings.conversion.pandoc_filters">Pandoc Filters</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="setting-row setting-row-column">
+                                <div class="note mb-sm">
+                                    <a href="https://github.com/jgm/pandoc/wiki/Pandoc-Filters" target="_blank">Pandoc Filters Wiki</a> |
+                                    <a href="https://pandoc.org/lua-filters.html" target="_blank">Lua Filters</a>
+                                </div>
+                                <div class="d-flex gap-md">
+                                    <div id="filters-list" class="list flex-1 min-h-120">
+                                        <div class="list-empty" data-i18n="settings.conversion.no_filters">无 Filter</div>
+                                    </div>
+                                    <div class="btn-group flex-column">
+                                        <button class="btn btn-secondary btn-sm" onclick="addFilter()" data-i18n="settings.conversion.add_filter">添加</button>
+                                        <button class="btn btn-secondary btn-sm" id="filter-remove-btn" disabled onclick="removeFilter()" data-i18n="settings.conversion.remove_filter">移除</button>
+                                        <button class="btn btn-secondary btn-sm" id="filter-up-btn" disabled onclick="moveFilterUp()" data-i18n="settings.conversion.move_up">上移</button>
+                                        <button class="btn btn-secondary btn-sm" id="filter-down-btn" disabled onclick="moveFilterDown()" data-i18n="settings.conversion.move_down">下移</button>
+                                    </div>
+                                </div>
+                                <div class="note mt-sm" data-i18n="settings.conversion.pandoc_filters_note">Filters 按顺序执行，支持 Lua 脚本和可执行文件</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title" data-i18n="settings.conversion.html_formatting">HTML 格式化</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <span class="setting-label" data-i18n="settings.conversion.strikethrough">删除线转换为 &lt;del&gt; 标签</span>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" class="toggle-input" id="strikethrough-to-del" checked>
+                                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title" data-i18n="settings.conversion.first_paragraph_heading">首段缩进</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <span class="setting-label" data-i18n="settings.conversion.md_indent">Markdown 转换时禁用首段缩进</span>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" class="toggle-input" id="md-disable-indent" checked>
+                                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                                </label>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <span class="setting-label" data-i18n="settings.conversion.html_indent">HTML 转换时禁用首段缩进</span>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" class="toggle-input" id="html-disable-indent" checked>
+                                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 高级设置 -->
+                <section id="panel-advanced" class="panel">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title" data-i18n="settings.advanced.excel_options">Excel 选项</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <span class="setting-label" data-i18n="settings.advanced.excel_enable">启用 Excel 表格插入</span>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" class="toggle-input" id="enable-excel" checked>
+                                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                                </label>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <span class="setting-label" data-i18n="settings.advanced.excel_format">保留 Excel 格式</span>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" class="toggle-input" id="excel-keep-format" checked>
+                                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title" data-i18n="settings.advanced.debug_options">开发者选项</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <span class="setting-label" data-i18n="settings.advanced.debug_mode">启用调试模式</span>
+                                    <span class="setting-description" data-i18n="settings.advanced.debug_mode_note">启用后将开启开发者工具和控制台日志（需重启生效）</span>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" class="toggle-input" id="debug-mode">
+                                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 实验性功能 -->
+                <section id="panel-experimental" class="panel">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title" data-i18n="settings.experimental.formula_processing">公式处理</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <span class="setting-label" data-i18n="settings.conversion.keep_formula">保留原始公式格式</span>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" class="toggle-input" id="keep-formula">
+                                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                                </label>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <span class="setting-label" data-i18n="settings.conversion.enable_latex_replacements">启用 LaTeX 自动替换</span>
+                                    <span class="setting-description" data-i18n="settings.conversion.latex_replacements_note">自动将常见 LaTeX 命令转换为 Word 兼容格式</span>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" class="toggle-input" id="enable-latex-replacements" checked>
+                                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                                </label>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <span class="setting-label" data-i18n="settings.conversion.fix_single_dollar_block">修复单行 $ 块级公式</span>
+                                    <span class="setting-description" data-i18n="settings.conversion.fix_single_dollar_block_note">将独立行的 $...$ 公式转换为块级公式</span>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" class="toggle-input" id="fix-single-dollar-block" checked>
+                                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title" data-i18n="settings.conversion.pandoc_request_headers">Pandoc 请求头</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <span class="setting-label" data-i18n="settings.conversion.pandoc_request_headers_enable">启用自定义请求头</span>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" class="toggle-input" id="enable-request-headers" onchange="toggleRequestHeadersState()">
+                                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                                </label>
+                            </div>
+                            <div class="setting-row setting-row-column">
+                                <textarea id="request-headers" rows="4" data-i18n-placeholder="settings.conversion.pandoc_request_headers_placeholder" placeholder="每行一个请求头，格式：Header-Name: value" disabled></textarea>
+                                <div class="note mt-sm" data-i18n="settings.conversion.pandoc_request_headers_note">下载远程图片等资源时附加的 HTTP 请求头</div>
+                                <button class="btn btn-secondary btn-sm mt-sm" onclick="fillRequestHeadersExample()" data-i18n="settings.conversion.pandoc_request_headers_fill_example">填入示例</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 应用扩展 -->
+                <section id="panel-extensions" class="panel">
+                    <div class="card">
+                        <div class="card-body">
+                            <p class="text-secondary" data-i18n="settings.extensions.description">
+                                注：可在此配置扩展不同需求的粘贴。双击应用可编辑窗口名称匹配规则，为空则匹配所有窗口。
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- HTML 粘贴工作流 -->
+                    <div class="card extension-section" data-workflow="html">
+                        <div class="card-header">
+                            <h3 class="card-title" data-i18n="settings.extensions.html_title">HTML 粘贴</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <span class="setting-label" data-i18n="settings.extensions.html_enable">启用 HTML 格式粘贴</span>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" class="toggle-input" id="ext-html-enabled">
+                                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                                </label>
+                            </div>
+                            <div class="setting-row ml-md">
+                                <div class="setting-info">
+                                    <span class="setting-label" data-i18n="settings.extensions.keep_latex">保持 $...$ 公式格式（不转换为 MathML）</span>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" class="toggle-input" id="ext-html-keep-latex">
+                                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                                </label>
+                            </div>
+                            <div class="setting-row setting-row-column">
+                                <div class="section-subtitle" data-i18n="settings.extensions.app_list">目标应用</div>
+                                <div class="d-flex gap-md">
+                                    <div id="ext-html-apps" class="list flex-1 min-h-80">
+                                        <div class="list-empty" data-i18n="settings.extensions.no_apps">无应用</div>
+                                    </div>
+                                    <div class="btn-group flex-column">
+                                        <button class="btn btn-secondary btn-sm" onclick="extensionsManager.addApp('html')" data-i18n="settings.extensions.select_app">选择应用</button>
+                                        <button class="btn btn-secondary btn-sm" id="ext-html-remove-btn" disabled onclick="extensionsManager.removeApp('html')" data-i18n="settings.conversion.remove_filter">移除</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Markdown 粘贴工作流 -->
+                    <div class="card extension-section" data-workflow="md">
+                        <div class="card-header">
+                            <h3 class="card-title" data-i18n="settings.extensions.md_title">Markdown 粘贴</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <span class="setting-label" data-i18n="settings.extensions.md_enable">启用 Markdown 纯文本粘贴</span>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" class="toggle-input" id="ext-md-enabled">
+                                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                                </label>
+                            </div>
+                            <div class="setting-row setting-row-column">
+                                <div class="section-subtitle" data-i18n="settings.extensions.app_list">目标应用</div>
+                                <div class="d-flex gap-md">
+                                    <div id="ext-md-apps" class="list flex-1 min-h-80">
+                                        <div class="list-empty" data-i18n="settings.extensions.no_apps">无应用</div>
+                                    </div>
+                                    <div class="btn-group flex-column">
+                                        <button class="btn btn-secondary btn-sm" onclick="extensionsManager.addApp('md')" data-i18n="settings.extensions.select_app">选择应用</button>
+                                        <button class="btn btn-secondary btn-sm" id="ext-md-remove-btn" disabled onclick="extensionsManager.removeApp('md')" data-i18n="settings.conversion.remove_filter">移除</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- LaTeX 粘贴工作流 -->
+                    <div class="card extension-section" data-workflow="latex">
+                        <div class="card-header">
+                            <h3 class="card-title" data-i18n="settings.extensions.latex_title">LaTeX 粘贴</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <span class="setting-label" data-i18n="settings.extensions.latex_enable">启用 LaTeX 粘贴</span>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" class="toggle-input" id="ext-latex-enabled">
+                                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                                </label>
+                            </div>
+                            <div class="setting-row setting-row-column">
+                                <div class="section-subtitle" data-i18n="settings.extensions.app_list">目标应用</div>
+                                <div class="d-flex gap-md">
+                                    <div id="ext-latex-apps" class="list flex-1 min-h-80">
+                                        <div class="list-empty" data-i18n="settings.extensions.no_apps">无应用</div>
+                                    </div>
+                                    <div class="btn-group flex-column">
+                                        <button class="btn btn-secondary btn-sm" onclick="extensionsManager.addApp('latex')" data-i18n="settings.extensions.select_app">选择应用</button>
+                                        <button class="btn btn-secondary btn-sm" id="ext-latex-remove-btn" disabled onclick="extensionsManager.removeApp('latex')" data-i18n="settings.conversion.remove_filter">移除</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 文件粘贴工作流 -->
+                    <div class="card extension-section" data-workflow="file">
+                        <div class="card-header">
+                            <h3 class="card-title" data-i18n="settings.extensions.file_title">文件粘贴</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <span class="setting-label" data-i18n="settings.extensions.file_enable">启用文件粘贴</span>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" class="toggle-input" id="ext-file-enabled">
+                                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                                </label>
+                            </div>
+                            <div class="setting-row setting-row-column">
+                                <div class="section-subtitle" data-i18n="settings.extensions.app_list">目标应用</div>
+                                <div class="d-flex gap-md">
+                                    <div id="ext-file-apps" class="list flex-1 min-h-80">
+                                        <div class="list-empty" data-i18n="settings.extensions.no_apps">无应用</div>
+                                    </div>
+                                    <div class="btn-group flex-column">
+                                        <button class="btn btn-secondary btn-sm" onclick="extensionsManager.addApp('file')" data-i18n="settings.extensions.select_app">选择应用</button>
+                                        <button class="btn btn-secondary btn-sm" id="ext-file-remove-btn" disabled onclick="extensionsManager.removeApp('file')" data-i18n="settings.conversion.remove_filter">移除</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- macOS 权限 -->
+                <section id="panel-permissions" class="panel macos-only">
+                    <div class="card">
+                        <div class="card-body">
+                            <p id="permissions-intro" class="text-secondary" data-i18n="settings.permissions.intro">
+                                PasteMD 需要以下系统权限才能正常工作。请点击"打开设置"按钮授予相应权限。
+                            </p>
+                            <p id="permissions-hint" class="text-sm text-muted mt-sm" data-i18n="settings.permissions.add_hint">
+                                提示：如果看不到 PasteMD，请点击"+"按钮手动添加。
+                            </p>
+                        </div>
+                    </div>
+
+                    <div id="permissions-list">
+                        <!-- 辅助功能 -->
+                        <div class="card permission-card" data-permission="accessibility">
+                            <div class="card-body">
+                                <div class="permission-header">
+                                    <span class="permission-title" data-i18n="settings.permissions.accessibility.title">
+                                        <span class="status-dot unknown"></span>
+                                        辅助功能
+                                    </span>
+                                    <span class="permission-status text-muted" data-i18n="settings.permissions.status.checking">检查中...</span>
+                                </div>
+                                <div class="permission-desc" data-i18n="settings.permissions.accessibility.desc">用于模拟键盘输入和控制其他应用程序</div>
+                                <div class="permission-actions">
+                                    <button class="btn btn-secondary btn-sm btn-request d-none" onclick="permissionsManager.requestPermission('accessibility')" data-i18n="settings.permissions.request_access">请求权限</button>
+                                    <button class="btn btn-secondary btn-sm" onclick="permissionsManager.openSettings('accessibility')" data-i18n="settings.permissions.open_settings">打开设置</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 屏幕录制 -->
+                        <div class="card permission-card" data-permission="screen_recording">
+                            <div class="card-body">
+                                <div class="permission-header">
+                                    <span class="permission-title" data-i18n="settings.permissions.screen_recording.title">
+                                        <span class="status-dot unknown"></span>
+                                        屏幕录制
+                                    </span>
+                                    <span class="permission-status text-muted" data-i18n="settings.permissions.status.checking">检查中...</span>
+                                </div>
+                                <div class="permission-desc" data-i18n="settings.permissions.screen_recording.desc">用于检测当前活跃的应用程序窗口</div>
+                                <div class="permission-actions">
+                                    <button class="btn btn-secondary btn-sm btn-request d-none" onclick="permissionsManager.requestPermission('screen_recording')" data-i18n="settings.permissions.request_access">请求权限</button>
+                                    <button class="btn btn-secondary btn-sm" onclick="permissionsManager.openSettings('screen_recording')" data-i18n="settings.permissions.open_settings">打开设置</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 输入监控 -->
+                        <div class="card permission-card" data-permission="input_monitoring">
+                            <div class="card-body">
+                                <div class="permission-header">
+                                    <span class="permission-title" data-i18n="settings.permissions.input_monitoring.title">
+                                        <span class="status-dot unknown"></span>
+                                        输入监控
+                                    </span>
+                                    <span class="permission-status text-muted" data-i18n="settings.permissions.status.checking">检查中...</span>
+                                </div>
+                                <div class="permission-desc" data-i18n="settings.permissions.input_monitoring.desc">用于监听全局热键</div>
+                                <div class="permission-actions">
+                                    <button class="btn btn-secondary btn-sm btn-request d-none" onclick="permissionsManager.requestPermission('input_monitoring')" data-i18n="settings.permissions.request_access">请求权限</button>
+                                    <button class="btn btn-secondary btn-sm" onclick="permissionsManager.openSettings('input_monitoring')" data-i18n="settings.permissions.open_settings">打开设置</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 自动化 -->
+                        <div class="card permission-card" data-permission="automation">
+                            <div class="card-body">
+                                <div class="permission-header">
+                                    <span class="permission-title" data-i18n="settings.permissions.automation.title">
+                                        <span class="status-dot unknown"></span>
+                                        自动化
+                                    </span>
+                                    <span class="permission-status text-muted" data-i18n="settings.permissions.status.checking">检查中...</span>
+                                </div>
+                                <div class="permission-desc" data-i18n="settings.permissions.automation.desc">用于控制 Microsoft Word 和 Excel</div>
+                                <div class="permission-actions">
+                                    <button class="btn btn-secondary btn-sm btn-request d-none" onclick="permissionsManager.requestPermission('automation')" data-i18n="settings.permissions.request_access">请求权限</button>
+                                    <button class="btn btn-secondary btn-sm" onclick="permissionsManager.openSettings('automation')" data-i18n="settings.permissions.open_settings">打开设置</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mt-sm">
+                        <div class="card-body">
+                            <button class="btn btn-secondary" onclick="permissionsManager.refresh()" data-i18n="settings.permissions.refresh">刷新状态</button>
+                            <span id="last-checked" class="ml-md text-secondary text-sm" data-i18n="settings.permissions.last_checked">最后检查：--:--:--</span>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- 底部按钮栏 -->
+            <footer class="content-footer">
+                <button class="btn btn-secondary" onclick="closeWindow()" data-i18n="settings.buttons.cancel">取消</button>
+                <button class="btn btn-primary" onclick="saveSettings()" data-i18n="settings.buttons.save">保存</button>
+            </footer>
         </main>
-
-        <!-- 底部按钮栏 -->
-        <footer class="actions">
-            <button class="btn btn-secondary" onclick="closeWindow()" data-i18n="settings.buttons.cancel">取消</button>
-            <button class="btn btn-primary" onclick="saveSettings()" data-i18n="settings.buttons.save">保存</button>
-        </footer>
     </div>
 
     <!-- 热键录制模态框 -->
     <div id="hotkey-modal" class="modal-overlay hidden" onclick="event.target === this && closeHotkeyModal()">
         <div class="modal">
             <div class="modal-header">
-                <h2 data-i18n="hotkey.dialog.title">设置热键</h2>
+                <h2 class="modal-title" data-i18n="hotkey.dialog.title">设置热键</h2>
                 <button class="modal-close" onclick="closeHotkeyModal()">&times;</button>
             </div>
             <div class="modal-body">
                 <p class="mb-md" data-i18n="hotkey.dialog.instruction">点击"录制"按钮，然后按下您想要设置的快捷键组合。</p>
 
-                <div class="setting-item">
+                <div class="setting-row">
                     <span data-i18n="hotkey.dialog.current_hotkey">当前热键：</span>
                     <span id="current-hotkey-display" class="font-bold text-primary">--</span>
                 </div>
 
-                <div class="setting-item">
+                <div class="setting-row setting-row-column mt-md">
                     <span data-i18n="hotkey.dialog.new_hotkey">新热键：</span>
-                    <input type="text" id="hotkey-input" class="hotkey-input" readonly data-i18n-placeholder="hotkey.dialog.input_placeholder" placeholder="点击录制...">
+                    <input type="text" id="hotkey-input" class="hotkey-input mt-sm" readonly data-i18n-placeholder="hotkey.dialog.input_placeholder" placeholder="点击录制...">
                 </div>
 
                 <div class="text-center mt-md">
@@ -439,7 +682,7 @@
     <div id="app-select-modal" class="modal-overlay hidden" onclick="event.target === this && extensionsManager.closeAppSelectModal()">
         <div class="modal modal-lg">
             <div class="modal-header">
-                <h2 data-i18n="settings.extensions.select_app">选择应用</h2>
+                <h2 class="modal-title" data-i18n="settings.extensions.select_app">选择应用</h2>
                 <button class="modal-close" onclick="extensionsManager.closeAppSelectModal()">&times;</button>
             </div>
             <div class="modal-body">
@@ -464,15 +707,15 @@
     <div id="window-pattern-modal" class="modal-overlay hidden" onclick="event.target === this && extensionsManager.closeWindowPatternModal()">
         <div class="modal">
             <div class="modal-header">
-                <h2 data-i18n="settings.extensions.edit_window_pattern">编辑窗口名称匹配</h2>
+                <h2 class="modal-title" data-i18n="settings.extensions.edit_window_pattern">编辑窗口名称匹配</h2>
                 <button class="modal-close" onclick="extensionsManager.closeWindowPatternModal()">&times;</button>
             </div>
             <div class="modal-body">
-                <div class="setting-item mb-md">
+                <div class="setting-row mb-md">
                     <span data-i18n="settings.extensions.app_name">应用名称：</span>
                     <span id="window-pattern-app-name" class="font-bold">--</span>
                 </div>
-                <div class="setting-item">
+                <div class="setting-row setting-row-column">
                     <label for="window-pattern-input" data-i18n="settings.extensions.window_pattern">窗口名称</label>
                     <textarea id="window-pattern-input" rows="4" data-i18n-placeholder="settings.extensions.window_pattern_hint" placeholder="可选正则表达式，用于匹配浏览器窗口标题（每行一个）"></textarea>
                 </div>

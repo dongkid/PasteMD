@@ -27,6 +27,11 @@ from .win32_types import (
     DWMWCP_DONOTROUND,
     DWMWCP_ROUND,
     DWMWCP_ROUNDSMALL,
+    # SetWindowPos 标志
+    SWP_NOMOVE,
+    SWP_NOSIZE,
+    SWP_NOZORDER,
+    SWP_FRAMECHANGED,
 )
 
 
@@ -81,6 +86,7 @@ def apply_mica_effect(hwnd: int, dark_mode: bool = True, use_alt: bool = False) 
 
     try:
         dwmapi = ctypes.windll.dwmapi
+        user32 = ctypes.windll.user32
 
         # 设置深色/浅色模式标题栏
         dark_value = ctypes.c_int(1 if dark_mode else 0)
@@ -125,6 +131,15 @@ def apply_mica_effect(hwnd: int, dark_mode: bool = True, use_alt: bool = False) 
                 ctypes.sizeof(mica_value)
             )
             log(f"Mica effect applied (21H2 API): dark={dark_mode}, result={result}")
+
+        # 强制刷新窗口非客户区以确保深色/浅色模式生效
+        # 这对于初始化时应用正确的 Mica 主题是必须的
+        user32.SetWindowPos(
+            hwnd,
+            0,  # HWND_TOP
+            0, 0, 0, 0,  # x, y, cx, cy (不改变)
+            SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED
+        )
 
         return result == 0
 
@@ -175,6 +190,9 @@ def update_mica_dark_mode(hwnd: int, dark_mode: bool) -> bool:
 
     try:
         dwmapi = ctypes.windll.dwmapi
+        user32 = ctypes.windll.user32
+
+        # 设置深色/浅色模式属性
         dark_value = ctypes.c_int(1 if dark_mode else 0)
         result = dwmapi.DwmSetWindowAttribute(
             hwnd,
@@ -182,6 +200,16 @@ def update_mica_dark_mode(hwnd: int, dark_mode: bool) -> bool:
             ctypes.byref(dark_value),
             ctypes.sizeof(dark_value)
         )
+
+        # 强制刷新窗口非客户区以应用深色模式
+        # 这对于动态切换 Mica 主题是必须的
+        user32.SetWindowPos(
+            hwnd,
+            0,  # HWND_TOP
+            0, 0, 0, 0,  # x, y, cx, cy (不改变)
+            SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED
+        )
+
         log(f"Mica dark mode updated: dark={dark_mode}, result={result}")
         return result == 0
     except Exception as e:

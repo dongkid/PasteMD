@@ -73,6 +73,10 @@ body.platform-macos .tab.macos-only {
     display: inline-flex !important;
 }
 
+body.platform-macos .nav-item.macos-only {
+    display: flex !important;
+}
+
 /* Windows 特有元素 */
 .windows-only {
     display: none !important;
@@ -86,26 +90,21 @@ body.platform-windows .checkbox-item.windows-only {
     display: flex !important;
 }
 
+body.platform-windows .setting-row.windows-only {
+    display: flex !important;
+}
+
 /* 禁用状态 */
 .disabled {
     opacity: 0.5;
     pointer-events: none;
 }
 
-/* 应用容器 */
-.app {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    overflow: hidden;
-    background: var(--bg-primary);
-    transition: background-color 0.2s ease;
-}
-
-/* Mica/Vibrancy 透明背景支持 */
+/* 应用容器 - 基础样式由 components.css 定义侧边栏布局 */
+/* 此处仅保留 Mica/Vibrancy 背景支持 - 使用变量以支持系统浅色模式下的深色主题 */
 :root.mica-enabled .app,
 body.vibrancy-enabled .app {
-    background: transparent;
+    background: var(--fill-solid-base);
 }
 
 /* 加载状态 */

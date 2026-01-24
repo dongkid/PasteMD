@@ -45,6 +45,17 @@ window.platformEffects = {
                     self.micaEnabled = true;
                     self.applyTransparentBackground();
                     console.log('Windows Mica effect detected and enabled');
+
+                    // 关键修复：Mica 检测到后，主动同步当前主题到 Mica
+                    // 这解决了 applyTheme 在 mica-enabled 添加前执行的时序问题
+                    const root = document.documentElement;
+                    let currentTheme = 'auto';
+                    if (root.classList.contains('dark-theme')) {
+                        currentTheme = 'dark';
+                    } else if (root.classList.contains('light-theme')) {
+                        currentTheme = 'light';
+                    }
+                    self.onThemeChange(currentTheme);
                 }
             }
         };

@@ -1,7 +1,82 @@
 /* PasteMD Settings - Theme Variables */
+/* Fluent Design System for Windows 11 */
 
-/* ==================== 深色主题（默认） ==================== */
+/* ==================== Fluent Design 通用令牌 ==================== */
+
 :root {
+    /* ===== 动画令牌 ===== */
+    --ease-standard: cubic-bezier(0.1, 0.9, 0.2, 1);
+    --ease-accelerate: cubic-bezier(0.9, 0.1, 1, 0.2);
+    --ease-decelerate: cubic-bezier(0.1, 0.9, 0.2, 1);
+    --duration-fast: 83ms;
+    --duration-normal: 167ms;
+    --duration-slow: 250ms;
+    --duration-slower: 333ms;
+
+    /* ===== 间距令牌 (4px 网格) ===== */
+    --space-xxs: 2px;
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 12px;
+    --space-lg: 16px;
+    --space-xl: 24px;
+    --space-xxl: 32px;
+
+    /* ===== Fluent 圆角 ===== */
+    --radius-control: 4px;   /* 控件 */
+    --radius-card: 8px;      /* 卡片 */
+    --radius-dialog: 12px;   /* 对话框 */
+    --radius-full: 9999px;   /* 圆形 */
+}
+
+/* ==================== 深色主题 Fluent 令牌（默认） ==================== */
+:root {
+    /* 背景层级 */
+    --fill-solid-base: #202020;
+    --fill-mica-layer: rgba(255, 255, 255, 0.0419);
+    --fill-mica-card: rgba(255, 255, 255, 0.0512);
+    --fill-mica-card-alt: rgba(255, 255, 255, 0.0698);
+
+    /* 控件填充 */
+    --fill-control-default: rgba(255, 255, 255, 0.0605);
+    --fill-control-secondary: rgba(255, 255, 255, 0.0837);
+    --fill-control-tertiary: rgba(255, 255, 255, 0.0326);
+    --fill-control-disabled: rgba(255, 255, 255, 0.0419);
+
+    /* 悬停/按下 */
+    --fill-subtle-secondary: rgba(255, 255, 255, 0.0605);
+    --fill-subtle-tertiary: rgba(255, 255, 255, 0.0419);
+
+    /* 边框 */
+    --stroke-card-default: rgba(255, 255, 255, 0.0837);
+    --stroke-control-default: rgba(255, 255, 255, 0.0698);
+    --stroke-control-elevation: rgba(255, 255, 255, 0.093);
+    --stroke-divider: rgba(255, 255, 255, 0.0837);
+
+    /* 强调色 */
+    --accent-default: #60cdff;
+    --accent-secondary: rgba(96, 205, 255, 0.9);
+    --accent-tertiary: rgba(96, 205, 255, 0.8);
+    --text-on-accent: #000000;
+
+    /* 阴影 */
+    --shadow-card: 0 2px 4px rgba(0, 0, 0, 0.14);
+    --shadow-flyout: 0 8px 16px rgba(0, 0, 0, 0.14);
+    --shadow-dialog: 0 32px 64px rgba(0, 0, 0, 0.24);
+
+    /* 文字禁用状态 */
+    --text-disabled: rgba(255, 255, 255, 0.3628);
+
+    /* RGB 原始值（用于半透明效果） */
+    --bg-primary-rgb: 30, 30, 30;
+    --bg-modal-rgb: 32, 32, 32;
+    --text-secondary-rgb: 160, 160, 160;
+
+    /* Toast 文字颜色 */
+    --text-on-success: #000;
+    --text-on-warning: #000;
+
+    /* ===== 原有变量（保持兼容性） ===== */
     /* 主题色 */
     --bg-primary: #1e1e1e;
     --bg-secondary: #2d2d2d;
@@ -33,7 +108,6 @@
     --info: #42a5f5;
 
     /* 强调色文字 */
-    --text-on-accent: #000;
     --text-on-error: #fff;
 
     /* 权限状态色 */
@@ -50,7 +124,7 @@
     --radius-md: 8px;
     --radius-lg: 12px;
 
-    /* 间距 */
+    /* 间距 (旧版兼容) */
     --spacing-xs: 4px;
     --spacing-sm: 8px;
     --spacing-md: 16px;
@@ -62,59 +136,54 @@
     --font-mono: "SF Mono", "Fira Code", Consolas, monospace;
 }
 
-/* ==================== 浅色主题变量定义 ==================== */
-/* 用于 auto 模式（媒体查询）和 light 强制模式 */
-
-/* 浅色主题 (auto 模式 - 跟随系统) */
-@media (prefers-color-scheme: light) {
-    :root.auto-theme {
-        /* 主题色 */
-        --bg-primary: #ffffff;
-        --bg-secondary: #f5f5f5;
-        --bg-tertiary: #eeeeee;
-        --bg-hover: #e0e0e0;
-
-        /* 文字颜色 */
-        --text-primary: #212121;
-        --text-secondary: #757575;
-        --text-muted: #9e9e9e;
-
-        /* 强调色 */
-        --accent: #0288d1;
-        --accent-hover: #0277bd;
-        --accent-active: #01579b;
-
-        /* 边框 */
-        --border: #e0e0e0;
-        --border-light: #d0d0d0;
-
-        /* 状态色 */
-        --success: #43a047;
-        --success-bg: rgba(67, 160, 71, 0.1);
-        --warning: #fb8c00;
-        --warning-bg: rgba(251, 140, 0, 0.1);
-        --error: #e53935;
-        --error-bg: rgba(229, 57, 53, 0.1);
-        --error-hover: #c62828;
-        --info: #1e88e5;
-
-        /* 强调色文字 */
-        --text-on-accent: #fff;
-        --text-on-error: #fff;
-
-        /* 权限状态色 */
-        --status-granted: #43a047;
-        --status-missing: #e53935;
-
-        /* 阴影 */
-        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.1);
-        --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.1);
-        --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.15);
-    }
-}
-
-/* ==================== 强制浅色主题 ==================== */
+/* ==================== 浅色主题 Fluent 令牌 ==================== */
 :root.light-theme {
+    /* 背景层级 */
+    --fill-solid-base: #f3f3f3;
+    --fill-mica-layer: rgba(255, 255, 255, 0.50);
+    --fill-mica-card: rgba(255, 255, 255, 0.70);
+    --fill-mica-card-alt: rgba(255, 255, 255, 0.80);
+
+    /* 控件填充 */
+    --fill-control-default: rgba(255, 255, 255, 0.70);
+    --fill-control-secondary: rgba(249, 249, 249, 0.50);
+    --fill-control-tertiary: rgba(249, 249, 249, 0.30);
+    --fill-control-disabled: rgba(249, 249, 249, 0.30);
+
+    /* 悬停/按下 */
+    --fill-subtle-secondary: rgba(0, 0, 0, 0.0373);
+    --fill-subtle-tertiary: rgba(0, 0, 0, 0.0241);
+
+    /* 边框 */
+    --stroke-card-default: rgba(0, 0, 0, 0.0578);
+    --stroke-control-default: rgba(0, 0, 0, 0.0578);
+    --stroke-control-elevation: rgba(255, 255, 255, 0.08);
+    --stroke-divider: rgba(0, 0, 0, 0.0803);
+
+    /* 强调色 */
+    --accent-default: #005fb8;
+    --accent-secondary: rgba(0, 95, 184, 0.9);
+    --accent-tertiary: rgba(0, 95, 184, 0.8);
+    --text-on-accent: #ffffff;
+
+    /* 阴影 */
+    --shadow-card: 0 2px 4px rgba(0, 0, 0, 0.04);
+    --shadow-flyout: 0 8px 16px rgba(0, 0, 0, 0.08);
+    --shadow-dialog: 0 32px 64px rgba(0, 0, 0, 0.14);
+
+    /* 文字禁用状态 */
+    --text-disabled: rgba(0, 0, 0, 0.3614);
+
+    /* RGB 原始值（用于半透明效果） */
+    --bg-primary-rgb: 255, 255, 255;
+    --bg-modal-rgb: 243, 243, 243;
+    --text-secondary-rgb: 117, 117, 117;
+
+    /* Toast 文字颜色 */
+    --text-on-success: #000;
+    --text-on-warning: #000;
+
+    /* ===== 原有变量（保持兼容性） ===== */
     /* 主题色 */
     --bg-primary: #ffffff;
     --bg-secondary: #f5f5f5;
@@ -146,7 +215,6 @@
     --info: #1e88e5;
 
     /* 强调色文字 */
-    --text-on-accent: #fff;
     --text-on-error: #fff;
 
     /* 权限状态色 */
@@ -157,6 +225,99 @@
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.1);
     --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.1);
     --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* ==================== 浅色主题 (auto 模式 - 跟随系统) ==================== */
+@media (prefers-color-scheme: light) {
+    :root.auto-theme {
+        /* 背景层级 */
+        --fill-solid-base: #f3f3f3;
+        --fill-mica-layer: rgba(255, 255, 255, 0.50);
+        --fill-mica-card: rgba(255, 255, 255, 0.70);
+        --fill-mica-card-alt: rgba(255, 255, 255, 0.80);
+
+        /* 控件填充 */
+        --fill-control-default: rgba(255, 255, 255, 0.70);
+        --fill-control-secondary: rgba(249, 249, 249, 0.50);
+        --fill-control-tertiary: rgba(249, 249, 249, 0.30);
+        --fill-control-disabled: rgba(249, 249, 249, 0.30);
+
+        /* 悬停/按下 */
+        --fill-subtle-secondary: rgba(0, 0, 0, 0.0373);
+        --fill-subtle-tertiary: rgba(0, 0, 0, 0.0241);
+
+        /* 边框 */
+        --stroke-card-default: rgba(0, 0, 0, 0.0578);
+        --stroke-control-default: rgba(0, 0, 0, 0.0578);
+        --stroke-control-elevation: rgba(255, 255, 255, 0.08);
+        --stroke-divider: rgba(0, 0, 0, 0.0803);
+
+        /* 强调色 */
+        --accent-default: #005fb8;
+        --accent-secondary: rgba(0, 95, 184, 0.9);
+        --accent-tertiary: rgba(0, 95, 184, 0.8);
+        --text-on-accent: #ffffff;
+
+        /* 阴影 */
+        --shadow-card: 0 2px 4px rgba(0, 0, 0, 0.04);
+        --shadow-flyout: 0 8px 16px rgba(0, 0, 0, 0.08);
+        --shadow-dialog: 0 32px 64px rgba(0, 0, 0, 0.14);
+
+        /* 文字禁用状态 */
+        --text-disabled: rgba(0, 0, 0, 0.3614);
+
+        /* RGB 原始值（用于半透明效果） */
+        --bg-primary-rgb: 255, 255, 255;
+        --bg-modal-rgb: 243, 243, 243;
+        --text-secondary-rgb: 117, 117, 117;
+
+        /* Toast 文字颜色 */
+        --text-on-success: #000;
+        --text-on-warning: #000;
+
+        /* ===== 原有变量（保持兼容性） ===== */
+        /* 主题色 */
+        --bg-primary: #ffffff;
+        --bg-secondary: #f5f5f5;
+        --bg-tertiary: #eeeeee;
+        --bg-hover: #e0e0e0;
+
+        /* 文字颜色 */
+        --text-primary: #212121;
+        --text-secondary: #757575;
+        --text-muted: #9e9e9e;
+
+        /* 强调色 */
+        --accent: #0288d1;
+        --accent-hover: #0277bd;
+        --accent-active: #01579b;
+
+        /* 边框 */
+        --border: #e0e0e0;
+        --border-light: #d0d0d0;
+
+        /* 状态色 */
+        --success: #43a047;
+        --success-bg: rgba(67, 160, 71, 0.1);
+        --warning: #fb8c00;
+        --warning-bg: rgba(251, 140, 0, 0.1);
+        --error: #e53935;
+        --error-bg: rgba(229, 57, 53, 0.1);
+        --error-hover: #c62828;
+        --info: #1e88e5;
+
+        /* 强调色文字 */
+        --text-on-error: #fff;
+
+        /* 权限状态色 */
+        --status-granted: #43a047;
+        --status-missing: #e53935;
+
+        /* 阴影 */
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.1);
+        --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.1);
+        --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.15);
+    }
 }
 
 /* ==================== 强制深色主题 ==================== */
@@ -185,8 +346,9 @@ body.platform-macos {
 
 /* ==================== Windows 11 Mica 效果 ==================== */
 
-/* Mica 深色模式（默认） */
+/* Mica 启用时覆盖（深色模式默认） */
 :root.mica-enabled {
+    --fill-solid-base: transparent;
     --bg-primary: transparent;
     --bg-secondary: rgba(255, 255, 255, 0.04);
     --bg-tertiary: rgba(255, 255, 255, 0.07);
@@ -196,25 +358,91 @@ body.platform-macos {
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.15);
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.2);
     --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.25);
+
+    /* 深色主题文字颜色 - Mica 半透明背景需要更高对比度 */
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255, 255, 255, 0.78);
+    --text-muted: rgba(255, 255, 255, 0.55);
 }
 
 /* Mica 浅色模式 */
 :root.mica-enabled.light-theme {
+    --fill-solid-base: transparent;
+    --fill-mica-layer: rgba(255, 255, 255, 0.60);
+    --fill-mica-card: rgba(255, 255, 255, 0.80);
+    --fill-mica-card-alt: rgba(255, 255, 255, 0.90);
     --bg-secondary: rgba(255, 255, 255, 0.6);
     --bg-tertiary: rgba(255, 255, 255, 0.75);
     --bg-hover: rgba(255, 255, 255, 0.85);
     --border: rgba(0, 0, 0, 0.06);
     --border-light: rgba(0, 0, 0, 0.08);
+
+    /* 浅色主题文字颜色 */
+    --text-primary: #212121;
+    --text-secondary: #757575;
+    --text-muted: #9e9e9e;
 }
 
 /* Mica Auto 模式 - 跟随系统浅色 */
 @media (prefers-color-scheme: light) {
     :root.mica-enabled.auto-theme {
+        --fill-solid-base: transparent;
+        --fill-mica-layer: rgba(255, 255, 255, 0.60);
+        --fill-mica-card: rgba(255, 255, 255, 0.80);
+        --fill-mica-card-alt: rgba(255, 255, 255, 0.90);
         --bg-secondary: rgba(255, 255, 255, 0.6);
         --bg-tertiary: rgba(255, 255, 255, 0.75);
         --bg-hover: rgba(255, 255, 255, 0.85);
         --border: rgba(0, 0, 0, 0.06);
         --border-light: rgba(0, 0, 0, 0.08);
+
+        /* 浅色主题文字颜色 */
+        --text-primary: #212121;
+        --text-secondary: #757575;
+        --text-muted: #9e9e9e;
+    }
+
+    /* Mica 深色主题（系统浅色模式时）- 使用不透明深色背景 */
+    /* Windows Mica 背景色跟随系统主题，应用无法独立控制 */
+    /* 当用户选择深色主题但系统是浅色模式时，禁用 Mica 透明效果 */
+    :root.mica-enabled.dark-theme {
+        /* Fluent Design 背景层级 - 不透明深色 */
+        --fill-solid-base: #202020;
+        --fill-mica-layer: #252525;
+        --fill-mica-card: #2d2d2d;
+        --fill-mica-card-alt: #333333;
+
+        /* Fluent Design 控件填充 - 不透明深色 */
+        --fill-control-default: #3a3a3a;
+        --fill-control-secondary: #404040;
+        --fill-control-tertiary: #333333;
+        --fill-control-disabled: #2a2a2a;
+
+        /* Fluent Design 悬停/按下 - 不透明深色 */
+        --fill-subtle-secondary: #353535;
+        --fill-subtle-tertiary: #303030;
+
+        /* Fluent Design 边框 - 不透明深色 */
+        --stroke-card-default: #404040;
+        --stroke-control-default: #454545;
+        --stroke-control-elevation: #505050;
+        --stroke-divider: #3a3a3a;
+
+        /* 原有变量 */
+        --bg-primary: #1e1e1e;
+        --bg-secondary: #2d2d2d;
+        --bg-tertiary: #363636;
+        --bg-hover: #404040;
+        --border: #404040;
+        --border-light: #505050;
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+        --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.3);
+        --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.3);
+
+        /* 深色主题文字颜色 */
+        --text-primary: #e0e0e0;
+        --text-secondary: #a0a0a0;
+        --text-muted: #707070;
     }
 }
 
@@ -227,6 +455,11 @@ body.platform-macos.vibrancy-enabled {
     --bg-tertiary: rgba(255, 255, 255, 0.12);
     --bg-hover: rgba(255, 255, 255, 0.15);
     --border: rgba(255, 255, 255, 0.1);
+
+    /* 深色主题文字颜色 - Vibrancy 半透明背景需要更高对比度 */
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255, 255, 255, 0.78);
+    --text-muted: rgba(255, 255, 255, 0.55);
 }
 
 /* Vibrancy 浅色模式 */
@@ -235,6 +468,11 @@ body.platform-macos.vibrancy-enabled.light-theme {
     --bg-tertiary: rgba(0, 0, 0, 0.06);
     --bg-hover: rgba(0, 0, 0, 0.08);
     --border: rgba(0, 0, 0, 0.1);
+
+    /* 浅色主题文字颜色 */
+    --text-primary: #212121;
+    --text-secondary: #757575;
+    --text-muted: #9e9e9e;
 }
 
 /* Vibrancy Auto 模式 - 跟随系统浅色 */
@@ -244,5 +482,48 @@ body.platform-macos.vibrancy-enabled.light-theme {
         --bg-tertiary: rgba(0, 0, 0, 0.06);
         --bg-hover: rgba(0, 0, 0, 0.08);
         --border: rgba(0, 0, 0, 0.1);
+
+        /* 浅色主题文字颜色 */
+        --text-primary: #212121;
+        --text-secondary: #757575;
+        --text-muted: #9e9e9e;
+    }
+
+    /* Vibrancy 深色主题（系统浅色模式时）- 使用不透明深色背景 */
+    /* macOS Vibrancy 背景色跟随系统主题，应用无法独立控制 */
+    body.platform-macos.vibrancy-enabled.dark-theme {
+        /* Fluent Design 背景层级 - 不透明深色 */
+        --fill-solid-base: #202020;
+        --fill-mica-layer: #252525;
+        --fill-mica-card: #2d2d2d;
+        --fill-mica-card-alt: #333333;
+
+        /* Fluent Design 控件填充 - 不透明深色 */
+        --fill-control-default: #3a3a3a;
+        --fill-control-secondary: #404040;
+        --fill-control-tertiary: #333333;
+        --fill-control-disabled: #2a2a2a;
+
+        /* Fluent Design 悬停/按下 - 不透明深色 */
+        --fill-subtle-secondary: #353535;
+        --fill-subtle-tertiary: #303030;
+
+        /* Fluent Design 边框 - 不透明深色 */
+        --stroke-card-default: #404040;
+        --stroke-control-default: #454545;
+        --stroke-control-elevation: #505050;
+        --stroke-divider: #3a3a3a;
+
+        /* 原有变量 */
+        --bg-primary: #1e1e1e;
+        --bg-secondary: #2d2d2d;
+        --bg-tertiary: #363636;
+        --bg-hover: #404040;
+        --border: #404040;
+
+        /* 深色主题文字颜色 */
+        --text-primary: #e0e0e0;
+        --text-secondary: #a0a0a0;
+        --text-muted: #707070;
     }
 }
