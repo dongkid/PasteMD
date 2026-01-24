@@ -114,3 +114,147 @@ body.vibrancy-enabled .app {
     align-items: center;
     height: 100%;
 }
+
+/* ==================== 焦点指示器 (WCAG 2.2 可访问性) ==================== */
+
+/* 统一焦点样式 - 双色轮廓设计 */
+:focus-visible {
+    outline: 2px solid var(--accent-default, #60cdff);
+    outline-offset: 2px;
+    border-radius: var(--borderRadiusMedium, 4px);
+}
+
+/* 隐藏非键盘焦点 */
+:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* 深色背景上的焦点 */
+.dark-bg :focus-visible,
+.btn-primary:focus-visible {
+    outline-color: #fff;
+}
+
+/* ==================== 高对比度模式支持 ==================== */
+
+@media (forced-colors: active) {
+    /* 焦点指示器 */
+    :focus-visible {
+        outline: 3px solid Highlight !important;
+        outline-offset: 2px;
+    }
+
+    /* 按钮 */
+    .btn,
+    .nav-item,
+    .card,
+    .toggle-track {
+        border: 2px solid transparent;
+        forced-color-adjust: none;
+    }
+
+    .btn:focus-visible,
+    .nav-item:focus-visible {
+        border-color: Highlight;
+    }
+
+    /* 确保文字可读 */
+    .btn {
+        background-color: ButtonFace;
+        color: ButtonText;
+    }
+
+    .btn:hover {
+        background-color: Highlight;
+        color: HighlightText;
+    }
+
+    .btn-primary {
+        background-color: Highlight;
+        color: HighlightText;
+    }
+
+    /* 导航项 */
+    .nav-item.active {
+        background-color: Highlight;
+        color: HighlightText;
+    }
+
+    .nav-item.active::before {
+        background: HighlightText;
+    }
+
+    /* 开关 */
+    .toggle-track {
+        border-color: ButtonText;
+    }
+
+    .toggle-input:checked + .toggle-track {
+        background-color: Highlight;
+        border-color: Highlight;
+    }
+
+    .toggle-thumb {
+        background-color: ButtonText;
+    }
+
+    .toggle-input:checked + .toggle-track .toggle-thumb {
+        background-color: HighlightText;
+    }
+
+    /* 输入框 */
+    input[type="text"],
+    input[type="password"],
+    input[type="number"],
+    textarea,
+    select {
+        border: 2px solid ButtonText;
+        background-color: Field;
+        color: FieldText;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+        border-color: Highlight;
+    }
+
+    /* 卡片 */
+    .card {
+        border: 2px solid ButtonText;
+    }
+}
+
+/* ==================== 增强对比度模式 ==================== */
+
+@media (prefers-contrast: more) {
+    :focus-visible {
+        outline-width: 3px;
+    }
+
+    .card {
+        border-width: 2px;
+        border-color: var(--stroke-control-default);
+    }
+
+    .btn {
+        border-width: 2px;
+    }
+
+    .nav-item.active::before {
+        width: 4px;
+    }
+}
+
+/* ==================== 减弱动效模式 ==================== */
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

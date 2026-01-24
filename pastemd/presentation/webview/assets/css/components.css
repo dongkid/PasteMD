@@ -95,13 +95,22 @@
     border-radius: var(--radius-control);
     color: var(--text-secondary);
     cursor: pointer;
-    transition: all var(--duration-fast) var(--ease-standard);
     position: relative;
+    /* Fluent Motion 动效 */
+    transition:
+        background-color var(--motion-duration-fast, 167ms) var(--motion-easing-standard, cubic-bezier(0.8, 0, 0, 1)),
+        transform var(--motion-duration-faster, 83ms) var(--motion-easing-decelerate, cubic-bezier(0.1, 0.9, 0.2, 1)),
+        color var(--motion-duration-faster, 83ms) var(--motion-easing-standard, cubic-bezier(0.8, 0, 0, 1));
 }
 
 .nav-item:hover {
     background: var(--fill-subtle-secondary);
     color: var(--text-primary);
+}
+
+/* 导航项按下状态 - 压感反馈 */
+.nav-item:active {
+    transform: scale(0.98);
 }
 
 .nav-item.active {
@@ -214,6 +223,18 @@
     box-shadow:
         inset 0 1px 0 var(--stroke-control-elevation),
         var(--shadow-card);
+    /* Fluent Motion 动效 - 卡片悬停效果 */
+    transition:
+        box-shadow var(--motion-duration-normal, 250ms) var(--motion-easing-standard, cubic-bezier(0.8, 0, 0, 1)),
+        transform var(--motion-duration-normal, 250ms) var(--motion-easing-standard, cubic-bezier(0.8, 0, 0, 1));
+}
+
+/* 卡片悬停 - 阴影提升 + 轻微上浮 */
+.card:hover {
+    box-shadow:
+        inset 0 1px 0 var(--stroke-control-elevation),
+        var(--shadow8, 0 0 2px rgba(0,0,0,0.24), 0 4px 8px rgba(0,0,0,0.28));
+    transform: translateY(-1px);
 }
 
 .card-header {
@@ -326,9 +347,13 @@
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
-    transition: all var(--duration-fast) var(--ease-standard);
     position: relative;
     white-space: nowrap;
+    /* Fluent Motion 动效 */
+    transition:
+        background-color var(--motion-duration-fast, 167ms) var(--motion-easing-standard, cubic-bezier(0.8, 0, 0, 1)),
+        transform var(--motion-duration-fast, 167ms) var(--motion-easing-decelerate, cubic-bezier(0.1, 0.9, 0.2, 1)),
+        box-shadow var(--motion-duration-fast, 167ms) var(--motion-easing-standard, cubic-bezier(0.8, 0, 0, 1));
 }
 
 /* 主要按钮 */
@@ -347,7 +372,8 @@
 
 .btn-primary:active {
     background: var(--accent-tertiary);
-    transform: scale(0.98);
+    transform: scale(0.96);
+    box-shadow: none;
 }
 
 /* 次要按钮 */
@@ -365,7 +391,8 @@
 
 .btn-secondary:active {
     background: var(--fill-control-tertiary);
-    transform: scale(0.98);
+    transform: scale(0.96);
+    box-shadow: none;
 }
 
 /* 危险按钮 */
@@ -379,7 +406,8 @@
 }
 
 .btn-danger:active {
-    transform: scale(0.98);
+    transform: scale(0.96);
+    box-shadow: none;
 }
 
 .btn:disabled {
@@ -530,8 +558,11 @@ select:focus {
     background: var(--fill-control-default);
     border: 1px solid var(--stroke-control-elevation);
     border-radius: var(--radius-full);
-    transition: all var(--duration-normal) var(--ease-standard);
     position: relative;
+    /* Fluent Motion 动效 */
+    transition:
+        background-color var(--motion-duration-fast, 167ms) var(--motion-easing-standard, cubic-bezier(0.8, 0, 0, 1)),
+        border-color var(--motion-duration-fast, 167ms) var(--motion-easing-standard, cubic-bezier(0.8, 0, 0, 1));
 }
 
 .toggle-thumb {
@@ -542,7 +573,10 @@ select:focus {
     height: 14px;
     background: var(--text-secondary);
     border-radius: var(--radius-full);
-    transition: all var(--duration-normal) var(--ease-standard);
+    /* Fluent Motion 动效 - 滑动效果 */
+    transition:
+        left var(--motion-duration-fast, 167ms) var(--motion-easing-standard, cubic-bezier(0.8, 0, 0, 1)),
+        background-color var(--motion-duration-fast, 167ms) var(--motion-easing-standard, cubic-bezier(0.8, 0, 0, 1));
 }
 
 .toggle:hover .toggle-track {
@@ -562,7 +596,7 @@ select:focus {
 
 /* Focus 状态 */
 .toggle-input:focus-visible + .toggle-track {
-    outline: 2px solid var(--text-primary);
+    outline: 2px solid var(--accent-default, #60cdff);
     outline-offset: 2px;
 }
 
@@ -954,25 +988,15 @@ select:focus {
 }
 
 /* ==================== 减少动画支持 ==================== */
-
-@media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-        animation-duration: 0.01ms !important;
-        transition-duration: 0.01ms !important;
-    }
-}
+/* 注意：减弱动效的完整支持在 base.css 中定义 */
 
 /* ==================== Focus 可见性 ==================== */
+/* 注意：焦点指示器的完整支持（包括高对比度模式）在 base.css 中定义 */
 
-:focus-visible {
-    outline: 2px solid var(--accent-default);
+/* 特定控件的焦点样式增强 */
+select:focus-visible {
+    outline: 2px solid var(--accent-default, #60cdff);
     outline-offset: 2px;
-}
-
-:focus:not(:focus-visible) {
-    outline: none;
 }
 
 /* ==================== 旧版兼容性样式 ==================== */
