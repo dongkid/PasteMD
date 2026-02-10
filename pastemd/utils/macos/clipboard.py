@@ -136,6 +136,22 @@ def get_clipboard_text() -> str:
         raise ClipboardError(f"Failed to read clipboard: {e}")
 
 
+def set_clipboard_text(text: str) -> None:
+    """
+    设置剪贴板纯文本内容
+    
+    Args:
+        text: 要设置的文本内容
+        
+    Raises:
+        ClipboardError: 剪贴板操作失败时
+    """
+    try:
+        pyperclip.copy(text)
+    except Exception as e:
+        raise ClipboardError(f"Failed to set clipboard text: {e}")
+
+
 def is_clipboard_empty() -> bool:
     """
     检查剪贴板是否为空
@@ -237,12 +253,14 @@ def set_clipboard_rich_text(
         if html is not None:
             html_data = NSData.dataWithBytes_length_(html.encode("utf-8"), len(html.encode("utf-8")))
             item.setData_forType_(html_data, NSPasteboardTypeHTML)
-            log(f"set HTML type={NSPasteboardTypeHTML} len={len(html.encode('utf-8'))}")
+            item.setString_forType_(html, HTML_UTI)
+            log(f"set HTML type={NSPasteboardTypeHTML},{HTML_UTI} len={len(html.encode('utf-8'))}")
 
         # 4) Plain（兜底）
         if text is not None:
             item.setString_forType_(text, PLAIN_UTI)
-            log(f"set PLAIN type={PLAIN_UTI} len={len(text.encode('utf-8'))}")
+            item.setString_forType_(text, NSPasteboardTypeString)
+            log(f"set PLAIN type={PLAIN_UTI},NSPasteboardTypeString len={len(text.encode('utf-8'))}")
         
         wrote = pasteboard.writeObjects_([item])
         if not wrote:

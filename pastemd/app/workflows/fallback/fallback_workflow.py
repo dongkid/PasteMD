@@ -104,7 +104,7 @@ class FallbackWorkflow(BaseWorkflow):
         
         # 生成输出路径
         output_path = generate_output_path(
-            keep_file=(action == "save"),
+            keep_file=True,
             save_dir=self.config.get("save_dir", ""),
             table_data=table_data,
         )
@@ -131,6 +131,7 @@ class FallbackWorkflow(BaseWorkflow):
                 html, self.config
             )
             from_html = True
+            md_text = ""
         else:
             # Markdown
             content = get_clipboard_text()
@@ -143,12 +144,14 @@ class FallbackWorkflow(BaseWorkflow):
                 content, self.config
             )
             from_html = False
+            md_text = content
         
         # 2. 生成输出路径
         output_path = generate_output_path(
-            keep_file=(action == "save"),
+            keep_file=True,
             save_dir=self.config.get("save_dir", ""),
-            md_text=""
+            md_text=md_text,
+            html_text=html if from_html else "",
         )
         
         # 3. 执行输出

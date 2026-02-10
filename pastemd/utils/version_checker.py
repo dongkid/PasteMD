@@ -1,13 +1,15 @@
 """版本更新检查器"""
 
 import json
+import os
 import re
-from typing import Tuple
-import urllib.request
+import sys
 import urllib.error
-from typing import Optional, Dict, Any
+import urllib.request
+from typing import Optional, Dict, Any, Tuple
 
 from .logging import log
+from .system_detect import is_windows
 
 
 class VersionChecker:
@@ -76,6 +78,7 @@ class VersionChecker:
 
         优先尝试直连（不使用任何代理），如果失败，再回退到使用系统代理。
         """
+        self._prepare_ssl_environment()
         req = urllib.request.Request(
             self.GITHUB_API_URL,
             headers={
@@ -119,6 +122,99 @@ class VersionChecker:
 
         # 两种方式都失败
         return None
+
+    def _prepare_ssl_environment(self) -> None:
+        """Windows: 尽量固定 OpenSSL DLL 来源，并记录诊断信息。"""
+        if not is_windows():
+            return
+
+        base_dir = self._get_app_base_dir()
+        log(f"SSL diag: base_dir={base_dir}")
+
+        if base_dir:
+            libssl_path = os.path.join(base_dir, "libssl-3-x64.dll")
+            libcrypto_path = os.path.join(base_dir, "libcrypto-3-x64.dll")
+            log(f"SSL diag: libssl exists={os.path.isfile(libssl_path)}")
+            log(f"SSL diag: libcrypto exists={os.path.isfile(libcrypto_path)}")
+
+            if hasattr(os, "add_dll_directory"):
+                try:
+                    os.add_dll_directory(base_dir)
+                    log("SSL diag: added DLL search directory")
+                except Exception as exc:
+                    log(f"SSL diag: add_dll_directory failed: {exc}")
+
+            self._preload_openssl_dlls(libcrypto_path, libssl_path)
+
+        self._log_ssl_runtime_info()
+
+    def _get_app_base_dir(self) -> str:
+        if hasattr(sys, "_MEIPASS"):
+            return str(sys._MEIPASS)
+        if getattr(sys, "frozen", False):
+            return os.path.dirname(sys.executable)
+        current_file = os.path.abspath(__file__)
+        return os.path.dirname(os.path.dirname(os.path.dirname(current_file)))
+
+    def _preload_openssl_dlls(self, libcrypto_path: str, libssl_path: str) -> None:
+        try:
+            import ctypes
+        except Exception as exc:
+            log(f"SSL diag: ctypes import failed: {exc}")
+            return
+
+        for path in (libcrypto_path, libssl_path):
+            if not path or not os.path.isfile(path):
+                continue
+            try:
+                ctypes.WinDLL(path)
+                log(f"SSL diag: preloaded {os.path.basename(path)}")
+            except Exception as exc:
+                log(f"SSL diag: preload failed for {os.path.basename(path)}: {exc}")
+
+    def _get_loaded_dll_path(self, dll_name: str) -> Optional[str]:
+        try:
+            import ctypes
+            from ctypes import wintypes
+
+            kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+            kernel32.GetModuleHandleW.argtypes = [wintypes.LPCWSTR]
+            kernel32.GetModuleHandleW.restype = wintypes.HMODULE
+            kernel32.GetModuleFileNameW.argtypes = [
+                wintypes.HMODULE,
+                wintypes.LPWSTR,
+                wintypes.DWORD,
+            ]
+            kernel32.GetModuleFileNameW.restype = wintypes.DWORD
+
+            hmod = kernel32.GetModuleHandleW(dll_name)
+            if not hmod:
+                return None
+            buf = ctypes.create_unicode_buffer(260)
+            if kernel32.GetModuleFileNameW(hmod, buf, 260) == 0:
+                return None
+            return buf.value or None
+        except Exception:
+            return None
+
+    def _log_ssl_runtime_info(self) -> None:
+        try:
+            import ssl
+
+            log(f"SSL diag: OPENSSL_VERSION={ssl.OPENSSL_VERSION}")
+            try:
+                log(f"SSL diag: _ssl module={ssl._ssl.__file__}")
+            except Exception:
+                pass
+
+            for dll_name in ("libssl-3-x64.dll", "libcrypto-3-x64.dll"):
+                dll_path = self._get_loaded_dll_path(dll_name)
+                if dll_path:
+                    log(f"SSL diag: loaded {dll_name} from {dll_path}")
+                else:
+                    log(f"SSL diag: {dll_name} not loaded yet")
+        except Exception as exc:
+            log(f"SSL diag: failed to log ssl info: {exc}")
     
     def _compare_versions(self, latest: str, current: str) -> bool:
         ln, lrank, lpre = self._parse_version_parts(latest)

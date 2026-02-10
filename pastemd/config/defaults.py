@@ -50,6 +50,10 @@ def get_default_save_dir() -> str:
         return os.path.expanduser("~/Documents/pastemd")
 
 
+# 保留应用列表（不允许添加到可扩展工作流）
+RESERVED_APPS = {"word", "wps", "excel", "wps_excel"}
+
+
 DEFAULT_CONFIG: Dict[str, Any] = {
     "hotkey": "<ctrl>+<shift>+b",
     "pandoc_path": find_pandoc(),
@@ -60,6 +64,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "startup_notify": True,
     "enable_excel": True,
     "excel_keep_format": True,
+    "paste_delay_s": 0.3,
     "no_app_action": "open",  # 无应用检测时的动作：open=自动打开, save=仅保存, clipboard=复制到剪贴板, none=无操作
     "md_disable_first_para_indent": True,
     "html_disable_first_para_indent": True,
@@ -75,4 +80,39 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     ],
     "pandoc_filters": [],
+    "pandoc_filters_by_conversion": {
+        "md_to_docx": [],
+        "html_to_docx": [],
+        "html_to_md": [],
+        "md_to_html": [],
+        "md_to_rtf": [],
+        "md_to_latex": [],
+    },
+    # 可扩展工作流配置
+    # apps 格式（win）: [{"name": "Notion", "id": "/path/to/app", "window_patterns": [".*Notion.*"]}, ...]
+    # apps 格式（macOS）: [{"name": "Notion", "id": "com.notionlabs.Notion", "window_patterns": [".*Notion.*"]}, ...]
+    # window_patterns: 可选的正则表达式数组，用于匹配窗口标题（如浏览器中的网页）
+    "extensible_workflows": {
+        "html": {
+            "enabled": True,  # 默认开启
+            "apps": [],
+            "keep_formula_latex": True,  # True = $...$, False = MathML
+        },
+        "md": {
+            "enabled": True,  # 默认开启
+            "apps": [],
+            "html_formatting": {
+                "css_font_to_semantic": True,
+                "bold_first_row_to_header": True,
+            },
+        },
+        "latex": {
+            "enabled": True,  # 默认开启
+            "apps": [],
+        },
+        "file": {
+            "enabled": True,  # 默认开启
+            "apps": [],
+        },
+    },
 }

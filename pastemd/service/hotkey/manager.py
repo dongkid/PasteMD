@@ -6,6 +6,13 @@ from pynput import keyboard
 
 from ...utils.logging import log
 from ...utils.system_detect import is_macos
+from ...core.state import app_state
+
+
+# macOS 上应该忽略的系统级按键，避免与输入法切换冲突
+MAC_IGNORED_KEYS = {
+    keyboard.Key.caps_lock,  # Caps Lock 通常用于切换输入法
+}
 
 
 class HotkeyManager:
@@ -18,31 +25,75 @@ class HotkeyManager:
         self._mac_hotkey: Optional[keyboard.HotKey] = None
         self._mac_lock = threading.Lock()
 
+    def _should_ignore_key(self, key) -> bool:
+        """检查是否应该忽略该按键（macOS 系统键）"""
+        if not is_macos():
+            return False
+        return key in MAC_IGNORED_KEYS
+
     def _mac_ensure_listener(self) -> None:
         if self._mac_listener:
             return
 
         def on_press(key):
+            # macOS: 忽略系统级按键，避免与输入法冲突
+            if self._should_ignore_key(key):
+                return
+            
             with self._mac_lock:
                 hotkey_obj = self._mac_hotkey
             if not hotkey_obj:
                 return
             try:
+                # macOS: 在事件回调中快速处理，避免触发输入法 API
                 hotkey_obj.press(key)
-            except Exception:
+            except Exception as e:
+                # 忽略按键处理错误，避免影响输入法
                 pass
 
         def on_release(key):
+            # macOS: 忽略系统级按键，避免与输入法冲突
+            if self._should_ignore_key(key):
+                return
+            
             with self._mac_lock:
                 hotkey_obj = self._mac_hotkey
             if not hotkey_obj:
                 return
             try:
+                # macOS: 在事件回调中快速处理，避免触发输入法 API
                 hotkey_obj.release(key)
-            except Exception:
+            except Exception as e:
+                # 忽略按键处理错误，避免影响输入法
                 pass
 
-        self._mac_listener = keyboard.Listener(on_press=on_press, on_release=on_release)
+        # macOS: 创建键盘监听器（将在后台线程运行）
+        if is_macos():
+            # 解决 macOS 输入法切换时的崩溃问题 (Thread 8 Crash)
+            # 崩溃原因: pynput 在后台线程处理 NSSystemDefined 事件时调用 UI API (NSEvent)
+            try:
+                from Quartz import NSSystemDefined
+            except ImportError:
+                NSSystemDefined = 14
+
+            class SafeDarwinListener(keyboard.Listener):
+                def _handle_message(self, *args):
+                    # args: _proxy, event_type, event, _refcon, injected
+                    if args[1] == NSSystemDefined:
+                        return
+                    # 调用父类实现 (pynput.keyboard._darwin.Listener)
+                    keyboard.Listener._handle_message(self, *args)
+            
+            ListenerClass = SafeDarwinListener
+        else:
+            ListenerClass = keyboard.Listener
+
+        # suppress=False: 不抑制按键，让系统正常处理
+        self._mac_listener = ListenerClass(
+            on_press=on_press, 
+            on_release=on_release,
+            suppress=False  # 不抑制系统按键处理
+        )
         self._mac_listener.daemon = True
         self._mac_listener.start()
 
@@ -54,6 +105,14 @@ class HotkeyManager:
 
             def on_activate():
                 try:
+                    # macOS: 将回调调度到主线程 UI 队列，避免输入法切换时的线程断言失败
+                    if is_macos():
+                        ui_queue = getattr(app_state, "ui_queue", None)
+                        if ui_queue is not None:
+                            ui_queue.put(callback)
+                            return
+                    
+                    # 回退：直接调用（可能导致输入法切换崩溃）
                     callback()
                 except Exception as e:
                     log(f"Hotkey callback error: {e}")

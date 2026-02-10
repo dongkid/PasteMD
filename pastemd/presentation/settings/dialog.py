@@ -15,6 +15,7 @@ from ...i18n import t, iter_languages, get_language_label, get_no_app_action_map
 from ...core.state import app_state
 from ...config.loader import ConfigLoader
 from ...config.defaults import DEFAULT_CONFIG
+from .extensions_tab import ExtensionsTab
 
 if is_macos():
     from .permissions import MacOSPermissionsTab
@@ -48,16 +49,54 @@ class SettingsDialog:
         # 加载当前配置的副本，避免直接修改 app_state
         self.current_config = copy.deepcopy(app_state.config)
         
-        # 初始化 Filter 列表
-        raw_filters = self.current_config.get("pandoc_filters") or []
-        if isinstance(raw_filters, str):
-            raw_filters = [raw_filters]
-        elif not isinstance(raw_filters, (list, tuple)):
-            raw_filters = []
-        self.filters_list = [
-            f for f in raw_filters
+        self._conversion_filter_keys = [
+            "md_to_docx",
+            "html_to_docx",
+            "html_to_md",
+            "md_to_html",
+            "md_to_rtf",
+            "md_to_latex",
+        ]
+        self.filter_conversion_options = [
+            ("global", t("settings.conversion.filter_conversion_global")),
+            ("md_to_docx", t("settings.conversion.filter_conversion_md_to_docx")),
+            ("html_to_docx", t("settings.conversion.filter_conversion_html_to_docx")),
+            ("html_to_md", t("settings.conversion.filter_conversion_html_to_md")),
+            ("md_to_html", t("settings.conversion.filter_conversion_md_to_html")),
+            ("md_to_rtf", t("settings.conversion.filter_conversion_md_to_rtf")),
+            ("md_to_latex", t("settings.conversion.filter_conversion_md_to_latex")),
+        ]
+        self._filter_conversion_label_to_key = {
+            label: key for key, label in self.filter_conversion_options
+        }
+
+        raw_filters_by_conversion = self.current_config.get("pandoc_filters_by_conversion")
+        if not isinstance(raw_filters_by_conversion, dict):
+            raw_filters_by_conversion = {}
+
+        raw_global_filters = self.current_config.get("pandoc_filters") or []
+        if isinstance(raw_global_filters, str):
+            raw_global_filters = [raw_global_filters]
+        elif not isinstance(raw_global_filters, (list, tuple)):
+            raw_global_filters = []
+        raw_global_filters = [
+            f for f in raw_global_filters
             if isinstance(f, str) and f.strip()
         ]
+        self.global_filters = list(raw_global_filters)
+
+        self.filters_by_conversion: Dict[str, list[str]] = {}
+        for key in self._conversion_filter_keys:
+            raw_list = raw_filters_by_conversion.get(key, [])
+            if isinstance(raw_list, str):
+                raw_list = [raw_list]
+            elif not isinstance(raw_list, (list, tuple)):
+                raw_list = []
+            normalized = [f for f in raw_list if isinstance(f, str) and f.strip()]
+            self.filters_by_conversion[key] = normalized
+
+        default_label = self.filter_conversion_options[0][1]
+        self.filter_conversion_var = tk.StringVar(value=default_label)
         
         if app_state.root:
             self.root = tk.Toplevel(app_state.root)
@@ -203,7 +242,16 @@ class SettingsDialog:
         self._create_conversion_tab()
         self._create_advanced_tab()
         self._create_experimental_tab()
-        # 创建选项卡
+        
+        # 扩展选项卡
+        try:
+            self._extensions_tab = ExtensionsTab(self.notebook, self.current_config)
+            self._tab_map["extensions"] = self._extensions_tab.frame
+        except Exception as e:
+            log(f"Failed to create extensions tab: {e}")
+            self._extensions_tab = None
+        
+        # macOS 权限选项卡
         if is_macos():
             try:
                 self._permissions_tab = MacOSPermissionsTab(self.notebook, self.root)
@@ -322,63 +370,101 @@ class SettingsDialog:
 
     def _create_conversion_tab(self):
         """创建转换设置选项卡"""
-        frame = ttk.Frame(self.notebook, padding=10)
-        frame.columnconfigure(1, weight=1)
+        frame = ttk.Frame(self.notebook)
+        frame.rowconfigure(0, weight=1)
+        frame.columnconfigure(0, weight=1)
         self.notebook.add(frame, text=t("settings.tab.conversion"))
         self._tab_map["conversion"] = frame
+
+        canvas = tk.Canvas(frame, highlightthickness=0)
+        scrollbar = ttk.Scrollbar(frame, orient=tk.VERTICAL, command=canvas.yview)
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        scrollbar.grid(row=0, column=1, sticky=tk.NS)
+        canvas.grid(row=0, column=0, sticky=tk.NSEW)
+
+        content = ttk.Frame(canvas, padding=10)
+        content.columnconfigure(1, weight=1)
+
+        window_id = canvas.create_window((0, 0), window=content, anchor="nw")
+
+        def _on_content_configure(event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+
+        def _on_canvas_configure(event):
+            canvas.itemconfigure(window_id, width=event.width)
+
+        content.bind("<Configure>", _on_content_configure)
+        canvas.bind("<Configure>", _on_canvas_configure)
+
+        def _on_mousewheel(event):
+            if event.delta:
+                canvas.yview_scroll(int(-event.delta / 120), "units")
+
+        def _on_enter(_event):
+            canvas.bind_all("<MouseWheel>", _on_mousewheel)
+
+        def _on_leave(_event):
+            canvas.unbind_all("<MouseWheel>")
+
+        canvas.bind("<Enter>", _on_enter)
+        canvas.bind("<Leave>", _on_leave)
+        content.bind("<Enter>", _on_enter)
+        content.bind("<Leave>", _on_leave)
         
         # Pandoc 路径
-        ttk.Label(frame, text=t("settings.conversion.pandoc_path")).grid(row=0, column=0, sticky=tk.W, pady=5)
+        ttk.Label(content, text=t("settings.conversion.pandoc_path")).grid(row=0, column=0, sticky=tk.W, pady=5)
         
         self.pandoc_path_var = tk.StringVar(value=self.current_config.get("pandoc_path", "pandoc"))
-        self.pandoc_entry = ttk.Entry(frame, textvariable=self.pandoc_path_var, width=50)
+        self.pandoc_entry = ttk.Entry(content, textvariable=self.pandoc_path_var, width=50)
         self.pandoc_entry.grid(row=0, column=1, sticky=tk.EW, pady=5, padx=5)
         self.pandoc_entry.bind("<FocusIn>", self._on_focus_in)
         
         # 多按钮放在输入框下方
-        pandoc_button_frame = ttk.Frame(frame)
+        pandoc_button_frame = ttk.Frame(content)
         pandoc_button_frame.grid(row=1, column=1, sticky=tk.W, padx=5, pady=(0, 8))
         ttk.Button(pandoc_button_frame, text=t("settings.general.browse"), command=self._browse_pandoc).pack(side=tk.LEFT, padx=2)
         ttk.Button(pandoc_button_frame, text=t("settings.general.restore_default"), command=self._restore_default_pandoc_path).pack(side=tk.LEFT, padx=2)
         
         # Reference Docx
-        ttk.Label(frame, text=t("settings.conversion.reference_docx")).grid(row=2, column=0, sticky=tk.W, pady=5)
+        ttk.Label(content, text=t("settings.conversion.reference_docx")).grid(row=2, column=0, sticky=tk.W, pady=5)
         
         ref_docx = self.current_config.get("reference_docx")
         self.ref_docx_var = tk.StringVar(value=ref_docx if ref_docx else "")
-        self.ref_docx_entry = ttk.Entry(frame, textvariable=self.ref_docx_var, width=50)
+        self.ref_docx_entry = ttk.Entry(content, textvariable=self.ref_docx_var, width=50)
         self.ref_docx_entry.grid(row=2, column=1, sticky=tk.EW, pady=5, padx=5)
         self.ref_docx_entry.bind("<FocusIn>", self._on_focus_in)
         
-        ref_button_frame = ttk.Frame(frame)
+        ref_button_frame = ttk.Frame(content)
         ref_button_frame.grid(row=3, column=1, sticky=tk.W, padx=5, pady=(0, 8))
         ttk.Button(ref_button_frame, text=t("settings.general.browse"), command=self._browse_ref_docx).pack(side=tk.LEFT, padx=2)
         ttk.Button(ref_button_frame, text=t("settings.general.clear"), command=self._clear_ref_docx).pack(side=tk.LEFT, padx=2)
         
         # Pandoc Filters 配置区
-        current_row = self._create_filters_section(frame, row=4)
+        current_row = self._create_filters_section(content, row=4)
         
         # HTML 格式化
-        ttk.Label(frame, text=t("settings.conversion.html_formatting"), font=("", 10, "bold")).grid(row=current_row, column=0, columnspan=3, sticky=tk.W, pady=(15, 5))
+        ttk.Label(content, text=t("settings.conversion.html_formatting"), font=("", 10, "bold")).grid(row=current_row, column=0, columnspan=3, sticky=tk.W, pady=(15, 5))
         
         html_fmt = self.current_config.get("html_formatting", {})
         self.strikethrough_var = tk.BooleanVar(value=html_fmt.get("strikethrough_to_del", True))
-        ttk.Checkbutton(frame, text=t("settings.conversion.strikethrough"), variable=self.strikethrough_var).grid(row=current_row+1, column=0, columnspan=3, sticky=tk.W, pady=2)
+        ttk.Checkbutton(content, text=t("settings.conversion.strikethrough"), variable=self.strikethrough_var).grid(row=current_row+1, column=0, columnspan=3, sticky=tk.W, pady=2)
         
-        ttk.Label(frame, text=t("settings.conversion.first_paragraph_heading"), font=("", 10, "bold")).grid(row=current_row+2, column=0, columnspan=3, sticky=tk.W, pady=(12, 5))
+        ttk.Label(content, text=t("settings.conversion.first_paragraph_heading"), font=("", 10, "bold")).grid(row=current_row+2, column=0, columnspan=3, sticky=tk.W, pady=(12, 5))
         
         # 其他转换选项
         self.md_indent_var = tk.BooleanVar(value=self.current_config.get("md_disable_first_para_indent", True))
-        ttk.Checkbutton(frame, text=t("settings.conversion.md_indent"), variable=self.md_indent_var).grid(row=current_row+3, column=0, columnspan=3, sticky=tk.W, pady=2)
+        ttk.Checkbutton(content, text=t("settings.conversion.md_indent"), variable=self.md_indent_var).grid(row=current_row+3, column=0, columnspan=3, sticky=tk.W, pady=2)
         
         self.html_indent_var = tk.BooleanVar(value=self.current_config.get("html_disable_first_para_indent", True))
-        ttk.Checkbutton(frame, text=t("settings.conversion.html_indent"), variable=self.html_indent_var).grid(row=current_row+4, column=0, columnspan=3, sticky=tk.W, pady=2)
+        ttk.Checkbutton(content, text=t("settings.conversion.html_indent"), variable=self.html_indent_var).grid(row=current_row+4, column=0, columnspan=3, sticky=tk.W, pady=2)
 
     def _create_advanced_tab(self):
         """创建高级设置选项卡"""
         frame = ttk.Frame(self.notebook, padding=10)
         self.notebook.add(frame, text=t("settings.tab.advanced"))
         self._tab_map["advanced"] = frame
+        frame.columnconfigure(1, weight=1)
         
         # Excel 选项
         self.excel_enable_var = tk.BooleanVar(value=self.current_config.get("enable_excel", True))
@@ -386,6 +472,19 @@ class SettingsDialog:
         
         self.excel_format_var = tk.BooleanVar(value=self.current_config.get("excel_keep_format", True))
         ttk.Checkbutton(frame, text=t("settings.advanced.excel_format"), variable=self.excel_format_var).grid(row=1, column=0, sticky=tk.W, pady=5)
+
+        # 粘贴延迟
+        ttk.Label(frame, text=t("settings.advanced.paste_delay")).grid(row=2, column=0, sticky=tk.W, pady=(10, 5))
+        self.paste_delay_var = tk.StringVar(value=str(self.current_config.get("paste_delay_s", 0.3)))
+        paste_delay_entry = ttk.Entry(frame, textvariable=self.paste_delay_var, width=10)
+        paste_delay_entry.grid(row=2, column=1, sticky=tk.W, padx=5, pady=(10, 5))
+        paste_delay_entry.bind("<FocusIn>", self._on_focus_in)
+        ttk.Label(
+            frame,
+            text=t("settings.advanced.paste_delay_note"),
+            foreground="gray",
+            font=("", 8),
+        ).grid(row=3, column=0, columnspan=2, sticky=tk.W, padx=(0, 5), pady=(0, 5))
 
     def _create_experimental_tab(self):
         """创建实验性功能选项卡"""
@@ -629,9 +728,26 @@ class SettingsDialog:
             
             new_config["enable_excel"] = self.excel_enable_var.get()
             new_config["excel_keep_format"] = self.excel_format_var.get()
+            try:
+                paste_delay_value = float(self.paste_delay_var.get())
+                if paste_delay_value < 0:
+                    paste_delay_value = 0.0
+            except (TypeError, ValueError):
+                paste_delay_value = DEFAULT_CONFIG.get("paste_delay_s", 0.3)
+            new_config["paste_delay_s"] = paste_delay_value
             
             # 保存 Pandoc Filters 列表
-            new_config["pandoc_filters"] = self.filters_list
+            new_config["pandoc_filters_by_conversion"] = {
+                key: list(self.filters_by_conversion.get(key, []))
+                for key in self._conversion_filter_keys
+            }
+            new_config["pandoc_filters"] = list(self.global_filters)
+            
+            # 保存扩展选项卡配置
+            if self._extensions_tab:
+                ext_config = new_config.get("extensible_workflows", {})
+                ext_config.update(self._extensions_tab.get_config())
+                new_config["extensible_workflows"] = ext_config
             
             # 保存到文件
             self.config_loader.save(new_config)
@@ -786,6 +902,25 @@ class SettingsDialog:
         link2 = self._create_hyperlink_label(link_frame, link2_text, link2_url)
         link2.pack(side=tk.LEFT)
 
+        # 转换类型选择
+        conversion_frame = ttk.Frame(frame)
+        conversion_frame.grid(row=row+2, column=0, columnspan=3, sticky=tk.W, padx=(0, 5), pady=(0, 5))
+        ttk.Label(conversion_frame, text=t("settings.conversion.filter_conversion_label")).pack(
+            side=tk.LEFT
+        )
+        conversion_labels = [label for _, label in self.filter_conversion_options]
+        self.filter_conversion_combo = ttk.Combobox(
+            conversion_frame,
+            textvariable=self.filter_conversion_var,
+            values=conversion_labels,
+            state="readonly",
+            width=22,
+        )
+        self.filter_conversion_combo.pack(side=tk.LEFT, padx=(6, 0))
+        self.filter_conversion_combo.bind(
+            "<<ComboboxSelected>>", lambda e: self._on_filter_conversion_changed()
+        )
+
         # 列表框
         self.filters_listbox = tk.Listbox(
             frame, 
@@ -793,11 +928,11 @@ class SettingsDialog:
             selectmode=tk.SINGLE,
             activestyle="none"
         )
-        self.filters_listbox.grid(row=row+2, column=0, columnspan=2, sticky=tk.NSEW, padx=(0, 5), pady=5)
+        self.filters_listbox.grid(row=row+3, column=0, columnspan=2, sticky=tk.NSEW, padx=(0, 5), pady=5)
         
         # 按钮组
         button_frame = ttk.Frame(frame)
-        button_frame.grid(row=row+2, column=2, sticky=tk.N, pady=5)
+        button_frame.grid(row=row+3, column=2, sticky=tk.N, pady=5)
         
         # 按钮宽度统一
         btn_width = 8
@@ -841,7 +976,7 @@ class SettingsDialog:
             foreground="gray",
             font=("", 8)
         )
-        note_label.grid(row=row+3, column=0, columnspan=3, sticky=tk.W, padx=(0, 5), pady=(0, 8))
+        note_label.grid(row=row+4, column=0, columnspan=3, sticky=tk.W, padx=(0, 5), pady=(0, 8))
         
         # 绑定列表框选择事件
         self.filters_listbox.bind("<<ListboxSelect>>", lambda e: self._update_filter_buttons_state())
@@ -856,7 +991,7 @@ class SettingsDialog:
         self._update_filter_buttons_state()
         
         # 返回下一个可用行号
-        return row + 4
+        return row + 5
 
     def _create_hyperlink_label(self, parent: tk.Widget, text: str, url: str) -> ttk.Label:
         """创建可点击的超链接标签"""
@@ -872,6 +1007,17 @@ class SettingsDialog:
         link.bind("<Button-1>", lambda e: webbrowser.open(url))
         
         return link
+
+    def _get_current_filters(self) -> list[str]:
+        label = self.filter_conversion_var.get()
+        key = self._filter_conversion_label_to_key.get(label, "global")
+        if key == "global":
+            return self.global_filters
+        return self.filters_by_conversion.setdefault(key, [])
+
+    def _on_filter_conversion_changed(self):
+        self._refresh_filters_listbox()
+        self._update_filter_buttons_state()
 
     def _on_add_filter(self):
         """处理添加 Filter 的操作"""
@@ -890,8 +1036,8 @@ class SettingsDialog:
         
         # 用户是否选择文件
         if path:
-            # 将路径添加到 filters_list
-            self.filters_list.append(path)
+            # 将路径添加到当前转换类型列表
+            self._get_current_filters().append(path)
             
             # 刷新列表框显示
             self._refresh_filters_listbox()
@@ -910,8 +1056,8 @@ class SettingsDialog:
             
         index = selection[0]
         
-        # 从 filters_list 中删除对应项
-        self.filters_list.pop(index)
+        # 从当前转换类型列表中删除对应项
+        self._get_current_filters().pop(index)
         
         # 刷新列表框显示
         self._refresh_filters_listbox()
@@ -931,10 +1077,11 @@ class SettingsDialog:
         index = selection[0]
         
         # 检查有效性
+        current_list = self._get_current_filters()
         if index > 0:
             # 交换位置
-            self.filters_list[index], self.filters_list[index-1] = \
-                self.filters_list[index-1], self.filters_list[index]
+            current_list[index], current_list[index-1] = \
+                current_list[index-1], current_list[index]
             
             # 刷新显示
             self._refresh_filters_listbox()
@@ -957,10 +1104,11 @@ class SettingsDialog:
         index = selection[0]
         
         # 检查有效性
-        if index < len(self.filters_list) - 1:
+        current_list = self._get_current_filters()
+        if index < len(current_list) - 1:
             # 交换位置
-            self.filters_list[index], self.filters_list[index+1] = \
-                self.filters_list[index+1], self.filters_list[index]
+            current_list[index], current_list[index+1] = \
+                current_list[index+1], current_list[index]
             
             # 刷新显示
             self._refresh_filters_listbox()
@@ -979,10 +1127,11 @@ class SettingsDialog:
         # 判断是否有选中
         has_selection = bool(selection)
         
+        current_list = self._get_current_filters()
         if has_selection:
             index = selection[0]
             is_first = (index == 0)
-            is_last = (index == len(self.filters_list) - 1)
+            is_last = (index == len(current_list) - 1)
             
             # 设置按钮状态
             self.remove_filter_btn.config(state=tk.NORMAL)
@@ -1000,8 +1149,8 @@ class SettingsDialog:
             # 清空列表框
             self.filters_listbox.delete(0, tk.END)
             
-            # 遍历 filters_list，显示完整路径
-            for path in self.filters_list:
+            # 遍历当前转换类型列表，显示完整路径
+            for path in self._get_current_filters():
                 self.filters_listbox.insert(tk.END, path)
         except Exception as e:
             log(f"Failed to refresh filters listbox: {e}")
@@ -1016,7 +1165,8 @@ class SettingsDialog:
             return
             
         index = selection[0]
-        current_path = self.filters_list[index]
+        current_list = self._get_current_filters()
+        current_path = current_list[index]
         
         # 创建编辑对话框
         edit_dialog = tk.Toplevel(self.root)
@@ -1052,7 +1202,7 @@ class SettingsDialog:
             """保存编辑"""
             new_path = path_var.get().strip()
             if new_path:
-                self.filters_list[index] = new_path
+                current_list[index] = new_path
                 self._refresh_filters_listbox()
                 # 恢复选中
                 self.filters_listbox.selection_set(index)

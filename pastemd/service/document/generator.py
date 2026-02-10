@@ -66,6 +66,35 @@ def _mask_pandoc_request_headers(headers: List[str]) -> List[str]:
     return masked
 
 
+def _normalize_filters(value) -> List[str]:
+    if value is None:
+        return []
+    if isinstance(value, str):
+        return [value.strip()] if value.strip() else []
+    if isinstance(value, (list, tuple)):
+        return [item.strip() for item in value if isinstance(item, str) and item.strip()]
+    return []
+
+
+def _get_pandoc_filters(config: dict, key: str) -> List[str]:
+    global_filters = _normalize_filters(config.get("pandoc_filters"))
+
+    per_filters: List[str] = []
+    by_conversion = config.get("pandoc_filters_by_conversion")
+    if isinstance(by_conversion, dict):
+        per_filters.extend(_normalize_filters(by_conversion.get(key)))
+
+    per_filters.extend(_normalize_filters(config.get(f"pandoc_filters_{key}")))
+
+    combined = []
+    seen = set()
+    for item in global_filters + per_filters:
+        if item not in seen:
+            combined.append(item)
+            seen.add(item)
+    return combined
+
+
 class DocumentGenerator:
     """
     文档生成服务
@@ -144,7 +173,7 @@ class DocumentGenerator:
             reference_docx=config.get("reference_docx"),
             Keep_original_formula=config.get("Keep_original_formula", False),
             enable_latex_replacements=config.get("enable_latex_replacements", True),
-            custom_filters=config.get("pandoc_filters", []),
+            custom_filters=_get_pandoc_filters(config, "md_to_docx"),
             request_headers=request_headers,
             cwd=config.get("save_dir"),
         )
@@ -185,7 +214,9 @@ class DocumentGenerator:
             reference_docx=config.get("reference_docx"),
             Keep_original_formula=config.get("Keep_original_formula", False),
             enable_latex_replacements=config.get("enable_latex_replacements", True),
-            custom_filters=config.get("pandoc_filters", []),
+            custom_filters=_get_pandoc_filters(config, "html_to_docx"),
+            custom_filters_html_to_md=_get_pandoc_filters(config, "html_to_md"),
+            custom_filters_md_to_docx=_get_pandoc_filters(config, "md_to_docx"),
             request_headers=request_headers,
             cwd=config.get("save_dir"),
         )
@@ -208,7 +239,10 @@ class DocumentGenerator:
             PandocError: 转换失败时
         """
         self._ensure_pandoc_integration()
-        return self._pandoc_integration.convert_html_to_markdown_text(html_text)  # type: ignore[union-attr]
+        return self._pandoc_integration.convert_html_to_markdown_text(  # type: ignore[union-attr]
+            html_text,
+            custom_filters=_get_pandoc_filters(config, "html_to_md"),
+        )
 
     def convert_markdown_to_html_text(self, md_text: str, config: dict) -> str:
         """
@@ -222,7 +256,7 @@ class DocumentGenerator:
             md_text,
             Keep_original_formula=config.get("Keep_original_formula", True),
             enable_latex_replacements=config.get("enable_latex_replacements", True),
-            custom_filters=config.get("pandoc_filters", []),
+            custom_filters=_get_pandoc_filters(config, "md_to_html"),
             cwd=config.get("save_dir"),
         )
 
@@ -240,7 +274,37 @@ class DocumentGenerator:
             md_text,
             Keep_original_formula=config.get("Keep_original_formula", True),
             enable_latex_replacements=config.get("enable_latex_replacements", True),
-            custom_filters=config.get("pandoc_filters", []),
+            custom_filters=_get_pandoc_filters(config, "md_to_rtf"),
             request_headers=request_headers,
             cwd=config.get("save_dir"),
+        )
+
+    def convert_html_to_latex_text(self, html_text: str, config: dict) -> str:
+        """
+        将 HTML 文本转换为 LaTeX 文本（用于 Overleaf 粘贴）。
+        
+        Returns:
+            去除文档头部的 LaTeX 内容，可直接粘贴到 Overleaf
+        """
+        self._ensure_pandoc_integration()
+        return self._pandoc_integration.convert_html_to_latex_text(  # type: ignore[union-attr]
+            html_text,
+            strip_preamble=True,
+            custom_filters_html_to_md=_get_pandoc_filters(config, "html_to_md"),
+            custom_filters_md_to_latex=_get_pandoc_filters(config, "md_to_latex"),
+        )
+
+    def convert_markdown_to_latex_text(self, md_text: str, config: dict) -> str:
+        """
+        将 Markdown 文本转换为 LaTeX 文本（用于 Overleaf 粘贴）。
+        
+        Returns:
+            去除文档头部的 LaTeX 内容，可直接粘贴到 Overleaf
+        """
+        self._ensure_pandoc_integration()
+        return self._pandoc_integration.convert_markdown_to_latex_text(  # type: ignore[union-attr]
+            md_text,
+            strip_preamble=True,
+            enable_latex_replacements=config.get("enable_latex_replacements", True),
+            custom_filters=_get_pandoc_filters(config, "md_to_latex"),
         )

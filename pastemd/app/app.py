@@ -38,8 +38,14 @@ from ..i18n import FALLBACK_LANGUAGE, detect_system_language, set_language, t
 from .wiring import Container
 
 
-def initialize_application() -> Container:
-    """初始化应用程序"""
+def initialize_application() -> tuple[Container, dict]:
+    """初始化应用程序
+    
+    Returns:
+        tuple: (container, workflow_conflicts)
+            - container: 依赖注入容器
+            - workflow_conflicts: 预留字段，当前返回空字典
+    """
     # 1. 加载配置
     config_loader = ConfigLoader()
     config = config_loader.load()
@@ -67,7 +73,7 @@ def initialize_application() -> Container:
     container = Container()
     
     log("Application initialized successfully")
-    return container
+    return container, {}
 
 
 def show_startup_notification(notification_manager: NotificationManager) -> None:
@@ -136,7 +142,7 @@ def main() -> None:
             sys.exit(1)
         
         # 初始化应用程序
-        container = initialize_application()
+        container, workflow_conflicts = initialize_application()
 
         # 初始化 UI 队列，确保 Tk 等 UI 操作始终在主线程
         ui_queue: queue.Queue = queue.Queue()

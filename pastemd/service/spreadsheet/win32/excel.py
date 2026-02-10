@@ -1,36 +1,9 @@
-"""Windows Excel spreadsheet placer."""
+"""Windows Excel spreadsheet placer (HTML clipboard paste)."""
 
-from typing import List
-from ..base import BaseSpreadsheetPlacer
-from ....core.types import PlacementResult
-from ....utils.logging import log
-from ....i18n import t
-
-# 复用现有 COM 插入器
-from .excel_inserter import MSExcelInserter
+from ..base import ClipboardHTMLSpreadsheetPlacer
 
 
-class ExcelPlacer(BaseSpreadsheetPlacer):
-    """Windows Excel 内容落地器"""
-    
-    def __init__(self):
-        self.com_inserter = MSExcelInserter()
-    
-    def place(self, table_data: List[List[str]], config: dict) -> PlacementResult:
-        """通过 COM 插入表格数据,失败不降级"""
-        try:
-            keep_format = config.get("excel_keep_format", config.get("keep_format", True))
-            success = self.com_inserter.insert(table_data, keep_format=keep_format)
-            
-            if success:
-                return PlacementResult(success=True, method="com")
-            else:
-                raise Exception(t("placer.win32_excel.insert_failed_unknown"))
-        
-        except Exception as e:
-            log(f"Excel COM 插入失败: {e}")
-            return PlacementResult(
-                success=False,
-                method="com",
-                error=t("placer.win32_excel.insert_failed", error=str(e))
-            )
+class ExcelPlacer(ClipboardHTMLSpreadsheetPlacer):
+    """Windows Excel 内容落地器（HTML 剪贴板粘贴方式）"""
+
+    app_name = "Windows Excel"
