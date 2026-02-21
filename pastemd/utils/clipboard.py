@@ -45,6 +45,24 @@ elif sys.platform == "win32":
     from .win32.keystroke import simulate_paste
     # read_file_with_encoding 从共享模块导入
     from .clipboard_file_utils import read_file_with_encoding
+elif sys.platform == "linux":
+    from .linux.clipboard import (
+        get_clipboard_text,
+        set_clipboard_text,
+        is_clipboard_empty,
+        is_clipboard_html,
+        get_clipboard_html,
+        set_clipboard_rich_text,
+        copy_files_to_clipboard,
+        is_clipboard_files,
+        get_clipboard_files,
+        get_markdown_files_from_clipboard,
+        read_markdown_files_from_clipboard,
+        preserve_clipboard,
+    )
+    from .linux.keystroke import simulate_paste
+    # read_file_with_encoding 从共享模块导入
+    from .clipboard_file_utils import read_file_with_encoding
 else:
     # 其他平台的后备实现（仅支持基本文本功能）
     import pyperclip
@@ -129,8 +147,8 @@ __all__ = [
     "ClipboardError",
 ]
 
-# 条件导出文件操作/富文本/粘贴快捷键 (Windows 和 macOS)
-if sys.platform in ("win32", "darwin"):
+# 条件导出文件操作/富文本/粘贴快捷键 (Windows / macOS / Linux)
+if sys.platform in ("win32", "darwin", "linux"):
     __all__.extend([
         "set_clipboard_rich_text",
         "simulate_paste",

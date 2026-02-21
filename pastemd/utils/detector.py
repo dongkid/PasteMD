@@ -25,6 +25,12 @@ elif sys.platform == "win32":
     from .win32.window import (
         get_foreground_window_title as _get_frontmost_window_title,
     )
+elif sys.platform == "linux":
+    from .linux.detector import (
+        detect_active_app as _detect_active_app,
+        detect_wps_type as _detect_wps_type,
+        get_frontmost_window_title as _get_frontmost_window_title,
+    )
 else:
     # 不支持的平台，提供空实现
     def _detect_active_app() -> str:
