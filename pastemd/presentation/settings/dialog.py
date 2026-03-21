@@ -596,6 +596,27 @@ class SettingsDialog:
             state=(tk.NORMAL if enabled else tk.DISABLED)
         )
 
+    def _should_confirm_keep_formula_enable(self) -> bool:
+        """Return True when enabling keep-formula requires an explicit warning."""
+        original_value = bool(self.current_config.get("Keep_original_formula", False))
+        new_value = bool(self.keep_formula_var.get())
+        return new_value and original_value != new_value
+
+    def _confirm_keep_formula_enable(self) -> bool:
+        """
+        Warn before saving when the keep-formula experimental option is enabled.
+        Note: This is a temporary implementation. Please be aware that future features of a similar nature may require special confirmation and will be distinctly labeled.
+        """
+        if not self._should_confirm_keep_formula_enable():
+            return True
+
+        return self._ask_topmost_yes_no(
+            t("settings.title.warning"),
+            t("settings.conversion.keep_formula_enable_warning"),
+            icon="warning",
+            default="no",
+        )
+
     def _browse_save_dir(self):
         """浏览保存目录"""
         path = filedialog.askdirectory(
@@ -678,6 +699,9 @@ class SettingsDialog:
     def _on_save(self):
         """保存配置"""
         try:
+            if not self._confirm_keep_formula_enable():
+                return
+
             # 更新配置字典
             new_config = self.current_config.copy()
             
@@ -807,6 +831,30 @@ class SettingsDialog:
         
         # 清理临时窗口
         temp_root.destroy()
+
+    def _ask_topmost_yes_no(
+        self,
+        title: str,
+        message: str,
+        *,
+        icon: str = "question",
+        default: str | None = None,
+    ) -> bool:
+        """显示置顶确认框并返回用户选择。"""
+        temp_root = tk.Toplevel(self.root)
+        temp_root.withdraw()
+        temp_root.attributes("-topmost", True)
+
+        try:
+            kwargs: Dict[str, Any] = {
+                "parent": self.root,
+                "icon": icon,
+            }
+            if default:
+                kwargs["default"] = default
+            return bool(messagebox.askyesno(title, message, **kwargs))
+        finally:
+            temp_root.destroy()
 
     def show(self):
         """显示设置对话框（非阻塞模式）"""

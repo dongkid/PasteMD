@@ -159,6 +159,7 @@
     "settings.conversion.filter_resources_link1_text": "Official Pandoc Filters List",
     "settings.conversion.filter_resources_link2_text": "Lua Filters Documentation",
     "settings.conversion.keep_formula": "Keep original math formula (no conversion)",
+    "settings.conversion.keep_formula_enable_warning": "Enabling \"Keep original math formula (no conversion)\" will disable math formula rendering and processing in PasteMD.\n\nPasteMD will no longer render, convert, or apply compatibility handling to math expressions, which may lead to unexpected formula display or paste results.\n\nDo you still want to save this setting?",
     "settings.conversion.enable_latex_replacements": "Auto-fix incompatible LaTeX syntax",
     "settings.conversion.latex_replacements_note": "(e.g., replace {\\kern 10pt} with \\qquad)",
     "settings.conversion.fix_single_dollar_block": "Auto-detect non-standard math blocks",

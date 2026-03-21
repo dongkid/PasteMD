@@ -159,6 +159,7 @@
     "settings.conversion.filter_resources_link1_text": "Pandoc Filters 公式一覧",
     "settings.conversion.filter_resources_link2_text": "Lua Filters ドキュメント",
     "settings.conversion.keep_formula": "元の数式を保持（変換しない）",
+    "settings.conversion.keep_formula_enable_warning": "「元の数式を保持（変換しない）」を有効にすると、PasteMD の数式レンダリングおよび処理機能が失われます。\n\nこれにより、数式のレンダリング、変換、互換性のための処理は行われなくなり、数式の表示や貼り付け結果が期待どおりにならない可能性があります。\n\nそれでもこの設定を保存しますか？",
     "settings.conversion.enable_latex_replacements": "互換性のない LaTeX 文法を自動修正",
     "settings.conversion.latex_replacements_note": "（例：{\\kern 10pt} を \\qquad に置換）",
     "settings.conversion.fix_single_dollar_block": "非標準のブロック数式を自動検出",
