@@ -459,6 +459,8 @@ pyinstaller --clean -F -w -n PasteMD
      alt="送你一朵小花"
      width="150">
      
+🌟**我的小店**：欢迎光临，不定期上架好物～ [点击前往](https://pay.ldxp.cn/shop/S1024F64)
+
 | 支付宝 | 微信 |
 | --- | --- |
 | ![支付宝打赏](docs/pay/Alipay.jpg) | ![微信打赏](docs/pay/Weixinpay.png) |
