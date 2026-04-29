@@ -79,21 +79,22 @@ class SettingsDialog:
             raw_global_filters = [raw_global_filters]
         elif not isinstance(raw_global_filters, (list, tuple)):
             raw_global_filters = []
-        raw_global_filters = [
-            f for f in raw_global_filters
-            if isinstance(f, str) and f.strip()
+        self.global_filters: list[dict] = [
+            item for item in (self._parse_filter_item(f) for f in raw_global_filters)
+            if item is not None
         ]
-        self.global_filters = list(raw_global_filters)
 
-        self.filters_by_conversion: Dict[str, list[str]] = {}
+        self.filters_by_conversion: Dict[str, list[dict]] = {}
         for key in self._conversion_filter_keys:
             raw_list = raw_filters_by_conversion.get(key, [])
             if isinstance(raw_list, str):
                 raw_list = [raw_list]
             elif not isinstance(raw_list, (list, tuple)):
                 raw_list = []
-            normalized = [f for f in raw_list if isinstance(f, str) and f.strip()]
-            self.filters_by_conversion[key] = normalized
+            self.filters_by_conversion[key] = [
+                item for item in (self._parse_filter_item(f) for f in raw_list)
+                if item is not None
+            ]
 
         default_label = self.filter_conversion_options[0][1]
         self.filter_conversion_var = tk.StringVar(value=default_label)
@@ -760,7 +761,7 @@ class SettingsDialog:
                 paste_delay_value = DEFAULT_CONFIG.get("paste_delay_s", 0.3)
             new_config["paste_delay_s"] = paste_delay_value
             
-            # 保存 Pandoc Filters 列表
+            # 保存 Pandoc Filters 列表（dict 格式，兼容旧版 str 格式）
             new_config["pandoc_filters_by_conversion"] = {
                 key: list(self.filters_by_conversion.get(key, []))
                 for key in self._conversion_filter_keys
@@ -1017,6 +1018,14 @@ class SettingsDialog:
         )
         self.move_down_btn.pack(pady=2)
         
+        self.toggle_filter_btn = ttk.Button(
+            button_frame,
+            text=t("settings.conversion.disable_filter"),
+            command=self._on_toggle_filter,
+            width=btn_width
+        )
+        self.toggle_filter_btn.pack(pady=2)
+        
         # 说明文本
         note_label = ttk.Label(
             frame, 
@@ -1041,6 +1050,20 @@ class SettingsDialog:
         # 返回下一个可用行号
         return row + 5
 
+    @staticmethod
+    def _parse_filter_item(item) -> Optional[dict]:
+        """Parse a filter item, supporting both legacy (str) and new (dict) formats.
+
+        Returns ``{"path": ..., "enabled": ...}`` or ``None`` if invalid.
+        """
+        if isinstance(item, str) and item.strip():
+            return {"path": item.strip(), "enabled": True}
+        if isinstance(item, dict):
+            path = item.get("path", "")
+            if isinstance(path, str) and path.strip():
+                return {"path": path.strip(), "enabled": bool(item.get("enabled", True))}
+        return None
+
     def _create_hyperlink_label(self, parent: tk.Widget, text: str, url: str) -> ttk.Label:
         """创建可点击的超链接标签"""
         link = ttk.Label(
@@ -1056,7 +1079,7 @@ class SettingsDialog:
         
         return link
 
-    def _get_current_filters(self) -> list[str]:
+    def _get_current_filters(self) -> list[dict]:
         label = self.filter_conversion_var.get()
         key = self._filter_conversion_label_to_key.get(label, "global")
         if key == "global":
@@ -1084,8 +1107,8 @@ class SettingsDialog:
         
         # 用户是否选择文件
         if path:
-            # 将路径添加到当前转换类型列表
-            self._get_current_filters().append(path)
+            # 将路径添加到当前转换类型列表（新格式 dict）
+            self._get_current_filters().append({"path": path, "enabled": True})
             
             # 刷新列表框显示
             self._refresh_filters_listbox()
@@ -1140,6 +1163,26 @@ class SettingsDialog:
             # 更新按钮状态
             self._update_filter_buttons_state()
 
+    def _on_toggle_filter(self):
+        """切换选中 Filter 的启用/禁用状态"""
+        selection = self.filters_listbox.curselection()
+        if not selection:
+            return
+        
+        index = selection[0]
+        current_list = self._get_current_filters()
+        current_item = current_list[index]
+        current_item["enabled"] = not current_item.get("enabled", True)
+        
+        # 刷新显示
+        self._refresh_filters_listbox()
+        
+        # 恢复选中
+        self.filters_listbox.selection_set(index)
+        
+        # 更新按钮状态
+        self._update_filter_buttons_state()
+
     def _on_move_filter_down(self):
         """将选中的 Filter 向下移动一位"""
         # 获取选中索引
@@ -1180,16 +1223,22 @@ class SettingsDialog:
             index = selection[0]
             is_first = (index == 0)
             is_last = (index == len(current_list) - 1)
+            enabled = current_list[index].get("enabled", True)
             
             # 设置按钮状态
             self.remove_filter_btn.config(state=tk.NORMAL)
             self.move_up_btn.config(state=tk.DISABLED if is_first else tk.NORMAL)
             self.move_down_btn.config(state=tk.DISABLED if is_last else tk.NORMAL)
+            self.toggle_filter_btn.config(
+                state=tk.NORMAL,
+                text=t("settings.conversion.disable_filter" if enabled else "settings.conversion.enable_filter")
+            )
         else:
             # 无选中项时禁用移除/上移/下移按钮
             self.remove_filter_btn.config(state=tk.DISABLED)
             self.move_up_btn.config(state=tk.DISABLED)
             self.move_down_btn.config(state=tk.DISABLED)
+            self.toggle_filter_btn.config(state=tk.DISABLED, text=t("settings.conversion.disable_filter"))
 
     def _refresh_filters_listbox(self):
         """刷新列表框显示内容，同步 filters_list 数据"""
@@ -1198,8 +1247,15 @@ class SettingsDialog:
             self.filters_listbox.delete(0, tk.END)
             
             # 遍历当前转换类型列表，显示完整路径
-            for path in self._get_current_filters():
-                self.filters_listbox.insert(tk.END, path)
+            for item in self._get_current_filters():
+                path = item["path"]
+                enabled = item.get("enabled", True)
+                if enabled:
+                    self.filters_listbox.insert(tk.END, path)
+                else:
+                    self.filters_listbox.insert(tk.END, f"✗ {path}")
+                    idx = self.filters_listbox.size() - 1
+                    self.filters_listbox.itemconfig(idx, fg="gray")
         except Exception as e:
             log(f"Failed to refresh filters listbox: {e}")
 
@@ -1214,7 +1270,7 @@ class SettingsDialog:
             
         index = selection[0]
         current_list = self._get_current_filters()
-        current_path = current_list[index]
+        current_path = current_list[index]["path"]
         
         # 创建编辑对话框
         edit_dialog = tk.Toplevel(self.root)
@@ -1250,7 +1306,7 @@ class SettingsDialog:
             """保存编辑"""
             new_path = path_var.get().strip()
             if new_path:
-                current_list[index] = new_path
+                current_list[index]["path"] = new_path
                 self._refresh_filters_listbox()
                 # 恢复选中
                 self.filters_listbox.selection_set(index)

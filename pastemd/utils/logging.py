@@ -52,10 +52,10 @@ def _get_logger() -> logging.Logger:
     return _logger
 
 
-def log(message: str) -> None:
+def log(message: str, level: int = logging.INFO) -> None:
     """记录日志到文件"""
     try:
-        _get_logger().info(message)
+        _get_logger().log(level, message)
     except Exception:
         # 记录日志失败时静默处理，避免递归错误
         pass

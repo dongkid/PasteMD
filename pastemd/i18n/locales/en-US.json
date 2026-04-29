@@ -154,6 +154,8 @@
     "settings.conversion.filter_conversion_md_to_latex": "Markdown \u2192 LaTeX",
     "settings.conversion.add_filter": "Add...",
     "settings.conversion.remove_filter": "Remove",
+    "settings.conversion.enable_filter": "Enable",
+    "settings.conversion.disable_filter": "Disable",
     "settings.conversion.move_up": "↑",
     "settings.conversion.move_down": "↓",
     "settings.conversion.filter_resources_link1_text": "Official Pandoc Filters List",

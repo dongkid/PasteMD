@@ -154,6 +154,8 @@
     "settings.conversion.filter_conversion_md_to_latex": "Markdown → LaTeX",
     "settings.conversion.add_filter": "添加...",
     "settings.conversion.remove_filter": "移除",
+    "settings.conversion.enable_filter": "启用",
+    "settings.conversion.disable_filter": "禁用",
     "settings.conversion.move_up": "↑",
     "settings.conversion.move_down": "↓",
     "settings.conversion.filter_resources_link1_text": "Pandoc Filters 官方列表",

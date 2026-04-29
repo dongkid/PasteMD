@@ -67,12 +67,30 @@ def _mask_pandoc_request_headers(headers: List[str]) -> List[str]:
 
 
 def _normalize_filters(value) -> List[str]:
+    """Normalize filter config values to a flat list of enabled paths.
+
+    Supports both legacy format (list of strings) and new format
+    (list of dicts with ``path`` and ``enabled`` keys).  Only paths
+    whose ``enabled`` field is truthy (defaults to True) are returned.
+    """
     if value is None:
         return []
     if isinstance(value, str):
         return [value.strip()] if value.strip() else []
     if isinstance(value, (list, tuple)):
-        return [item.strip() for item in value if isinstance(item, str) and item.strip()]
+        result: List[str] = []
+        for item in value:
+            if isinstance(item, str):
+                # Legacy format: plain path string
+                if item.strip():
+                    result.append(item.strip())
+            elif isinstance(item, dict):
+                # New format: {"path": "...", "enabled": true/false}
+                path = item.get("path", "")
+                enabled = item.get("enabled", True)
+                if isinstance(path, str) and path.strip() and enabled:
+                    result.append(path.strip())
+        return result
     return []
 
 

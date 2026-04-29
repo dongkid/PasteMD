@@ -258,6 +258,10 @@ nuitka-crash-report.xml
 AGENTS.md
 CLAUDE.md
 
+# Windows
+nul
+NUL
+
 # macOS
 **/.DS_Store
 

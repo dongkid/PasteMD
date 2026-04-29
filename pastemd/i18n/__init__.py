@@ -6,8 +6,9 @@ import json
 import locale
 import logging
 import os
-from typing import Dict, Iterator, Optional, Any
+from typing import Dict, Iterator, Optional
 from ..config.paths import resource_path
+from ..utils.logging import log
 
 
 FALLBACK_LANGUAGE = "en-US"
@@ -15,7 +16,6 @@ FALLBACK_LANGUAGE = "en-US"
 _loaded_translations: Dict[str, Dict[str, str]] = {}
 _language_metadata: Dict[str, Dict[str, str]] = {}
 _current_language = FALLBACK_LANGUAGE
-_logger = logging.getLogger(__name__)
 
 
 def _get_locales_dir() -> str:
@@ -71,9 +71,9 @@ def _load_translations(language: str) -> Dict[str, str]:
                     _language_metadata[language] = meta
                 data = {str(k): str(v) for k, v in loaded.items() if k != "_meta"}
         except FileNotFoundError:
-            _logger.warning("Translation file missing for %s at %s", language, json_path)
+            log(f"Translation file missing for {language} at {json_path}", level=logging.WARNING)
         except Exception as exc:
-            _logger.warning("Failed to load translations for %s: %s", language, exc)
+            log(f"Failed to load translations for {language}: {exc}", level=logging.WARNING)
 
     _loaded_translations[language] = data or {}
     return _loaded_translations[language]
@@ -205,6 +205,8 @@ def t(key: str, **kwargs) -> str:
     """
     Translate a key into the active language.
 
+    Fallback chain: current language → en-US → raw key (with warning).
+
     Args:
         key: Translation key.
         **kwargs: Optional format arguments inserted via str.format.
@@ -212,16 +214,16 @@ def t(key: str, **kwargs) -> str:
     translations = _load_translations(_current_language)
     text = translations.get(key)
 
+    # Key missing in current language — fall back to en-US
     if text is None and _current_language != FALLBACK_LANGUAGE:
-        text = _load_translations(FALLBACK_LANGUAGE).get(key)
+        fallback_text = _load_translations(FALLBACK_LANGUAGE).get(key)
+        if fallback_text is not None:
+            log(f"Translation key '{key}' missing in {_current_language}, falling back to {FALLBACK_LANGUAGE}", level=logging.WARNING)
+            text = fallback_text
 
+    # Key missing in fallback language — use raw key as last resort
     if text is None:
-        for data in _loaded_translations.values():
-            if key in data:
-                text = data[key]
-                break
-
-    if text is None:
+        log(f"Translation key '{key}' not found in {FALLBACK_LANGUAGE}, using raw key", level=logging.WARNING)
         text = key
 
     if kwargs:
