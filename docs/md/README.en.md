@@ -29,6 +29,17 @@
 <a href="https://hellogithub.com/repository/RICHQAQ/PasteMD" target="_blank"><img src="https://abroad.hellogithub.com/v1/widgets/recommend.svg?rid=7dfb1883330d441f9264d8e8945c75e2&claim_uid=RvDOqI1Satiwzh4&theme=neutral" alt="Featured｜HelloGitHub" style="width: 250px; height: 54px;" width="250" height="54" /></a>
 </p>
 
+<!-- sponsor-ad:start -->
+## ❤️ Sponsors
+<table>
+<tr>
+<td width="200" align="center" valign="middle"><img src="../../docs/img/Doloffer_logo.png" alt="DolOffer" width="180"></a></td>
+<td valign="middle">
+  <a href="https://doloffer.com/friend/PduWP9xx">Thanks to DolOffer for supporting this project! DolOffer offers discounts on popular digital subscriptions such as ChatGPT Plus, Claude, YouTube Premium, Spotify, and Apple Music, with genuine subscriptions, stable service, and reliable after-sales support. Register through the exclusive link and use the coupon code `AI8888` for an extra 10% off. Some products currently require a Hong Kong or South Korea IP to view and purchase.</a></td>
+</tr>
+</table>
+<!-- sponsor-ad:end -->
+
 > When writing papers or reports, do formulas copied from AI tools (like ChatGPT or DeepSeek) turn into garbled text in Word? Do Markdown tables fail to paste correctly into Excel? **PasteMD was built specifically to solve these problems.**
 > 
 > <img src="../../docs/gif/atri/igood.gif"
