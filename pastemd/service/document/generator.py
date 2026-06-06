@@ -201,7 +201,13 @@ class DocumentGenerator:
             docx_bytes = DocxProcessor.apply_custom_processing(
                 docx_bytes,
                 disable_first_para_indent=True,
-                target_style="Body Text"
+                target_style="Body Text",
+                horizontal_rule_style=config.get("horizontal_rule_style", "default"),
+            )
+        elif config.get("horizontal_rule_style") == "paragraph_border":
+            docx_bytes = DocxProcessor.apply_custom_processing(
+                docx_bytes,
+                horizontal_rule_style="paragraph_border",
             )
         
         return docx_bytes
@@ -244,7 +250,13 @@ class DocumentGenerator:
             docx_bytes = DocxProcessor.apply_custom_processing(
                 docx_bytes,
                 disable_first_para_indent=True,
-                target_style="Body Text"
+                target_style="Body Text",
+                horizontal_rule_style=config.get("horizontal_rule_style", "default"),
+            )
+        elif config.get("horizontal_rule_style") == "paragraph_border":
+            docx_bytes = DocxProcessor.apply_custom_processing(
+                docx_bytes,
+                horizontal_rule_style="paragraph_border",
             )
         
         return docx_bytes

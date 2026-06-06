@@ -69,6 +69,16 @@ class SettingsDialog:
         self._filter_conversion_label_to_key = {
             label: key for key, label in self.filter_conversion_options
         }
+        self.horizontal_rule_style_options = [
+            ("default", t("settings.conversion.horizontal_rule_style_default")),
+            ("paragraph_border", t("settings.conversion.horizontal_rule_style_paragraph_border")),
+        ]
+        self._horizontal_rule_style_label_to_key = {
+            label: key for key, label in self.horizontal_rule_style_options
+        }
+        self._horizontal_rule_style_key_to_label = {
+            key: label for key, label in self.horizontal_rule_style_options
+        }
 
         raw_filters_by_conversion = self.current_config.get("pandoc_filters_by_conversion")
         if not isinstance(raw_filters_by_conversion, dict):
@@ -578,15 +588,31 @@ class SettingsDialog:
         html_fmt = self.current_config.get("html_formatting", {})
         self.strikethrough_var = tk.BooleanVar(value=html_fmt.get("strikethrough_to_del", True))
         ttk.Checkbutton(content, text=t("settings.conversion.strikethrough"), variable=self.strikethrough_var).grid(row=current_row+1, column=0, columnspan=3, sticky=tk.W, pady=2)
+
+        ttk.Label(content, text=t("settings.conversion.horizontal_rule_style")).grid(row=current_row+2, column=0, sticky=tk.W, pady=(8, 2))
+        horizontal_rule_style = self.current_config.get("horizontal_rule_style", "default")
+        horizontal_rule_label = self._horizontal_rule_style_key_to_label.get(
+            horizontal_rule_style,
+            self._horizontal_rule_style_key_to_label["default"],
+        )
+        self.horizontal_rule_style_var = tk.StringVar(value=horizontal_rule_label)
+        self.horizontal_rule_style_combo = ttk.Combobox(
+            content,
+            textvariable=self.horizontal_rule_style_var,
+            values=[label for _, label in self.horizontal_rule_style_options],
+            state="readonly",
+            width=28,
+        )
+        self.horizontal_rule_style_combo.grid(row=current_row+2, column=1, sticky=tk.W, pady=(8, 2), padx=5)
         
-        ttk.Label(content, text=t("settings.conversion.first_paragraph_heading"), font=("", 10, "bold")).grid(row=current_row+2, column=0, columnspan=3, sticky=tk.W, pady=(12, 5))
+        ttk.Label(content, text=t("settings.conversion.first_paragraph_heading"), font=("", 10, "bold")).grid(row=current_row+3, column=0, columnspan=3, sticky=tk.W, pady=(12, 5))
         
         # 其他转换选项
         self.md_indent_var = tk.BooleanVar(value=self.current_config.get("md_disable_first_para_indent", True))
-        ttk.Checkbutton(content, text=t("settings.conversion.md_indent"), variable=self.md_indent_var).grid(row=current_row+3, column=0, columnspan=3, sticky=tk.W, pady=2)
+        ttk.Checkbutton(content, text=t("settings.conversion.md_indent"), variable=self.md_indent_var).grid(row=current_row+4, column=0, columnspan=3, sticky=tk.W, pady=2)
         
         self.html_indent_var = tk.BooleanVar(value=self.current_config.get("html_disable_first_para_indent", True))
-        ttk.Checkbutton(content, text=t("settings.conversion.html_indent"), variable=self.html_indent_var).grid(row=current_row+4, column=0, columnspan=3, sticky=tk.W, pady=2)
+        ttk.Checkbutton(content, text=t("settings.conversion.html_indent"), variable=self.html_indent_var).grid(row=current_row+5, column=0, columnspan=3, sticky=tk.W, pady=2)
 
     def _create_advanced_tab(self):
         """创建高级设置选项卡"""
@@ -882,6 +908,18 @@ class SettingsDialog:
                 "strikethrough_var",
                 current_html_formatting.get("strikethrough_to_del", True),
             )
+            horizontal_rule_var = getattr(self, "horizontal_rule_style_var", None)
+            if horizontal_rule_var is None:
+                new_config["horizontal_rule_style"] = self.current_config.get(
+                    "horizontal_rule_style",
+                    "default",
+                )
+            else:
+                selected_horizontal_rule_label = horizontal_rule_var.get()
+                new_config["horizontal_rule_style"] = self._horizontal_rule_style_label_to_key.get(
+                    selected_horizontal_rule_label,
+                    "default",
+                )
             
             new_config["md_disable_first_para_indent"] = self._get_var_value(
                 "md_indent_var",
