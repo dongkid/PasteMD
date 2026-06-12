@@ -55,9 +55,11 @@ class ExcelBaseWorkflow(BaseWorkflow, ABC):
                 self._save_xlsx(table_data)
 
         except ClipboardError as e:
+            self._success = False
             self._log(f"Clipboard error: {e}")
             self._notify_error(t("workflow.table.invalid_with_app", app=self.app_name))
         except Exception as e:
+            self._success = False
             self._log(f"{self.app_name} workflow failed: {e}")
             import traceback
 
@@ -94,6 +96,7 @@ class ExcelBaseWorkflow(BaseWorkflow, ABC):
             )
             with open(output_path, "wb") as f:
                 f.write(xlsx_bytes)
+            self._set_output(output_path, len(xlsx_bytes))
             self._log(f"Saved XLSX to: {output_path}")
         except Exception as e:
             self._log(f"Failed to save XLSX: {e}")

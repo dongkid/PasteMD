@@ -15,6 +15,10 @@ from ...service.hotkey.recorder import HotkeyRecorder
 from ...i18n import t
 from ...core.state import app_state
 
+# 跨平台等宽字体
+_MONO_FONT = ("Menlo", 10, "bold") if is_macos() else ("Consolas", 10, "bold")
+_MONO_FONT_NORMAL = ("Menlo", 10) if is_macos() else ("Consolas", 10)
+
 
 class HotkeyDialog:
     """热键设置对话框"""
@@ -285,7 +289,7 @@ class HotkeyDialog:
         ttk.Label(
             current_frame,
             text=self._format_hotkey(self.current_hotkey),
-            font=("Consolas", 10, "bold")
+            font=_MONO_FONT
         ).pack(side=tk.LEFT, padx=5)
         
         # 新热键输入
@@ -296,7 +300,7 @@ class HotkeyDialog:
         
         self.hotkey_entry = ttk.Entry(
             input_frame,
-            font=("Consolas", 10),
+            font=_MONO_FONT_NORMAL,
             state="readonly",
             width=25
         )

@@ -62,9 +62,11 @@ class MdWorkflow(ExtensibleWorkflow):
                 self._notify_error(result.error or t("workflow.generic.failure"))
 
         except ClipboardError as e:
+            self._success = False
             self._log(f"Clipboard error: {e}")
             self._notify_error(t("workflow.clipboard.read_failed"))
         except Exception as e:
+            self._success = False
             self._log(f"MD workflow failed: {e}")
             import traceback
             traceback.print_exc()

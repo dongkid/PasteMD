@@ -278,6 +278,8 @@ class SettingsDialog:
             self._tab_created.add("advanced")
             self._create_experimental_tab()
             self._tab_created.add("experimental")
+            self._create_history_tab()
+            self._tab_created.add("history")
 
             try:
                 self._extensions_tab = ExtensionsTab(self.notebook, self.current_config)
@@ -294,11 +296,12 @@ class SettingsDialog:
                 log(f"Failed to create permissions tab: {e}")
         else:
             # Windows 低配机器：懒加载，仅加占位符，点击标签时才创建
-            self._lazy_tab_keys = ["conversion", "advanced", "experimental"]
+            self._lazy_tab_keys = ["conversion", "advanced", "experimental", "history"]
             self._lazy_tab_labels = {
                 "conversion": lambda: t("settings.tab.conversion"),
                 "advanced":   lambda: t("settings.tab.advanced"),
                 "experimental": lambda: t("settings.tab.experimental"),
+                "history":    lambda: t("settings.tab.history"),
             }
             for key in self._lazy_tab_keys:
                 placeholder = ttk.Frame(self.notebook)
@@ -345,11 +348,13 @@ class SettingsDialog:
             self._do_lazy_swap(key, self._create_advanced_tab)
         elif key == "experimental":
             self._do_lazy_swap(key, self._create_experimental_tab)
+        elif key == "history":
+            self._do_lazy_swap(key, self._create_history_tab)
         elif key == "extensions":
             self._do_lazy_swap_extensions()
 
     def _do_lazy_swap(self, key: str, creator) -> None:
-        """通用懒加载替换：执行 creator → 移动新框架到位 → 移除占位符"""
+        """通用懒加载替换：创建真实标签页 → 插入到占位符位置 → 恢复选中"""
         placeholder = self._tab_map.get(key)
         if placeholder is None:
             return
@@ -358,21 +363,21 @@ class SettingsDialog:
         except Exception:
             return
 
-        # 先标记已创建，防止 forget 触发的 <<NotebookTabChanged>> 事件重入
+        # notebook.add 会改变选中，先记下用户想去的目标索引
         self._tab_created.add(key)
 
-        # 调用真实创建方法（会在 notebook 末尾添加新框架）
         creator()
 
-        # 刚创建的框架在末尾，_tab_map[key] 已被更新
         real_frame = self._tab_map.get(key)
         if real_frame is None or real_frame is placeholder:
             return
 
-        # 移动到占位符原本的位置（占位符被推到 idx+1）
         self.notebook.insert(idx, real_frame)
         self.notebook.forget(placeholder)
         placeholder.destroy()
+
+        # 显式切回用户点击的位置
+        self.notebook.select(idx)
 
         log(f"Lazy tab created: {key}")
 
@@ -764,6 +769,50 @@ class SettingsDialog:
             return fallback
         return var.get()
 
+    def _create_history_tab(self):
+        """创建历史记录设置标签页"""
+        frame = ttk.Frame(self.notebook, padding=10)
+        self.notebook.add(frame, text=t("settings.tab.history"))
+        self._tab_map["history"] = frame
+        frame.columnconfigure(0, weight=1)
+
+        history_cfg = self.current_config.get("history", {})
+
+        # 启用开关
+        self.history_enabled_var = tk.BooleanVar(value=history_cfg.get("enabled", True))
+        ttk.Checkbutton(frame, text=t("settings.history.enabled"), variable=self.history_enabled_var).grid(
+            row=0, column=0, sticky=tk.W, pady=5)
+
+        # 保存完整内容
+        self.history_save_full_var = tk.BooleanVar(value=history_cfg.get("save_full_content", True))
+        ttk.Checkbutton(frame, text=t("settings.history.save_full_content"), variable=self.history_save_full_var).grid(
+            row=1, column=0, sticky=tk.W, pady=5)
+
+        # 自动清理
+        self.history_auto_cleanup_var = tk.BooleanVar(value=history_cfg.get("auto_cleanup", True))
+        ttk.Checkbutton(frame, text=t("settings.history.auto_cleanup"), variable=self.history_auto_cleanup_var).grid(
+            row=2, column=0, sticky=tk.W, pady=5)
+
+        # 最大条目数
+        ttk.Label(frame, text=t("settings.history.max_entries")).grid(
+            row=3, column=0, sticky=tk.W, pady=(10, 2))
+        self.history_max_entries_var = tk.StringVar(value=str(history_cfg.get("max_entries", 500)))
+        entry = ttk.Entry(frame, textvariable=self.history_max_entries_var, width=8)
+        entry.grid(row=3, column=1, sticky=tk.W, padx=5, pady=(10, 2))
+        entry.bind("<FocusIn>", self._on_focus_in)
+        ttk.Label(frame, text=t("settings.history.max_entries_note"), foreground="gray", font=("", 8)).grid(
+            row=4, column=0, columnspan=2, sticky=tk.W, padx=(0, 5), pady=(0, 5))
+
+        # TTL 天数
+        ttk.Label(frame, text=t("settings.history.ttl_days")).grid(
+            row=5, column=0, sticky=tk.W, pady=(10, 2))
+        self.history_ttl_var = tk.StringVar(value=str(history_cfg.get("ttl_days", 90)))
+        entry2 = ttk.Entry(frame, textvariable=self.history_ttl_var, width=8)
+        entry2.grid(row=5, column=1, sticky=tk.W, padx=5, pady=(10, 2))
+        entry2.bind("<FocusIn>", self._on_focus_in)
+        ttk.Label(frame, text=t("settings.history.ttl_days_note"), foreground="gray", font=("", 8)).grid(
+            row=6, column=0, columnspan=2, sticky=tk.W, padx=(0, 5), pady=(0, 5))
+
     def _confirm_keep_formula_enable(self) -> bool:
         """
         Warn before saving when the keep-formula experimental option is enabled.
@@ -972,7 +1021,23 @@ class SettingsDialog:
             except (TypeError, ValueError):
                 paste_delay_value = DEFAULT_CONFIG.get("paste_delay_s", 0.3)
             new_config["paste_delay_s"] = paste_delay_value
-            
+
+            # 保存历史记录配置
+            if getattr(self, "history_enabled_var", None) is not None:
+                history_cfg = dict(self.current_config.get("history", {}))
+                history_cfg["enabled"] = self.history_enabled_var.get()
+                history_cfg["save_full_content"] = self.history_save_full_var.get()
+                history_cfg["auto_cleanup"] = self.history_auto_cleanup_var.get()
+                try:
+                    history_cfg["max_entries"] = int(self.history_max_entries_var.get())
+                except (TypeError, ValueError):
+                    history_cfg["max_entries"] = 500
+                try:
+                    history_cfg["ttl_days"] = int(self.history_ttl_var.get())
+                except (TypeError, ValueError):
+                    history_cfg["ttl_days"] = 90
+                new_config["history"] = history_cfg
+
             # 保存 Pandoc Filters 列表（dict 格式，兼容旧版 str 格式）
             new_config["pandoc_filters_by_conversion"] = {
                 key: list(self.filters_by_conversion.get(key, []))

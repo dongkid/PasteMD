@@ -32,10 +32,11 @@ except Exception:  # pragma: no cover
 
 class TrayMenuManager:
     """托盘菜单管理器"""
-    
-    def __init__(self, config_loader: ConfigLoader, notification_manager: NotificationManager):
+
+    def __init__(self, config_loader: ConfigLoader, notification_manager: NotificationManager, history_manager=None):
         self.config_loader = config_loader
         self.notification_manager = notification_manager
+        self.history_manager = history_manager
         self.restart_hotkey_callback = None  # 将由外部设置
         self.pause_hotkey_callback = None  # 暂停热键监听
         self.resume_hotkey_callback = None  # 恢复热键监听
@@ -44,6 +45,7 @@ class TrayMenuManager:
         self.latest_release_url = None  # 存储最新版本的下载链接
         self.hotkey_dialog = None
         self.settings_dialog = None
+        self.history_dialog = None
     
     def set_restart_hotkey_callback(self, callback):
         """设置重启热键的回调函数"""
@@ -129,6 +131,8 @@ class TrayMenuManager:
             pystray.Menu.SEPARATOR,
             pystray.MenuItem(t("tray.menu.open_save_dir"), self._on_open_save_dir),
             pystray.MenuItem(t("tray.menu.open_log"), self._on_open_log),
+            pystray.Menu.SEPARATOR,
+            pystray.MenuItem(t("tray.menu.paste_history"), self._on_open_history),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem(t("settings.dialog.title"), self._on_open_settings),
             pystray.Menu.SEPARATOR,
@@ -316,7 +320,62 @@ class TrayMenuManager:
             # 创建空日志文件
             open(log_path, "w", encoding="utf-8").close()
         open_file(log_path)
-    
+
+    def _on_open_history(self, icon, item):
+        """打开历史记录界面"""
+        if self.history_dialog is not None:
+            # Already open - bring to front
+            try:
+                self.history_dialog.lift()
+                self.history_dialog.focus_force()
+            except Exception:
+                self.history_dialog = None
+            return
+        self._open_history_dialog()
+
+    def _open_history_dialog(self):
+        """在主线程创建并显示历史记录对话框"""
+        from ...core.state import app_state
+        ui_queue = getattr(app_state, "ui_queue", None)
+        if ui_queue is not None:
+            ui_queue.put(self._do_show_history_dialog)
+            # macOS: 弹窗期间需要显示 Dock 图标
+            if is_macos():
+                try:
+                    from ...utils.macos.dock import begin_ui_session
+                    begin_ui_session()
+                except Exception:
+                    pass
+
+    def _do_show_history_dialog(self):
+        """在主线程中显示历史记录对话框"""
+        try:
+            from ..history.dialog import HistoryDialog
+            self.history_dialog = HistoryDialog(
+                self.history_manager,
+                self.notification_manager,
+                on_close=self._on_history_dialog_closed,
+            )
+            self.history_dialog.show()
+        except Exception as e:
+            log(f"Failed to open history dialog: {e}")
+            if is_macos():
+                try:
+                    from ...utils.macos.dock import end_ui_session
+                    end_ui_session()
+                except Exception:
+                    pass
+
+    def _on_history_dialog_closed(self):
+        """历史对话框关闭回调"""
+        self.history_dialog = None
+        if is_macos():
+            try:
+                from ...utils.macos.dock import end_ui_session
+                end_ui_session()
+            except Exception:
+                pass
+
     def _on_open_settings(self, icon, item):
         """打开设置界面"""
         self._open_settings(icon, item, None)

@@ -67,6 +67,12 @@ def get_config_path() -> str:
     return os.path.join(data_dir, "config.json")
 
 
+def get_history_db_path() -> str:
+    """获取历史记录数据库路径"""
+    data_dir = ensure_user_data_dir()
+    return os.path.join(data_dir, "paste_history.db")
+
+
 def get_log_dir() -> str:
     if is_macos():
         return os.path.join(os.path.expanduser("~"), "Library", "Logs", "PasteMD")

@@ -116,4 +116,13 @@ DEFAULT_CONFIG: Dict[str, Any] = {
             "apps": [],
         },
     },
+    # History module
+    "history": {
+        "enabled": True,           # Enable paste history recording
+        "max_entries": 500,        # Maximum records to keep
+        "ttl_days": 90,            # Auto-delete entries older than N days
+        "save_full_content": True, # Store full paste content (not just preview)
+        "auto_cleanup": True,      # Run cleanup on startup
+        "dedup_minutes": 0,        # Deduplication window in minutes (0 = disabled)
+    },
 }

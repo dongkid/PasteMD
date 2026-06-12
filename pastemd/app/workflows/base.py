@@ -11,24 +11,42 @@ from ...utils.logging import log
 
 class BaseWorkflow(ABC):
     """工作流基类"""
-    
+
     def __init__(self):
-        # 轻量级初始化
-        self.notification_manager = NotificationManager()  # 复用单例
-        
-        # 延迟初始化(避免 Pandoc 开销)
+        self.notification_manager = NotificationManager()
+        self._success = True
+        self._output_path = ""
+        self._output_bytes = 0
+
         self._doc_generator = None
         self._sheet_generator = None
-        
-        # 无状态预处理器（可复用）
+
         self._markdown_preprocessor = MarkdownPreprocessor()
         self._html_preprocessor = HtmlPreprocessor()
-    
+
     @property
     def config(self):
-        """实时获取最新配置"""
         return app_state.config
-    
+
+    @property
+    def success(self) -> bool:
+        return self._success
+
+    @property
+    def output_path(self) -> str:
+        """工作流执行后生成的输出文件路径（供路由器记录历史用）"""
+        return self._output_path
+
+    @property
+    def output_bytes(self) -> int:
+        """输出文件大小"""
+        return self._output_bytes
+
+    def _set_output(self, path: str, size: int = 0) -> None:
+        if path:
+            self._output_path = path
+            self._output_bytes = size
+
     @property
     def doc_generator(self):
         """懒加载 DocumentGenerator"""

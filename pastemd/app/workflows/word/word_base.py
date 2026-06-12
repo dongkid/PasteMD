@@ -81,15 +81,18 @@ class WordBaseWorkflow(BaseWorkflow, ABC):
                 self._save_docx(docx_bytes)
 
         except ClipboardError as e:
+            self._success = False
             self._log(f"Clipboard error: {e}")
             self._notify_error(t("workflow.clipboard.read_failed"))
         except PandocError as e:
+            self._success = False
             self._log(f"Pandoc error: {e}")
             if content_type == "html":
                 self._notify_error(t("workflow.html.convert_failed_generic"))
             else:
                 self._notify_error(t("workflow.markdown.convert_failed"))
         except Exception as e:
+            self._success = False
             self._log(f"{self.app_name} workflow failed: {e}")
             import traceback
 
@@ -126,6 +129,7 @@ class WordBaseWorkflow(BaseWorkflow, ABC):
             )
             with open(output_path, "wb") as f:
                 f.write(docx_bytes)
+            self._set_output(output_path, len(docx_bytes))
             self._log(f"Saved DOCX to: {output_path}")
         except Exception as e:
             self._log(f"Failed to save DOCX: {e}")

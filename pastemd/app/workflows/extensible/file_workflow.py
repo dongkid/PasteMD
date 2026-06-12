@@ -97,6 +97,7 @@ class FileWorkflow(ExtensibleWorkflow):
                 self._notify_error(result.error or t("workflow.action.clipboard_failed"))
 
         except ClipboardError as e:
+            self._success = False
             self._log(f"Clipboard error: {e}")
             msg = str(e)
             if "为空" in msg:
@@ -104,12 +105,14 @@ class FileWorkflow(ExtensibleWorkflow):
             else:
                 self._notify_error(t("workflow.clipboard.read_failed"))
         except PandocError as e:
+            self._success = False
             self._log(f"Pandoc error: {e}")
             if content_type == "html":
                 self._notify_error(t("workflow.html.convert_failed_generic"))
             else:
                 self._notify_error(t("workflow.markdown.convert_failed"))
         except Exception as e:
+            self._success = False
             self._log(f"File workflow failed: {e}")
             import traceback
             traceback.print_exc()
@@ -167,3 +170,4 @@ class FileWorkflow(ExtensibleWorkflow):
         """写入文件"""
         with open(output_path, "wb") as f:
             f.write(data)
+        self._set_output(output_path, len(data))

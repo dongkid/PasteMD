@@ -71,7 +71,16 @@ def initialize_application() -> tuple[Container, dict]:
     
     # 2. 创建依赖注入容器
     container = Container()
-    
+
+    # 3. 启动历史记录服务
+    try:
+        container.history_manager.start()
+        # Wire history manager into the workflow router
+        from .workflows.router import router as workflow_router
+        workflow_router.set_history_manager(container.history_manager)
+    except Exception as exc:
+        log(f"Failed to start history manager: {exc}")
+
     log("Application initialized successfully")
     return container, {}
 
@@ -286,6 +295,12 @@ def main() -> None:
         log(f"Fatal error: {e}")
         raise
     finally:
+        # 停止历史记录服务
+        try:
+            if 'container' in dir():
+                container.history_manager.stop()
+        except Exception:
+            pass
         # 释放锁
         if app_state.instance_checker:
             app_state.instance_checker.release_lock()

@@ -60,12 +60,15 @@ class YoudaoWorkflow(ExtensibleWorkflow):
                 self._notify_error(result.error or t("workflow.generic.failure"))
 
         except ClipboardError as e:
+            self._success = False
             self._log(f"Clipboard error: {e}")
             self._notify_error(t("workflow.clipboard.read_failed"))
         except PandocError as e:
+            self._success = False
             self._log(f"Pandoc error: {e}")
             self._notify_error(t("workflow.html.convert_failed_generic"))
         except Exception as e:
+            self._success = False
             self._log(f"Youdao workflow failed: {e}")
             import traceback
             traceback.print_exc()

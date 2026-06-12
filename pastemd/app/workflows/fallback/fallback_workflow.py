@@ -1,5 +1,7 @@
 """Fallback workflow - handles no-app scenarios."""
 
+import os
+
 from ..base import BaseWorkflow
 from .output_executor import OutputExecutor
 from pastemd.utils.clipboard import (
@@ -46,6 +48,7 @@ class FallbackWorkflow(BaseWorkflow):
                 self._handle_document(no_app_action, content_type)
         
         except ClipboardError as e:
+            self._success = False
             self._log(f"Clipboard error: {e}")
             msg = str(e)
             if "为空" in msg:
@@ -53,12 +56,14 @@ class FallbackWorkflow(BaseWorkflow):
             else:
                 self._notify_error(t("workflow.clipboard.read_failed"))
         except PandocError as e:
+            self._success = False
             self._log(f"Pandoc error: {e}")
             if content_type == "html":
                 self._notify_error(t("workflow.html.convert_failed_generic"))
             else:
                 self._notify_error(t("workflow.markdown.convert_failed"))
         except Exception as e:
+            self._success = False
             self._log(f"Fallback workflow failed: {e}")
             import traceback
             traceback.print_exc()
@@ -120,7 +125,9 @@ class FallbackWorkflow(BaseWorkflow):
         
         if not success:
             self._log(f"XLSX output failed with action: {action}")
-    
+        elif os.path.exists(output_path):
+            self._set_output(output_path, os.path.getsize(output_path))
+
     def _handle_document(self, action: str, content_type: str):
         """处理文档内容（HTML 或 Markdown）"""
         # 1. 读取内容
@@ -165,7 +172,9 @@ class FallbackWorkflow(BaseWorkflow):
         
         if not success:
             self._log(f"DOCX output failed with action: {action}")
-    
+        elif os.path.exists(output_path):
+            self._set_output(output_path, os.path.getsize(output_path))
+
     def _read_markdown_content(self) -> str:
         """
         读取 Markdown 内容
