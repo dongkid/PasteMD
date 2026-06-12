@@ -27,6 +27,14 @@ class FileWorkflow(ExtensibleWorkflow):
     - 复制文件到剪贴板并模拟粘贴
     """
 
+    display_name: str = "File"
+    content_type: str = "file"
+    source_format: str = "markdown"
+
+    @property
+    def pipeline(self) -> dict:
+        return {"input": "clipboard", "steps": ["detect_type", "to_docx_or_xlsx", "file_paste"]}
+
     def __init__(self):
         super().__init__()
         self.placer = FilePastePlacer()

@@ -23,13 +23,21 @@ from pastemd.utils.omml import convert_html_mathml_to_omml, generate_office_html
 
 class OfficeOmmlBaseWorkflow(BaseWorkflow, ABC):
     """Office OMML 工作流基类（OneNote/PowerPoint）。
-    
+
     处理流程：
     1. 读取剪贴板 HTML/Markdown
     2. 转换为带 MathML 的 HTML（Pandoc --mathml）
     3. 将 MathML 替换为 OMML 条件注释
     4. 使用 RichTextPastePlacer 粘贴
     """
+
+    display_name: str = "Office"
+    content_type: str = "html"
+    source_format: str = "html"
+
+    @property
+    def pipeline(self) -> dict:
+        return {"input": "clipboard", "steps": ["html", "preprocess", "omml_convert", "rich_paste"]}
 
     def __init__(self):
         super().__init__()

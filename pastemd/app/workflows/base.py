@@ -24,6 +24,18 @@ class BaseWorkflow(ABC):
         self._markdown_preprocessor = MarkdownPreprocessor()
         self._html_preprocessor = HtmlPreprocessor()
 
+    # ---- 元数据（子类按需覆写） ----
+
+    display_name: str = "Unknown"
+    content_type: str = "markdown"
+    source_format: str = "plain_text"
+
+    @property
+    def pipeline(self) -> dict:
+        return {"input": "clipboard", "steps": ["unknown"]}
+
+    # ---- 运行时属性 ----
+
     @property
     def config(self):
         return app_state.config

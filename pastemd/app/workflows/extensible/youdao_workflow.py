@@ -17,6 +17,14 @@ from ....service.paste import RichTextPastePlacer
 class YoudaoWorkflow(ExtensibleWorkflow):
     """Paste workflow for Youdao Cloud Note."""
 
+    display_name: str = "Youdao"
+    content_type: str = "html"
+    source_format: str = "html"
+
+    @property
+    def pipeline(self) -> dict:
+        return {"input": "clipboard", "steps": ["html", "preprocess", "md_convert", "rich_paste"]}
+
     def __init__(self):
         super().__init__()
         self.placer = RichTextPastePlacer()

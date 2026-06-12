@@ -11,6 +11,8 @@ from pastemd.utils.html_formatter import postprocess_pandoc_html_macwps, clean_h
 class WPSWorkflow(WordBaseWorkflow):
     """WPS 文档工作流"""
 
+    display_name: str = "WPS"
+
     def __init__(self):
         super().__init__()
         self._placer = WPSPlacer()

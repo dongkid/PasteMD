@@ -21,6 +21,14 @@ from pastemd.utils.markdown_utils import merge_markdown_contents
 class WordBaseWorkflow(BaseWorkflow, ABC):
     """Word/WPS 文字共用工作流逻辑。"""
 
+    display_name: str = "Word"
+    content_type: str = "markdown"
+    source_format: str = "markdown"
+
+    @property
+    def pipeline(self) -> dict:
+        return {"input": "clipboard", "steps": ["detect_type", "preprocess", "to_docx", "com_insert"]}
+
     @property
     @abstractmethod
     def app_name(self) -> str: ...

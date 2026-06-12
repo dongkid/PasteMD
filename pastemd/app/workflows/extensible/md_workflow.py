@@ -22,6 +22,14 @@ class MdWorkflow(ExtensibleWorkflow):
     - 使用 PlainTextPastePlacer 粘贴
     """
 
+    display_name: str = "Markdown"
+    content_type: str = "markdown"
+    source_format: str = "html"
+
+    @property
+    def pipeline(self) -> dict:
+        return {"input": "clipboard_html", "steps": ["html_to_md", "md_preprocess", "plain_paste"]}
+
     def __init__(self):
         super().__init__()
         self.placer = PlainTextPastePlacer()

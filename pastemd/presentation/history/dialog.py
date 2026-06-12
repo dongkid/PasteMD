@@ -4,6 +4,7 @@ import json
 import sys
 import tkinter as tk
 from tkinter import ttk, messagebox
+from dataclasses import dataclass
 from typing import Optional, Callable
 
 from ...utils.system_detect import is_macos
@@ -22,6 +23,16 @@ CONTENT_TYPE_DISPLAY = {
     "markdown": "MD", "html": "HTML", "latex": "LaTeX",
     "table": "Table", "file": "File", "richtext": "RichText",
 }
+
+@dataclass
+class FilterState:
+    status_filter: str = ""
+    target_filter: str = ""
+    workflow_filter: str = ""
+    content_type_filter: str = ""
+    keyword: str = ""
+    date_from: str = ""
+    date_to: str = ""
 
 ROW_HEIGHT = 24
 
@@ -146,7 +157,18 @@ class HistoryDialog:
         root.rowconfigure(2, weight=1)
         root.rowconfigure(3, weight=0)
 
-        # ── 搜索栏 ──
+        self._build_search_bar(root)
+        self._build_filter_panel(root)
+        self._build_tree(root)
+        self._build_bottom_bar(root)
+        self._update_stats()
+
+        if self._filter_frame:
+            self._filter_frame.grid_remove()
+
+    # ---- sub-builder methods ----
+
+    def _build_search_bar(self, root) -> None:
         tb0 = ttk.Frame(root, padding=(8, 8, 8, 0))
         tb0.grid(row=0, column=0, sticky="ew")
         tb0.columnconfigure(1, weight=1)
@@ -154,16 +176,15 @@ class HistoryDialog:
         ttk.Label(tb0, text=t("history.search.label"), font=("", 10, "bold")).grid(
             row=0, column=0, sticky="w", padx=(0, 6))
         self._search_var = tk.StringVar()
-        se = ttk.Entry(tb0, textvariable=self._search_var)
-        se.grid(row=0, column=1, sticky="ew", padx=(0, 6))
-        se.bind("<Return>", lambda _e: self._do_search())
-        se.bind("<KeyRelease>", self._on_search_typing)
+        self._search_entry = ttk.Entry(tb0, textvariable=self._search_var)
+        self._search_entry.grid(row=0, column=1, sticky="ew", padx=(0, 6))
+        self._search_entry.bind("<Return>", lambda _e: self._do_search())
+        self._search_entry.bind("<KeyRelease>", self._on_search_typing)
         ttk.Button(tb0, text=t("history.search.search"), command=self._do_search).grid(
             row=0, column=2, sticky="w", padx=(0, 4))
         ttk.Button(tb0, text=t("history.filter.clear"), command=self._clear_filters).grid(
             row=0, column=3, sticky="w", padx=(0, 4))
 
-        # 折叠/展开按钮
         self._filter_toggle_btn = ttk.Button(tb0, text="▸ " + t("history.filter.toggle"),
                                              command=self._toggle_filters, width=6)
         self._filter_toggle_btn.grid(row=0, column=4, sticky="w", padx=(0, 8))
@@ -171,7 +192,7 @@ class HistoryDialog:
         self._stats_label = ttk.Label(tb0, text="", font=("", 8))
         self._stats_label.grid(row=0, column=5, sticky="e")
 
-        # ── 过滤栏 (可折叠) ──
+    def _build_filter_panel(self, root) -> None:
         self._filter_frame = ttk.Frame(root, padding=(8, 4, 8, 2))
         self._filter_frame.grid(row=1, column=0, sticky="ew")
         self._filter_frame.columnconfigure(0, weight=1)
@@ -182,53 +203,40 @@ class HistoryDialog:
         self._filter_type = tk.StringVar(value="无")
 
         def _on_filter_change(*_a):
-            if self._suppress_trace:
-                return
+            if self._suppress_trace: return
             self._current_page = 0
             self._refresh_list()
 
-        self._filter_status.trace_add("write", _on_filter_change)
-        self._filter_target.trace_add("write", _on_filter_change)
-        self._filter_workflow.trace_add("write", _on_filter_change)
-        self._filter_type.trace_add("write", _on_filter_change)
+        for v in (self._filter_status, self._filter_target, self._filter_workflow, self._filter_type):
+            v.trace_add("write", _on_filter_change)
 
-        def _on_date_combo_change(*_a):
-            if self._suppress_trace:
-                return
-            self._current_page = 0
-            self._refresh_list()
-
-        # ── 过滤行 0: 状态 / 目标 / 类型 / 工作流 ──
+        # Row 0: status / target / type / workflow
         ftop = ttk.Frame(self._filter_frame)
         ftop.grid(row=0, column=0, sticky="ew")
 
-        ttk.Label(ftop, text=t("history.filter.status")).grid(row=0, column=0, sticky="w", padx=(0, 2))
-        ttk.Combobox(ftop, textvariable=self._filter_status,
-                     values=["无", "✓ success", "✗ fail"],
-                     state="readonly", width=9).grid(row=0, column=1, sticky="w", padx=(0, 10))
+        for col, (label, var, values) in enumerate([
+            (t("history.filter.status"),       self._filter_status,    ["无", "✓ success", "✗ fail"]),
+            (t("history.filter.target"),       self._filter_target,    list(FILTER_TARGET_MAP.keys())),
+            (t("history.filter.content_type"), self._filter_type,      list(FILTER_CTYPE_MAP.keys())),
+            (t("history.filter.workflow"),     self._filter_workflow,  list(FILTER_WORKFLOW_MAP.keys())),
+        ]):
+            ttk.Label(ftop, text=label).grid(row=0, column=col * 2, sticky="w", padx=(0, 2))
+            ttk.Combobox(ftop, textvariable=var, values=values,
+                         state="readonly", width=(9 if col == 0 else (7 if col == 2 else 8))
+                         ).grid(row=0, column=col * 2 + 1, sticky="w", padx=(0, 10) if col < 3 else (0, 0))
 
-        ttk.Label(ftop, text=t("history.filter.target")).grid(row=0, column=2, sticky="w", padx=(0, 2))
-        ttk.Combobox(ftop, textvariable=self._filter_target,
-                     values=list(FILTER_TARGET_MAP.keys()),
-                     state="readonly", width=8).grid(row=0, column=3, sticky="w", padx=(0, 10))
-
-        ttk.Label(ftop, text=t("history.filter.content_type")).grid(row=0, column=4, sticky="w", padx=(0, 2))
-        ttk.Combobox(ftop, textvariable=self._filter_type,
-                     values=list(FILTER_CTYPE_MAP.keys()),
-                     state="readonly", width=7).grid(row=0, column=5, sticky="w", padx=(0, 10))
-
-        ttk.Label(ftop, text=t("history.filter.workflow")).grid(row=0, column=6, sticky="w", padx=(0, 2))
-        ttk.Combobox(ftop, textvariable=self._filter_workflow,
-                     values=list(FILTER_WORKFLOW_MAP.keys()),
-                     state="readonly", width=8).grid(row=0, column=7, sticky="w")
-
-        # ── 过滤行 1: 日期选择 (开始 / 结束) ──
+        # Row 1: date range
         self._df_year  = tk.StringVar(value="")
         self._df_month = tk.StringVar(value="")
         self._df_day   = tk.StringVar(value="")
         self._dt_year  = tk.StringVar(value="")
         self._dt_month = tk.StringVar(value="")
         self._dt_day   = tk.StringVar(value="")
+
+        def _on_date_combo_change(*_a):
+            if self._suppress_trace: return
+            self._current_page = 0
+            self._refresh_list()
 
         for v in (self._df_year, self._df_month, self._df_day,
                   self._dt_year, self._dt_month, self._dt_day):
@@ -239,21 +247,17 @@ class HistoryDialog:
 
         ttk.Label(fbot, text=t("history.filter.date_from"), font=("", 8)).grid(
             row=0, column=0, sticky="w", padx=(0, 2))
-
-        # "开始" 日期行: 年 / 月 / 日
         self._build_date_row(fbot, 0, 1,
                              self._df_year, self._df_month, self._df_day,
                              padx_end=(0, 12))
 
         ttk.Label(fbot, text=t("history.filter.date_to"), font=("", 8)).grid(
             row=0, column=4, sticky="w", padx=(0, 2))
-
-        # "结束" 日期行: 年 / 月 / 日
         self._build_date_row(fbot, 0, 5,
                              self._dt_year, self._dt_month, self._dt_day,
                              padx_end=(0, 0))
 
-        # ── TreeView ──
+    def _build_tree(self, root) -> None:
         tree_frame = ttk.Frame(root)
         tree_frame.grid(row=2, column=0, sticky="nsew", padx=8, pady=(6, 0))
         tree_frame.grid_rowconfigure(0, weight=1)
@@ -264,8 +268,7 @@ class HistoryDialog:
 
         self._tree = ttk.Treeview(tree_frame,
             columns=("time", "target", "type", "preview", "filters", "status"),
-            show="headings", selectmode="extended",
-        )
+            show="headings", selectmode="extended")
         sort_cols = {"time": "created_at", "target": "target_app", "type": "content_type", "status": "status"}
         for col_id, text, pct in [
             ("time",    t("history.column.time"),    0.12),
@@ -275,8 +278,8 @@ class HistoryDialog:
             ("filters", t("history.column.filters"), 0.18),
             ("status",  t("history.column.status"),  0.04),
         ]:
-            sort_attr = sort_cols.get(col_id)
-            cmd = (lambda a=sort_attr: self._sort(a)) if sort_attr else (lambda: None)
+            sa = sort_cols.get(col_id)
+            cmd = (lambda a=sa: self._sort(a)) if sa else (lambda: None)
             self._tree.heading(col_id, text=text, command=cmd)
             self._tree.column(col_id, width=int(pct * 900), minwidth=30, stretch=True)
 
@@ -299,27 +302,20 @@ class HistoryDialog:
         self._tree.bind("<Button-2>" if sys.platform == "darwin" else "<Button-3>", self._on_right_click)
         self._tree.bind("<Delete>", self._on_delete_key)
         root.bind("<Escape>", lambda _e: self._on_window_close())
-        root.bind("<Command-f>" if sys.platform == "darwin" else "<Control-f>", lambda _e: se.focus_set())
+        root.bind("<Command-f>" if sys.platform == "darwin" else "<Control-f>",
+                  lambda _e: self._search_entry.focus_set())
 
-        # 显示默认排序箭头
         self._tree.heading("time", text=t("history.column.time") + " ▼")
 
-        # ── Bottom bar ──
+    def _build_bottom_bar(self, root) -> None:
         bottom = ttk.Frame(root, padding=(8, 4))
         bottom.grid(row=3, column=0, sticky="ew")
         ttk.Button(bottom, text=t("history.button.clear_all"), command=self._clear_all).pack(side=tk.LEFT, padx=(0, 8))
         ttk.Button(bottom, text=t("history.button.copy_selected"), command=self._copy_selected).pack(side=tk.LEFT)
-
         self._page_label = ttk.Label(bottom, text="")
         self._page_label.pack(side=tk.RIGHT, padx=(4, 0))
         ttk.Button(bottom, text=">", width=2, command=self._next_page).pack(side=tk.RIGHT)
         ttk.Button(bottom, text="<", width=2, command=self._prev_page).pack(side=tk.RIGHT)
-
-        self._update_stats()
-
-        # 默认隐藏筛选面板
-        if self._filter_frame:
-            self._filter_frame.grid_remove()
 
     # ------------------------------------------------------------------
     # Date selector helpers
@@ -331,8 +327,6 @@ class HistoryDialog:
                         padx_end=(0, 0)) -> None:
         """在 parent 的 row 行、start_col 开始放 年/月/日 三个 Combobox。"""
         years = [""] + [str(y) for y in range(2024, 2031)]
-        months = [""] + [f"{m:02d}" for m in range(1, 13)]
-        days = [""] + [f"{d:02d}" for d in range(1, 32)]
 
         cy = ttk.Combobox(parent, textvariable=yv, values=years, state="readonly", width=5)
         cy.grid(row=row, column=start_col, sticky="w", padx=(0, 1))
@@ -372,22 +366,19 @@ class HistoryDialog:
         for item in tree.get_children():
             tree.delete(item)
 
-        fs, ft, fw, fct, keyword, df, dt = self._effective_filters()
+        f = self._effective_filters()
         offset = self._current_page * self._page_size
 
-        if keyword:
-            rows = self._hm.search(keyword=keyword, limit=self._page_size,
-                                   status_filter=fs, target_filter=ft,
-                                   workflow_filter=fw, content_type_filter=fct,
-                                   date_from=df, date_to=dt,
+        kwargs = dict(status_filter=f.status_filter, target_filter=f.target_filter,
+                      workflow_filter=f.workflow_filter, content_type_filter=f.content_type_filter,
+                      date_from=f.date_from, date_to=f.date_to)
+        if f.keyword:
+            rows = self._hm.search(keyword=f.keyword, limit=self._page_size,
                                    sort_by=self._sort_col, order=self._sort_order,
-                                   offset=offset)
+                                   offset=offset, **kwargs)
         else:
             rows = self._hm.query(limit=self._page_size, offset=offset,
-                                  sort_by=self._sort_col, order=self._sort_order,
-                                  status_filter=fs, target_filter=ft,
-                                  workflow_filter=fw, content_type_filter=fct,
-                                  date_from=df, date_to=dt)
+                                  sort_by=self._sort_col, order=self._sort_order, **kwargs)
 
         for row in rows:
             is_pinned = row.get("pinned", False)
@@ -407,10 +398,10 @@ class HistoryDialog:
                                 status_icon),
                         tags=(row["status"], "pinned" if is_pinned else ""))
 
-        total = self._hm.count(status_filter=fs, target_filter=ft,
-                               workflow_filter=fw, content_type_filter=fct,
-                               date_from=df, date_to=dt,
-                               keyword=keyword)
+        total = self._hm.count(status_filter=f.status_filter, target_filter=f.target_filter,
+                               workflow_filter=f.workflow_filter, content_type_filter=f.content_type_filter,
+                               date_from=f.date_from, date_to=f.date_to,
+                               keyword=f.keyword)
         if total == 0:
             self._page_label.config(text=t("history.empty"))
         else:
@@ -457,22 +448,22 @@ class HistoryDialog:
         filename = _os.path.basename(path)
         return filename if filename else path
 
-    def _effective_filters(self):
-        """返回 (status, target, workflow, content_type, keyword, date_from, date_to) 代码值元组。"""
+    def _effective_filters(self) -> FilterState:
+        """返回当前生效的过滤条件。"""
         keyword = (self._search_var.get() or "").strip()
-        fs = FILTER_STATUS_MAP.get(self._filter_status.get() or "", "")
-        ft = FILTER_TARGET_MAP.get(self._filter_target.get() or "", "")
-        fw = FILTER_WORKFLOW_MAP.get(self._filter_workflow.get() or "", "")
-        fct = FILTER_CTYPE_MAP.get(self._filter_type.get() or "", "")
-        df = self._get_date_var(self._df_year, self._df_month, self._df_day)
-        dt = self._get_date_var(self._dt_year, self._dt_month, self._dt_day)
-        return fs, ft, fw, fct, keyword, df, dt
+        return FilterState(
+            status_filter=FILTER_STATUS_MAP.get(self._filter_status.get() or "", ""),
+            target_filter=FILTER_TARGET_MAP.get(self._filter_target.get() or "", ""),
+            workflow_filter=FILTER_WORKFLOW_MAP.get(self._filter_workflow.get() or "", ""),
+            content_type_filter=FILTER_CTYPE_MAP.get(self._filter_type.get() or "", ""),
+            keyword=keyword,
+            date_from=self._get_date_var(self._df_year, self._df_month, self._df_day),
+            date_to=self._get_date_var(self._dt_year, self._dt_month, self._dt_day),
+        )
 
     @staticmethod
     def _get_date_var(year_var, month_var, day_var) -> str:
         """从年/月/日 Combobox 拼出 YYYY-MM-DD，不全则返回 ""."""
-        if year_var is None:
-            return ""
         y = (year_var.get() or "").strip()
         m = (month_var.get() or "").strip()
         d = (day_var.get() or "").strip()
@@ -556,11 +547,11 @@ class HistoryDialog:
         self._refresh_list()
 
     def _next_page(self) -> None:
-        fs, ft, fw, fct, keyword, df, dt = self._effective_filters()
-        total = self._hm.count(status_filter=fs, target_filter=ft,
-                               workflow_filter=fw, content_type_filter=fct,
-                               date_from=df, date_to=dt,
-                               keyword=keyword)
+        f = self._effective_filters()
+        total = self._hm.count(status_filter=f.status_filter, target_filter=f.target_filter,
+                               workflow_filter=f.workflow_filter, content_type_filter=f.content_type_filter,
+                               date_from=f.date_from, date_to=f.date_to,
+                               keyword=f.keyword)
         if (self._current_page + 1) * self._page_size < total:
             self._current_page += 1
             self._refresh_list()

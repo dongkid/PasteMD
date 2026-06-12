@@ -18,6 +18,14 @@ from pastemd.utils.markdown_utils import merge_markdown_contents
 class ExcelBaseWorkflow(BaseWorkflow, ABC):
     """Excel/WPS 表格共用工作流逻辑。"""
 
+    display_name: str = "Excel"
+    content_type: str = "table"
+    source_format: str = "markdown"
+
+    @property
+    def pipeline(self) -> dict:
+        return {"input": "clipboard", "steps": ["parse_table", "to_xlsx", "clipboard_paste"]}
+
     @property
     @abstractmethod
     def app_name(self) -> str: ...

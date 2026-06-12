@@ -18,7 +18,15 @@ from pastemd.i18n import t
 
 class FallbackWorkflow(BaseWorkflow):
     """无应用场景工作流（执行 no_app_action）"""
-    
+
+    display_name: str = "Fallback"
+    content_type: str = "markdown"
+    source_format: str = "markdown"
+
+    @property
+    def pipeline(self) -> dict:
+        return {"input": "clipboard", "steps": ["detect_type", "to_docx_or_xlsx", "open_or_save"]}
+
     def __init__(self):
         super().__init__()
         self.output_executor = OutputExecutor(self.notification_manager)

@@ -13,6 +13,8 @@ class PowerPointWorkflow(OfficeOmmlBaseWorkflow):
     数学公式自动转换为可编辑的 Office 公式。
     """
 
+    display_name: str = "PowerPoint"
+
     @property
     def app_name(self) -> str:
         return "PowerPoint"

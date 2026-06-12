@@ -7,6 +7,8 @@ from pastemd.service.spreadsheet import WPSExcelPlacer
 class WPSExcelWorkflow(ExcelBaseWorkflow):
     """WPS 表格工作流"""
 
+    display_name: str = "WPS Excel"
+
     def __init__(self):
         super().__init__()
         self._placer = WPSExcelPlacer()

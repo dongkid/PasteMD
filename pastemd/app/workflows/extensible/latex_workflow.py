@@ -15,12 +15,20 @@ from ....service.paste import PlainTextPastePlacer
 
 class LatexWorkflow(ExtensibleWorkflow):
     """LaTeX 粘贴工作流
-    
+
     适用于 Overleaf 等 LaTeX 编辑器：
     - 读取剪贴板 HTML/Markdown（自动识别）
     - 转换为 LaTeX（去除文档头部）
     - 使用 PlainTextPastePlacer 粘贴
     """
+
+    display_name: str = "LaTeX"
+    content_type: str = "latex"
+    source_format: str = "html"
+
+    @property
+    def pipeline(self) -> dict:
+        return {"input": "clipboard_html", "steps": ["html_to_md", "md_preprocess", "md_to_latex", "plain_paste"]}
 
     def __init__(self):
         super().__init__()

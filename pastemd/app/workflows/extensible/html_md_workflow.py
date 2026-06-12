@@ -27,6 +27,14 @@ class HtmlWorkflow(ExtensibleWorkflow):
     - 使用 RichTextPastePlacer 粘贴
     """
 
+    display_name: str = "HTML+MD"
+    content_type: str = "html"
+    source_format: str = "html"
+
+    @property
+    def pipeline(self) -> dict:
+        return {"input": "clipboard_html", "steps": ["html_to_md", "md_preprocess", "md_to_html", "rich_paste"]}
+
     def __init__(self):
         super().__init__()
         self.placer = RichTextPastePlacer()
