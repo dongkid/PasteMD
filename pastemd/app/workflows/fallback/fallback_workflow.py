@@ -48,6 +48,8 @@ class FallbackWorkflow(BaseWorkflow):
             
             # 1. 检测剪贴板内容类型
             content_type = self._detect_content_type()
+            self.content_type = content_type
+            self.source_format = content_type if content_type != "markdown" else "markdown"
             
             # 2. 根据内容类型处理
             if content_type == "table":

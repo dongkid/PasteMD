@@ -48,6 +48,8 @@ class FileWorkflow(ExtensibleWorkflow):
         content_type: str | None = None
         try:
             content_type = self._detect_content_type()
+            self.content_type = content_type
+            self.source_format = content_type if content_type != "markdown" else "markdown"
             self._log(f"File workflow: content_type={content_type}")
 
             if content_type == "table":

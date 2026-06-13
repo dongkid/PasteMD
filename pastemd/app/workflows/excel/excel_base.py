@@ -42,6 +42,8 @@ class ExcelBaseWorkflow(BaseWorkflow, ABC):
 
         try:
             table_data = self._read_clipboard_table()
+            self.content_type = "table"
+            self.source_format = "table"
             self._log(f"Parsed table with {len(table_data)} rows")
 
             result = self.placer.place(table_data, self.config)

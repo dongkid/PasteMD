@@ -43,6 +43,8 @@ class MdWorkflow(ExtensibleWorkflow):
         try:
             # 1. 读取剪贴板内容
             content_type, content = self._read_clipboard()
+            self.content_type = content_type
+            self.source_format = content_type if content_type != "markdown" else "html"
             self._log(f"MD workflow: content_type={content_type}")
             effective_config = self._build_md_config()
             

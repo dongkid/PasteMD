@@ -60,6 +60,8 @@ class OfficeOmmlBaseWorkflow(BaseWorkflow, ABC):
 
         try:
             content_type, content, from_md_file, md_file_count = self._read_clipboard()
+            self.content_type = content_type
+            self.source_format = content_type
             self._log(f"Clipboard content type: {content_type}")
 
             # Preprocess content

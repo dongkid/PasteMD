@@ -36,6 +36,8 @@ class YoudaoWorkflow(ExtensibleWorkflow):
     def execute(self) -> None:
         try:
             content_type, content = self._read_clipboard()
+            self.content_type = content_type
+            self.source_format = content_type if content_type != "markdown" else "html"
             self._log(f"Youdao workflow: content_type={content_type}")
 
             effective_config = {

@@ -43,6 +43,8 @@ class LatexWorkflow(ExtensibleWorkflow):
         try:
             # 1. 读取剪贴板内容
             content_type, content = self._read_clipboard()
+            self.content_type = content_type
+            self.source_format = content_type if content_type != "markdown" else "html"
             self._log(f"LaTeX workflow: content_type={content_type}")
             
             # 2. 转换为 Markdown（如果是 HTML）
