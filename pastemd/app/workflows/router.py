@@ -110,7 +110,7 @@ class WorkflowRouter:
             window_title = get_frontmost_window_title()
             log(f"Window title: {window_title}")
 
-            content_preview, full_content = HistoryRecorder.capture_clipboard_preview()
+            content_preview, full_content, original_html = HistoryRecorder.capture_clipboard()
 
             routes = self._build_dynamic_routes(window_title)
             workflow = routes.get(target_app, routes[""])
@@ -147,7 +147,7 @@ class WorkflowRouter:
         if getattr(self, "_recorder", None):
             self._recorder.record(target_app, workflow_key, ok, error_msg,
                                   window_title, content_preview, full_content,
-                                  workflow=workflow)
+                                  workflow=workflow, original_html=original_html)
 
 # 全局单例
 router = WorkflowRouter()

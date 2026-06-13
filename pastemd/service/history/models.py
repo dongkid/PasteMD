@@ -9,7 +9,7 @@ import json
 _INSERT_COLUMNS = [
     "created_at", "source_format", "content_type",
     "target_app", "window_title", "workflow_key",
-    "conversion_pipeline", "preview", "full_content",
+    "conversion_pipeline", "preview", "full_content", "original_html",
     "output_bytes", "output_file_path", "filters_json",
     "status", "error_msg", "pinned",
 ]
@@ -37,6 +37,7 @@ class HistoryEntry:
     # 内容
     preview: str = ""                  # 前 200 字符预览
     full_content: str = ""             # 完整内容 (可配置不保存)
+    original_html: str = ""            # 原始 HTML 剪贴板 (来源为 html 时保存)
 
     # 输出
     output_bytes: int = 0              # 输出字节数 (docx/png/...)
@@ -69,7 +70,8 @@ class HistoryEntry:
             self.created_at, self.source_format, self.content_type,
             self.target_app, self.window_title, self.workflow_key,
             self.conversion_pipeline, self.preview,
-            self.full_content, self.output_bytes, self.output_file_path,
+            self.full_content, self.original_html,
+            self.output_bytes, self.output_file_path,
             self.filters_json, self.status, self.error_msg[:500],
             1 if self.pinned else 0,
         )

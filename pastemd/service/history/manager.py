@@ -14,12 +14,13 @@ from ...core.state import app_state
 from .models import HistoryEntry
 from .database import HistoryDatabase
 
+# 历史记录查询列 — 与 DDL 表定义列顺序一致
 _HISTORY_COLS = [
     "id", "created_at", "source_format", "content_type",
     "target_app", "window_title", "workflow_key",
-    "conversion_pipeline", "preview", "status",
-    "error_msg", "pinned", "full_content",
+    "conversion_pipeline", "preview", "full_content", "original_html",
     "output_bytes", "output_file_path", "filters_json",
+    "status", "error_msg", "pinned",
 ]
 
 _HISTORY_SELECT = ", ".join(_HISTORY_COLS)
@@ -375,6 +376,7 @@ class HistoryManager:
         self._enqueue_write(("cleanup", cfg.get("max_entries", 500), cfg.get("ttl_days", 90)))
 
     def _get_write_conn(self) -> sqlite3.Connection:
+        # 仅 _worker_loop (单线程) 调用，故存 self 上安全
         if not hasattr(self, "_write_conn") or self._write_conn is None:
             self._write_conn = sqlite3.connect(self._db_path)
             self._write_conn.execute("PRAGMA journal_mode = WAL")

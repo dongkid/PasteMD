@@ -3,7 +3,7 @@
 import json
 import sys
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
 from dataclasses import dataclass
 from typing import Optional, Callable
 
@@ -35,6 +35,10 @@ class FilterState:
     date_to: str = ""
 
 ROW_HEIGHT = 24
+
+# DatePicker 下拉值常量
+_MONTHS = [f"{m:02d}" for m in range(1, 13)]
+_DAYS   = [f"{d:02d}" for d in range(1, 32)]
 
 # 跨平台等宽字体：Consolas (Windows) / Menlo (macOS) / TkFixedFont (兜底)
 MONO_FONT = ("Menlo", 10) if is_macos() else ("Consolas", 10)
@@ -109,10 +113,10 @@ class HistoryDialog:
         # 获取屏幕尺寸，窗口占 80% 宽 x 75% 高
         sw = self._root.winfo_screenwidth()
         sh = self._root.winfo_screenheight()
-        w = max(1100, int(sw * 0.8))
-        h = max(750, int(sh * 0.75))
+        w = max(900, int(sw * 0.65))
+        h = max(580, int(sh * 0.6))
         self._root.geometry(f"{w}x{h}")
-        self._root.minsize(900, 560)
+        self._root.minsize(700, 450)
         self._root.protocol("WM_DELETE_WINDOW", self._on_window_close)
 
         try:
@@ -325,23 +329,16 @@ class HistoryDialog:
     def _build_date_row(parent: ttk.Frame, row: int, start_col: int,
                         yv: tk.StringVar, mv: tk.StringVar, dv: tk.StringVar,
                         padx_end=(0, 0)) -> None:
-        """在 parent 的 row 行、start_col 开始放 年/月/日 三个 Combobox。"""
         years = [""] + [str(y) for y in range(2024, 2031)]
 
         cy = ttk.Combobox(parent, textvariable=yv, values=years, state="readonly", width=5)
         cy.grid(row=row, column=start_col, sticky="w", padx=(0, 1))
-        cm = ttk.Combobox(parent, textvariable=mv, values=[""] + [f"{m:02d}" for m in range(1, 13)],
+        cm = ttk.Combobox(parent, textvariable=mv, values=[""] + _MONTHS,
                           state="readonly", width=3)
         cm.grid(row=row, column=start_col + 1, sticky="w", padx=(0, 1))
-        cd = ttk.Combobox(parent, textvariable=dv, values=[""] + [f"{d:02d}" for d in range(1, 32)],
+        cd = ttk.Combobox(parent, textvariable=dv, values=[""] + _DAYS,
                           state="readonly", width=3)
         cd.grid(row=row, column=start_col + 2, sticky="w", padx=padx_end)
-
-        def _on_month_day_change(*_a):
-            """月份改变时，更新日的可选范围（简化：固定 1-31）。"""
-            pass  # 简化实现，日范围始终 1-31
-
-        mv.trace_add("write", _on_month_day_change)
 
     def _toggle_filters(self) -> None:
         """折叠/展开筛选面板。"""
@@ -700,7 +697,56 @@ class HistoryDialog:
         btn_frame.grid(row=4, column=0, sticky="ew")
         ttk.Button(btn_frame, text=t("history.detail.copy"),
                    command=lambda: self._copy_to_clipboard(ct)).pack(side=tk.LEFT, padx=(0, 8))
+
+        # HTML 源码下拉按钮（仅当有 HTML 来源时显示）
+        original_html_str = entry.get("original_html", "") or ""
+        if original_html_str.strip():
+            full_text = entry.get("full_content", "") or ""
+            self._build_html_dropdown(btn_frame, original_html_str, full_text)
+
         ttk.Button(btn_frame, text=t("history.detail.close"), command=detail.destroy).pack(side=tk.RIGHT)
+
+    def _copy_html_to_clipboard(self, html: str, plain_text: str = "") -> None:
+        """以 CF_HTML + CF_TEXT 写回剪贴板，复现网页复制时的原始状态。"""
+        try:
+            from ...utils.clipboard import set_clipboard_rich_text
+            set_clipboard_rich_text(html=html, text=plain_text.strip() if plain_text else None)
+            self._nm.notify("PasteMD", t("history.copied_html"), ok=True)
+        except Exception as e:
+            log(f"HTML clipboard copy failed: {e}")
+            self._copy_to_clipboard(html or "")
+
+    def _build_html_dropdown(self, parent: ttk.Frame, html: str, plain_text: str) -> None:
+        """创建 HTML 源码的下拉菜单按钮（复制 / 导出文件）。"""
+        mb = ttk.Menubutton(parent, text=t("history.detail.copy_html"), direction="above")
+        mb.pack(side=tk.LEFT, padx=(0, 8))
+        menu = tk.Menu(mb, tearoff=0)
+        menu.add_command(
+            label=t("history.detail.copy_html_clipboard"),
+            command=lambda: self._copy_html_to_clipboard(html, plain_text),
+        )
+        menu.add_command(
+            label=t("history.detail.copy_html_export"),
+            command=lambda: self._export_html_file(html),
+        )
+        mb.configure(menu=menu)
+
+    def _export_html_file(self, html: str) -> None:
+        """导出原始 HTML 到文件。"""
+        file_path = filedialog.asksaveasfilename(
+            defaultextension=".html",
+            filetypes=[("HTML files", "*.html"), ("All files", "*.*")],
+            title=t("history.detail.copy_html_export"),
+        )
+        if not file_path:
+            return
+        try:
+            with open(file_path, "w", encoding="utf-8") as f:
+                f.write(html)
+            self._nm.notify("PasteMD", t("history.exported_html", path=file_path), ok=True)
+        except Exception as e:
+            log(f"HTML export failed: {e}")
+            self._nm.notify("PasteMD", t("history.exported_html_failed"), ok=False)
 
     def _copy_to_clipboard(self, content: str) -> None:
         try:

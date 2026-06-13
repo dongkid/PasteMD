@@ -14,6 +14,7 @@ DDL_STATEMENTS = [
         conversion_pipeline TEXT DEFAULT '{}',
         preview TEXT NOT NULL DEFAULT '',
         full_content TEXT DEFAULT '',
+        original_html TEXT DEFAULT '',
         output_bytes INTEGER NOT NULL DEFAULT 0,
         output_file_path TEXT DEFAULT '',
         filters_json TEXT DEFAULT '[]',
@@ -58,6 +59,7 @@ MIGRATIONS = [
     "ALTER TABLE paste_history ADD COLUMN output_bytes INTEGER NOT NULL DEFAULT 0",
     "ALTER TABLE paste_history ADD COLUMN output_file_path TEXT DEFAULT ''",
     "ALTER TABLE paste_history ADD COLUMN filters_json TEXT DEFAULT '[]'",
+    "ALTER TABLE paste_history ADD COLUMN original_html TEXT DEFAULT ''",
 ]
 
 
@@ -83,14 +85,15 @@ class HistoryDatabase:
                     except Exception:
                         pass
 
-            # 迁移 FTS5 → trigram
+                        # 迁移 FTS5 → trigram
+            fts5_ddl = [s for s in DDL_STATEMENTS if "fts5" in s.lower()][0]
             cur = conn.execute(
                 "SELECT sql FROM sqlite_master WHERE type='table' AND name='paste_history_fts'"
             )
             row = cur.fetchone()
             if row and "tokenize='trigram'" not in row[0]:
                 conn.execute("DROP TABLE IF EXISTS paste_history_fts")
-                conn.execute(DDL_STATEMENTS[8])
+                conn.execute(fts5_ddl)
                 conn.execute(
                     "INSERT INTO paste_history_fts(rowid, preview, full_content, "
                     "window_title, target_app, workflow_key) "

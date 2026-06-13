@@ -15,7 +15,7 @@ class HistoryRecorder:
 
     def record(self, target_app, workflow_key, success, error_msg,
                window_title, content_preview, full_content="",
-               workflow=None) -> None:
+               workflow=None, original_html="") -> None:
         """收集中元数据后写入 HistoryEntry 到 HistoryManager。"""
         if self._hm is None:
             return
@@ -38,6 +38,7 @@ class HistoryRecorder:
                 conversion_pipeline=json.dumps(pipeline, ensure_ascii=False),
                 preview=content_preview,
                 full_content=full_content if save_full else "",
+                original_html=original_html,
                 output_bytes=output_bytes,
                 status="success" if success else "fail",
                 error_msg=error_msg,
@@ -51,12 +52,14 @@ class HistoryRecorder:
     # ---- 剪贴板预览 ----
 
     @staticmethod
-    def capture_clipboard_preview() -> tuple[str, str]:
-        """返回 (preview_200, full_text)，兼容文件剪贴板。"""
+    def capture_clipboard() -> tuple[str, str, str]:
+        """捕获剪贴板内容，返回 (preview, full_text, original_html)。
+        必须在 workflow.execute() 之前调用。"""
         try:
             from ...utils.clipboard import (
                 get_clipboard_text, read_markdown_files_from_clipboard,
                 is_clipboard_files, get_clipboard_files, is_clipboard_empty,
+                get_clipboard_html,
             )
             text = get_clipboard_text() or ""
 
@@ -80,9 +83,16 @@ class HistoryRecorder:
                     text = "[non-text clipboard content]"
 
             preview = text.strip()[:200] if text else ""
-            return preview, text
+
+            html = ""
+            try:
+                html = get_clipboard_html() or ""
+            except Exception:
+                pass
+
+            return preview, text, html
         except Exception:
-            return "", ""
+            return "", "", ""
 
     # ---- 内部 -- 工作流元数据 ----
 
