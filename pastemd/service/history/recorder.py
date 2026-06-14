@@ -4,6 +4,7 @@ import json
 import os
 
 from ...core.state import app_state
+from ...utils.logging import log
 from .models import HistoryEntry
 
 
@@ -46,8 +47,8 @@ class HistoryRecorder:
                 output_file_path=output_path,
             )
             self._hm.record(entry)
-        except Exception:
-            pass  # 历史记录失败绝不影响主流程
+        except Exception as e:
+            log(f"HistoryRecorder.record failed: {e}")
 
     # ---- 内部 -- 工作流元数据 ----
 

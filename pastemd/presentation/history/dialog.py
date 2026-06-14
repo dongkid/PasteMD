@@ -14,10 +14,22 @@ from ...service.notification.manager import NotificationManager
 from ...utils.logging import log
 from ...i18n import t
 
-TARGET_DISPLAY = {
+# ===== 单一起源：代码值 → 显示名 =====
+# 目标应用
+_TARGET_DISPLAY = {
     "word": "Word", "wps": "WPS", "excel": "Excel",
     "wps_excel": "WPS Excel", "onenote": "OneNote",
     "powerpoint": "PowerPoint", "youdao": "Youdao", "": "—",
+}
+# 兼容别名（详情页等外部模块仍可引用 TARGET_DISPLAY）
+TARGET_DISPLAY = _TARGET_DISPLAY
+# 工作流（含目标应用 + 扩展工作流 + fallback）
+_WORKFLOW_DISPLAY = {
+    "word": "Word", "wps": "WPS", "excel": "Excel",
+    "wps_excel": "WPS Excel", "onenote": "OneNote",
+    "powerpoint": "PowerPoint", "youdao": "Youdao",
+    "": "Fallback", "fallback": "Fallback", "html": "HTML+MD",
+    "md": "Markdown", "latex": "LaTeX", "file": "File",
 }
 CONTENT_TYPE_DISPLAY = {
     "markdown": "MD", "html": "HTML", "latex": "LaTeX",
@@ -43,22 +55,15 @@ _DAYS   = [f"{d:02d}" for d in range(1, 32)]
 # 跨平台等宽字体：Consolas (Windows) / Menlo (macOS) / TkFixedFont (兜底)
 MONO_FONT = ("Menlo", 10) if is_macos() else ("Consolas", 10)
 
-# 过滤下拉框：显示名 → 代码值 映射
+# 过滤下拉映射（显示名 → 代码值），从单一起源推导
+def _reverse_display(m):
+    """反转 (代码→显示) 为 (显示→代码)，排除空 key 以保留「无」入口。"""
+    return {v: k for k, v in m.items() if k}
+
 FILTER_STATUS_MAP = {"无": "", "✓ success": "success", "✗ fail": "fail"}
-FILTER_TARGET_MAP = {
-    "无": "",
-    "Word": "word", "WPS": "wps", "Excel": "excel",
-    "WPS Excel": "wps_excel", "OneNote": "onenote",
-    "PowerPoint": "powerpoint", "Youdao": "youdao",
-}
-FILTER_WORKFLOW_MAP = {
-    "无": "",
-    "Word": "word", "WPS": "wps", "Excel": "excel",
-    "WPS Excel": "wps_excel", "OneNote": "onenote",
-    "PowerPoint": "powerpoint", "Youdao": "youdao",
-    "Fallback": "fallback", "HTML+MD": "html",
-    "Markdown": "md", "LaTeX": "latex", "File": "file",
-}
+FILTER_TARGET_MAP = {"无": "", **_reverse_display(_TARGET_DISPLAY)}
+FILTER_WORKFLOW_MAP = {"无": "", **_reverse_display(_WORKFLOW_DISPLAY)}
+# 内容类型：树视图用短标签、下拉用全名，故映射不互通，独立维护
 FILTER_CTYPE_MAP = {
     "无": "",
     "Markdown": "markdown", "HTML": "html", "LaTeX": "latex",
@@ -417,13 +422,7 @@ class HistoryDialog:
     @staticmethod
     def _format_workflow_key(key: str) -> str:
         """将 workflow_key 转为可读显示名。"""
-        WF_DISPLAY = {
-            "": "Fallback", "word": "Word", "wps": "WPS", "excel": "Excel",
-            "wps_excel": "WPS Excel", "onenote": "OneNote",
-            "powerpoint": "PowerPoint", "youdao": "Youdao",
-            "html": "HTML+MD", "md": "Markdown", "latex": "LaTeX", "file": "File",
-        }
-        return WF_DISPLAY.get(key, key) or "—"
+        return _WORKFLOW_DISPLAY.get(key, key) or "—"
 
     @staticmethod
     def _format_output_bytes(b: int) -> str:
