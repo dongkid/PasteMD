@@ -519,6 +519,7 @@ class HistoryDialog:
         if sel:
             for iid in sel:
                 self._hm.delete_entry(int(iid))
+            self._hm.flush()
             self._refresh_list()
             self._update_stats()
 
@@ -768,10 +769,12 @@ class HistoryDialog:
 
     def _toggle_pin(self, entry_id: int) -> None:
         self._hm.toggle_pin(entry_id)
+        self._hm.flush()
         self._refresh_list()
 
     def _delete_entry(self, entry_id: int) -> None:
         self._hm.delete_entry(entry_id)
+        self._hm.flush()
         self._refresh_list()
         self._update_stats()
 
@@ -779,6 +782,7 @@ class HistoryDialog:
         if not messagebox.askyesno(t("history.clear.title"), t("history.clear.confirm")):
             return
         self._hm.clear_all()
+        self._hm.flush()
         self._current_page = 0
         self._refresh_list()
         self._update_stats()

@@ -366,6 +366,19 @@ class HistoryManager:
     # Internals – write
     # ------------------------------------------------------------------
 
+    def flush(self, timeout: float = 5.0) -> None:
+        """阻塞等待写队列中的所有待处理操作完成。
+
+        用于读后写场景（如清空后立即刷新列表），确保 write-ahead 日志中的
+        变更在继续前已提交。
+        """
+        event = threading.Event()
+        try:
+            self._write_queue.put(("_flush", event), timeout=timeout)
+            event.wait(timeout)
+        except Exception:
+            pass
+
     def _enqueue_write(self, action) -> None:
         try:
             self._write_queue.put_nowait(action)
@@ -449,6 +462,12 @@ class HistoryManager:
             mx  = action[1] if len(action) > 1 else 500
             self._cleanup_expired(conn, ttl)
             self._enforce_max(conn, mx)
+        elif kind == "_flush":
+            event = action[1]
+            try:
+                event.set()
+            except Exception:
+                pass
 
     def _enforce_max(self, conn, mx=None):
         if mx is None:
