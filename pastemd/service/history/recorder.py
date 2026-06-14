@@ -49,51 +49,6 @@ class HistoryRecorder:
         except Exception:
             pass  # 历史记录失败绝不影响主流程
 
-    # ---- 剪贴板预览 ----
-
-    @staticmethod
-    def capture_clipboard() -> tuple[str, str, str]:
-        """捕获剪贴板内容，返回 (preview, full_text, original_html)。
-        必须在 workflow.execute() 之前调用。"""
-        try:
-            from ...utils.clipboard import (
-                get_clipboard_text, read_markdown_files_from_clipboard,
-                is_clipboard_files, get_clipboard_files, is_clipboard_empty,
-                get_clipboard_html,
-            )
-            text = get_clipboard_text() or ""
-
-            if not text.strip():
-                found, files_data, _ = read_markdown_files_from_clipboard()
-                if found and files_data:
-                    parts = [f"[{fn}]\n{content.strip()}" for fn, content in files_data]
-                    text = "\n\n".join(parts)
-                if not text.strip():
-                    try:
-                        if is_clipboard_files():
-                            files = get_clipboard_files()
-                            if files:
-                                names = [os.path.basename(f) for f in files[:10]]
-                                text = "Files: " + ", ".join(names)
-                                if len(files) > 10:
-                                    text += f" (+{len(files) - 10} more)"
-                    except Exception:
-                        pass
-                if not text.strip() and not is_clipboard_empty():
-                    text = "[non-text clipboard content]"
-
-            preview = text.strip()[:200] if text else ""
-
-            html = ""
-            try:
-                html = get_clipboard_html() or ""
-            except Exception:
-                pass
-
-            return preview, text, html
-        except Exception:
-            return "", "", ""
-
     # ---- 内部 -- 工作流元数据 ----
 
     @staticmethod
@@ -125,20 +80,6 @@ class HistoryRecorder:
                     return path, size
             except Exception:
                 pass
-
-        save_dir = app_state.config.get("save_dir", "") or ""
-        if not save_dir:
-            return "", 0
-        try:
-            files = sorted(
-                [os.path.join(save_dir, f) for f in os.listdir(save_dir)
-                 if os.path.isfile(os.path.join(save_dir, f))],
-                key=lambda p: os.path.getmtime(p), reverse=True,
-            )
-            if files:
-                return files[0], os.path.getsize(files[0])
-        except Exception:
-            pass
         return "", 0
 
     # ---- 内部 -- 过滤器 ----

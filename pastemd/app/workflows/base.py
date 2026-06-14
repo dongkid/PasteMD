@@ -7,6 +7,7 @@ from ...service.document import DocumentGenerator
 from ...service.spreadsheet import SpreadsheetGenerator
 from ...service.preprocessor import HtmlPreprocessor, MarkdownPreprocessor
 from ...utils.logging import log
+from ...utils.html_analyzer import is_plain_html_fragment
 
 
 class BaseWorkflow(ABC):
@@ -23,6 +24,24 @@ class BaseWorkflow(ABC):
 
         self._markdown_preprocessor = MarkdownPreprocessor()
         self._html_preprocessor = HtmlPreprocessor()
+
+        # Router 预捕获的剪贴板内容，避免 workflow 内重复读取 clipboard
+        self._pre_captured_text: str = ""
+        self._pre_captured_html: str = ""
+
+    def _try_pre_captured(self):
+        """尝试使用 Router 预捕获的剪贴板内容，避免重复读取 clipboard。
+
+        Returns:
+            ("html", html_content, False, 0) — 有预捕获的 HTML
+            ("markdown", text_content, False, 0) — 有预捕获的文本
+            None — 无预捕获内容，需要自行读取剪贴板
+        """
+        if self._pre_captured_html and not is_plain_html_fragment(self._pre_captured_html):
+            return ("html", self._pre_captured_html, False, 0)
+        if self._pre_captured_text:
+            return ("markdown", self._pre_captured_text, False, 0)
+        return None
 
     # ---- 元数据（子类按需覆写） ----
 

@@ -85,13 +85,20 @@ class HistoryDatabase:
                     except Exception:
                         pass
 
-                        # 迁移 FTS5 → trigram
+            # 迁移 FTS5：检查 tokenizer 或列是否过时
             fts5_ddl = [s for s in DDL_STATEMENTS if "fts5" in s.lower()][0]
             cur = conn.execute(
                 "SELECT sql FROM sqlite_master WHERE type='table' AND name='paste_history_fts'"
             )
             row = cur.fetchone()
-            if row and "tokenize='trigram'" not in row[0]:
+            needs_rebuild = False
+            if row:
+                fts_sql = row[0]
+                if "tokenize='trigram'" not in fts_sql:
+                    needs_rebuild = True
+                elif "full_content" not in fts_sql.lower():
+                    needs_rebuild = True
+            if needs_rebuild:
                 conn.execute("DROP TABLE IF EXISTS paste_history_fts")
                 conn.execute(fts5_ddl)
                 conn.execute(

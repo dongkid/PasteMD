@@ -138,6 +138,10 @@ class OfficeOmmlBaseWorkflow(BaseWorkflow, ABC):
 
     def _read_clipboard(self) -> tuple[str, str, bool, int]:
         """读取剪贴板,返回 (类型, 内容, 是否来自 MD 文件, MD 文件数量)"""
+        precap = self._try_pre_captured()
+        if precap:
+            return precap
+
         try:
             html = get_clipboard_html(self.config)
             if not is_plain_html_fragment(html):

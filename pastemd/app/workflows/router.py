@@ -6,6 +6,7 @@ from ...utils.detector import detect_active_app, get_frontmost_window_title
 from ...utils.logging import log
 from ...service.notification.manager import NotificationManager
 from ...service.history.recorder import HistoryRecorder
+from ...utils.clipboard import capture_clipboard_content
 from ...i18n import t
 
 from .word import WordWorkflow, WPSWorkflow
@@ -102,6 +103,7 @@ class WorkflowRouter:
         window_title = ""
         content_preview = ""
         full_content = ""
+        original_html = ""
         workflow = None
         try:
             target_app = detect_active_app()
@@ -110,7 +112,15 @@ class WorkflowRouter:
             window_title = get_frontmost_window_title()
             log(f"Window title: {window_title}")
 
-            content_preview, full_content, original_html = HistoryRecorder.capture_clipboard()
+            # 仅在历史记录启用时预捕获剪贴板（避免不必要的 CF_HTML 解析开销）
+            _history_enabled = (
+                self._recorder is not None
+                and app_state.config.get("history", {}).get("enabled", True)
+            )
+            if _history_enabled:
+                content_preview, full_content, original_html = capture_clipboard_content()
+            else:
+                content_preview = full_content = original_html = ""
 
             routes = self._build_dynamic_routes(window_title)
             workflow = routes.get(target_app, routes[""])
@@ -129,6 +139,9 @@ class WorkflowRouter:
                     workflow_key = ""
                 else:
                     workflow_key = target_app or ""
+            if _history_enabled:
+                workflow._pre_captured_text = full_content
+                workflow._pre_captured_html = original_html
             workflow.execute()
 
         except Exception as e:

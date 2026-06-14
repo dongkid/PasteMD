@@ -80,38 +80,33 @@ class FallbackWorkflow(BaseWorkflow):
             self._notify_error(t("workflow.generic.failure"))
     
     def _detect_content_type(self) -> str:
-        """
-        检测剪贴板内容类型
-        
-        Returns:
-            "table" | "html" | "markdown"
-        """
-        if is_clipboard_empty():
-            raise ClipboardError("剪贴板为空")
-        
-        # 检查是否为表格
-        markdown_text = get_clipboard_text()
-        found, files_data, _ = read_markdown_files_from_clipboard()
-        if found:
-            markdown_text = merge_markdown_contents(files_data)
-        table_data = parse_markdown_table(markdown_text)
-        if table_data:
-            return "table"
-        
-        # 检查是否为 HTML
-        try:
-            html = get_clipboard_html(self.config)
-            if not is_plain_html_fragment(html):
-                return "html"
-        except ClipboardError:
-            pass
-        
-        # 默认为 Markdown
+        """剪贴板内容类型检测，优先使用 router 预捕获的内容。"""
+        # 1. 表格检测优先（表格应优先于 HTML）
+        markdown_text = self._pre_captured_text or get_clipboard_text()
+        if markdown_text:
+            table_data = parse_markdown_table(markdown_text)
+            if table_data:
+                return "table"
+        else:
+            if is_clipboard_empty():
+                raise ClipboardError("剪贴板为空")
+
+        # 2. HTML 检测（使用预捕获 HTML 或直接读剪贴板）
+        html = self._pre_captured_html
+        if not html:
+            try:
+                html = get_clipboard_html(self.config)
+            except ClipboardError:
+                pass
+        if html and not is_plain_html_fragment(html):
+            return "html"
+
+        # 3. 兜底 Markdown
         return "markdown"
     
     def _handle_table(self, action: str):
         """处理表格内容"""
-        markdown_text = get_clipboard_text()
+        markdown_text = self._pre_captured_text or get_clipboard_text()
         found, files_data, _ = read_markdown_files_from_clipboard()
         if found:
             markdown_text = merge_markdown_contents(files_data)
@@ -140,9 +135,9 @@ class FallbackWorkflow(BaseWorkflow):
 
     def _handle_document(self, action: str, content_type: str):
         """处理文档内容（HTML 或 Markdown）"""
-        # 1. 读取内容
+        # 1. 读取内容（优先使用 router 预捕获）
         if content_type == "html":
-            html = get_clipboard_html(self.config)
+            html = self._pre_captured_html or get_clipboard_html(self.config)
             html = self.html_preprocessor.process(html, self.config)
             docx_bytes = self.doc_generator.convert_html_to_docx_bytes(
                 html, self.config
@@ -151,7 +146,7 @@ class FallbackWorkflow(BaseWorkflow):
             md_text = ""
         else:
             # Markdown
-            content = get_clipboard_text()
+            content = self._pre_captured_text or get_clipboard_text()
             found, files_data, _ = read_markdown_files_from_clipboard()
             if found:
                 content = merge_markdown_contents(files_data)

@@ -11,21 +11,17 @@ from ...config.paths import get_history_db_path
 from ...utils.logging import log
 from ...config.loader import ConfigLoader
 from ...core.state import app_state
-from .models import HistoryEntry
+from .models import HistoryEntry, _INSERT_COLUMNS
 from .database import HistoryDatabase
 
-# 历史记录查询列 — 与 DDL 表定义列顺序一致
-_HISTORY_COLS = [
-    "id", "created_at", "source_format", "content_type",
-    "target_app", "window_title", "workflow_key",
-    "conversion_pipeline", "preview", "full_content", "original_html",
-    "output_bytes", "output_file_path", "filters_json",
-    "status", "error_msg", "pinned",
-]
+# 完整列列表 — 与 DDL / _INSERT_COLUMNS 同步，避免多处维护
+_HISTORY_COLS = ["id"] + list(_INSERT_COLUMNS)
+# 列表视图排除大内容字段（仅详情页通过 SELECT * 加载）
+_HISTORY_LIST_COLS = [c for c in _HISTORY_COLS if c not in ("full_content", "original_html")]
 
-_HISTORY_SELECT = ", ".join(_HISTORY_COLS)
+_HISTORY_SELECT = ", ".join(_HISTORY_LIST_COLS)
 
-_HISTORY_SELECT_ALIASED = ", ".join(f"h.{c}" for c in _HISTORY_COLS)
+_HISTORY_SELECT_ALIASED = ", ".join(f"h.{c}" for c in _HISTORY_LIST_COLS)
 
 
 class HistoryManager:
@@ -136,10 +132,17 @@ class HistoryManager:
                 ).fetchone()
             else:
                 try:
-                    sql = """SELECT COUNT(*) FROM paste_history h
+                    fts_where, fts_params = self._build_where(
+                        status_filter, target_filter,
+                        content_type_filter, workflow_filter,
+                        date_from, date_to,
+                        extra_where="paste_history_fts MATCH ?",
+                        extra_params=[keyword],
+                    )
+                    sql = f"""SELECT COUNT(*) FROM paste_history h
                              JOIN paste_history_fts f ON h.id = f.rowid
-                             WHERE paste_history_fts MATCH ?"""
-                    row = conn.execute(sql, (keyword,)).fetchone()
+                             {fts_where}"""
+                    row = conn.execute(sql, fts_params).fetchone()
                 except Exception:
                     pattern = f"%{keyword}%"
                     like_where, like_params = self._build_where(
@@ -396,10 +399,18 @@ class HistoryManager:
 
     def _worker_loop(self) -> None:
         conn = self._get_write_conn()
+        _batch_inserts = 0
         while not self._stop_event.is_set():
             try:
                 item = self._write_queue.get(timeout=1.0)
             except queue.Empty:
+                # 空闲时执行一次迟到的裁剪
+                if _batch_inserts > 0:
+                    try:
+                        self._enforce_max(conn)
+                    except Exception:
+                        pass
+                    _batch_inserts = 0
                 continue
             if item is None:
                 break
@@ -409,7 +420,11 @@ class HistoryManager:
                     if not cfg.get("dedup_minutes", 0) or not self._is_duplicate(conn, item, cfg.get("dedup_minutes", 0)):
                         conn.execute(HistoryEntry.insert_sql(), item.to_row())
                         conn.commit()
-                        self._enforce_max(conn)
+                        _batch_inserts += 1
+                        # 每 50 条 INSERT 才执行一次裁剪，减少无效扫描
+                        if _batch_inserts >= 50:
+                            self._enforce_max(conn)
+                            _batch_inserts = 0
                 elif isinstance(item, tuple):
                     self._handle_action(conn, item)
             except Exception as e:

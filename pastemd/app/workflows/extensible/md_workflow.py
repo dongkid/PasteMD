@@ -84,6 +84,10 @@ class MdWorkflow(ExtensibleWorkflow):
     
     def _read_clipboard(self) -> tuple[str, str]:
         """读取剪贴板内容，返回 (类型, 内容)"""
+        precap = self._try_pre_captured()
+        if precap:
+            return (precap[0], precap[1])
+
         # 优先尝试 HTML
         try:
             html = get_clipboard_html(self.config)

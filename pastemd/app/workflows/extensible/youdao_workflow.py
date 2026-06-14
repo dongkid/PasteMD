@@ -85,6 +85,10 @@ class YoudaoWorkflow(ExtensibleWorkflow):
             self._notify_error(t("workflow.generic.failure"))
 
     def _read_clipboard(self) -> tuple[str, str]:
+        precap = self._try_pre_captured()
+        if precap:
+            return (precap[0], precap[1])
+
         try:
             html = get_clipboard_html(self.config)
             if not is_plain_html_fragment(html):

@@ -113,6 +113,11 @@ class WordBaseWorkflow(BaseWorkflow, ABC):
         """
         读取剪贴板,返回 (类型, 内容, 是否来自 MD 文件, MD 文件数量)
         """
+        # 优先使用 router 预捕获的剪贴板内容，避免重复读取 clipboard
+        precap = self._try_pre_captured()
+        if precap:
+            return precap
+
         try:
             html = get_clipboard_html(self.config)
             if not is_plain_html_fragment(html):
