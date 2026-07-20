@@ -367,6 +367,7 @@
     "history.detail.output_file": "File: ",
     "history.detail.pipeline": "Pipeline: ",
     "history.detail.filters": "Filters: ",
+    "history.detail.content_truncated": "Content too large ({size_kb}KB), truncated for display. Use Export to access full content.",
     "history.filter.workflow": "Workflow:",
     "history.filter.content_type": "Type:",
     "history.filter.date_from": "From:",

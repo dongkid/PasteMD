@@ -367,6 +367,7 @@
     "history.detail.output_file": "ファイル: ",
     "history.detail.pipeline": "パイプライン: ",
     "history.detail.filters": "フィルター: ",
+    "history.detail.content_truncated": "コンテンツが大きすぎます（{size_kb}KB）。表示用に切り詰めました。完全な内容はエクスポート機能を使用してください。",
     "history.filter.workflow": "ワークフロー:",
     "history.filter.content_type": "タイプ:",
     "history.filter.date_from": "開始:",

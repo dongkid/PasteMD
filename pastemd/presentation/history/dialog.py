@@ -738,8 +738,26 @@ class HistoryDialog:
         original_html_str = entry.get("original_html", "") or ""
         default_content_mode = DETAIL_CONTENT_HTML if original_html_str.strip() else DETAIL_CONTENT_PLAIN
         initial_content = original_html_str if default_content_mode == DETAIL_CONTENT_HTML else ct
-        text_widget = tk.Text(content_frame, wrap=tk.WORD, font=MONO_FONT)
+
+        # 内容预处理：截断 + HTML 标签展开 + 硬折行，确保 wrap=WORD 在短行上高效运行
+        MAX_CONTENT_CHARS = 200_000
+        if len(initial_content) > MAX_CONTENT_CHARS:
+            truncated_notice = (
+                f"<!-- ⚠ {t('history.detail.content_truncated', size_kb=len(initial_content)//1024)} -->\n"
+            )
+            initial_content = truncated_notice + initial_content[:MAX_CONTENT_CHARS]
+        initial_content = self._normalize_content_for_display(initial_content)
+
+        text_widget = tk.Text(
+            content_frame,
+            wrap=tk.WORD,
+            undo=False,
+            maxundo=0,
+            font=MONO_FONT,
+        )
+
         text_widget.insert("1.0", initial_content)
+
         text_widget.configure(state=tk.DISABLED)
 
         sb = ttk.Scrollbar(content_frame, orient=tk.VERTICAL, command=text_widget.yview)
@@ -764,6 +782,12 @@ class HistoryDialog:
 
         def _refresh_content_view(_event=None) -> None:
             content = self._detail_content_for_mode(ct, original_html_str, _selected_content_mode())
+            if len(content) > MAX_CONTENT_CHARS:
+                truncated_notice = (
+                    f"<!-- ⚠ {t('history.detail.content_truncated', size_kb=len(content)//1024)} -->\n"
+                )
+                content = truncated_notice + content[:MAX_CONTENT_CHARS]
+            content = self._normalize_content_for_display(content)
             text_widget.configure(state=tk.NORMAL)
             text_widget.delete("1.0", tk.END)
             text_widget.insert("1.0", content)
@@ -806,6 +830,38 @@ class HistoryDialog:
         if content_mode == DETAIL_CONTENT_HTML and original_html.strip():
             return original_html
         return plain_text
+
+    @staticmethod
+    def _normalize_content_for_display(content: str) -> str:
+        """预规范化内容用于 Text 控件显示，避免超长行导致的性能和体验问题。
+
+        策略：
+        1. HTML 内容：在 > 后插入换行，把一坨长 HTML 展开为多行
+        2. 任意内容：逐行检查，超过 HARD_WRAP 长度的行强制硬折行
+        3. 这样 wrap=tk.CHAR 可以在 O(n) 复杂度下正常换行，既快又好看
+        """
+        HARD_WRAP = 300          # 单行最大字符数，超出的强制折行
+        HTML_EXPAND_MIN = 5      # 至少 N 个 > 才认为是 HTML
+
+        # 检查是否需要做 HTML 标签展开：
+        # 条件：有少量行但有超长单行 + 存在足够多的 > 字符
+        lines = content.split("\n")
+        max_line = max(len(ln) for ln in lines) if lines else 0
+        gt_count = content.count(">")
+        if max_line > 500 and gt_count >= HTML_EXPAND_MIN:
+            content = content.replace(">\n", ">")  # 先清理已有的 HTML 换行
+            content = content.replace(">", ">\n")   # 每个 > 后换行
+            content = content.replace("\n ", "\n")  # 清理属性间多余空白
+            lines = content.split("\n")  # 重新分片用于硬折行
+
+        # 硬折行保护：对仍然超长的行做强制截断
+        result = []
+        for line in lines:
+            while len(line) > HARD_WRAP:
+                result.append(line[:HARD_WRAP])
+                line = line[HARD_WRAP:]
+            result.append(line)
+        return "\n".join(result)
 
     def _copy_detail_content(self, *, plain_text: str, original_html: str, content_mode: str) -> None:
         if content_mode == DETAIL_CONTENT_HTML and original_html.strip():

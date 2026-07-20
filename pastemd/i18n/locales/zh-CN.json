@@ -367,6 +367,7 @@
     "history.detail.output_file": "文件: ",
     "history.detail.pipeline": "管道: ",
     "history.detail.filters": "过滤器: ",
+    "history.detail.content_truncated": "内容过大({size_kb}KB)，已截断显示。完整内容请使用导出功能。",
     "history.filter.workflow": "工作流:",
     "history.filter.content_type": "类型:",
     "history.filter.date_from": "开始:",
